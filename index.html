@@ -1118,12 +1118,8 @@
                         <span>Estimates</span>
                     </div>
                     <div class="nav-item" onclick="showView('projects')">
-                        <span>📋</span>
-                        <span>Projects</span>
-                    </div>
-                    <div class="nav-item" onclick="showView('parts')">
-                        <span>📦</span>
-                        <span>Parts & Orders</span>
+                        <span>🔄</span>
+                        <span>Pipeline</span>
                     </div>
                     <div class="nav-item" onclick="showView('accounts')">
                         <span>🏫</span>
@@ -1139,6 +1135,10 @@
                     <div class="nav-item" onclick="showView('scheduling')">
                         <span>📅</span>
                         <span>Scheduling</span>
+                    </div>
+                    <div class="nav-item" onclick="showView('parts')">
+                        <span>📦</span>
+                        <span>Parts & Orders</span>
                     </div>
                     <div class="nav-item" onclick="showView('officeCreate')">
                         <span>+</span>
@@ -1319,14 +1319,12 @@
                     <!-- Projects View -->
                     <div id="projectsView" class="hidden">
                         <div class="page-header">
-                            <h1 class="page-title">Project Tracker</h1>
-                            <p class="page-subtitle">Visual pipeline of all jobs from estimate to completion</p>
+                            <h1 class="page-title">Pipeline</h1>
+                            <p class="page-subtitle">All jobs at a glance — from estimate to completion</p>
                         </div>
 
-                        <div class="card">
-                            <div class="card-body" id="projectsList">
-                                <!-- Populated by JavaScript -->
-                            </div>
+                        <div id="pipelineContent">
+                            <!-- Populated by JavaScript -->
                         </div>
                     </div>
 
@@ -5733,7 +5731,7 @@
             document.querySelectorAll('#officeDashboard .nav-item').forEach(el => el.classList.remove('active'));
 
             var navItems = document.querySelectorAll('#officeDashboard .nav-item');
-            // Nav indices: 0=Dashboard, 1=Estimates, 2=Projects, 3=Parts, 4=Accounts, 5=Search, 6=Schedule, 7=Create, 8=Employees(admin), 9=DataMgmt(admin)
+            // Nav indices: 0=Dashboard, 1=Estimates, 2=Pipeline, 3=Accounts, 4=Search, 5=Schedule, 6=Parts, 7=Create, 8=Employees(admin), 9=DataMgmt(admin)
 
             // Show selected view and update nav
             if (view === 'dashboard') {
@@ -5746,20 +5744,20 @@
             } else if (view === 'projects') {
                 document.getElementById('projectsView').classList.remove('hidden');
                 navItems[2].classList.add('active');
-                loadProjects();
+                loadPipeline();
             } else if (view === 'parts') {
                 document.getElementById('partsView').classList.remove('hidden');
-                navItems[3].classList.add('active');
+                navItems[6].classList.add('active');
             } else if (view === 'accounts') {
                 document.getElementById('accountsView').classList.remove('hidden');
-                navItems[4].classList.add('active');
+                navItems[3].classList.add('active');
                 loadAccounts();
             } else if (view === 'officeSearch') {
                 document.getElementById('officeSearchView').classList.remove('hidden');
-                navItems[5].classList.add('active');
+                navItems[4].classList.add('active');
             } else if (view === 'scheduling') {
                 document.getElementById('schedulingView').classList.remove('hidden');
-                navItems[6].classList.add('active');
+                navItems[5].classList.add('active');
                 loadSchedule();
             } else if (view === 'officeCreate') {
                 document.getElementById('officeCreateView').classList.remove('hidden');
@@ -5770,17 +5768,17 @@
                 navItems[1].classList.add('active');
             } else if (view === 'workOrderDetail') {
                 document.getElementById('workOrderDetailView').classList.remove('hidden');
-                navItems[5].classList.add('active');
+                navItems[4].classList.add('active');
             } else if (view === 'customerDetail') {
                 document.getElementById('customerDetailView').classList.remove('hidden');
-                navItems[4].classList.add('active');
+                navItems[3].classList.add('active');
             } else if (view === 'inspections') {
                 document.getElementById('officeInspectionsView').classList.remove('hidden');
-                navItems[5].classList.add('active');
+                navItems[4].classList.add('active');
                 loadOfficeInspections();
             } else if (view === 'workorders') {
                 document.getElementById('officeWorkOrdersView').classList.remove('hidden');
-                navItems[5].classList.add('active');
+                navItems[4].classList.add('active');
             } else if (view === 'employees') {
                 document.getElementById('employeesView').classList.remove('hidden');
                 if (navItems[8]) navItems[8].classList.add('active');
@@ -7185,7 +7183,7 @@
             const locationDisplay = inspection.locationName || inspection.customerName;
             const customerDisplay = inspection.customerName || 'Unknown Customer';
 
-            if (confirm(`Generate QuickBooks estimate for ${customerDisplay}?\n\nLocation: ${locationDisplay}\nJob #: ${jobNumber}\nTotal: $${total.toFixed(2)}\n\nThis will:\n• Create estimate #${jobNumber} in QuickBooks\n• Add job to Project Tracker\n• Send to Operations Review queue`)) {
+            if (confirm(`Generate QuickBooks estimate for ${customerDisplay}?\n\nLocation: ${locationDisplay}\nJob #: ${jobNumber}\nTotal: $${total.toFixed(2)}\n\nThis will:\n• Create estimate #${jobNumber} in QuickBooks\n• Add job to Pipeline\n• Send to Operations Review queue`)) {
                 const job = {
                     id: 'JOB-' + Date.now(),
                     jobNumber: jobNumber,
@@ -7231,67 +7229,171 @@
                 jobs.push(job);
                 localStorage.setItem('jobs', JSON.stringify(jobs));
 
-                alert(`✅ SUCCESS!\n\nQuickBooks Estimate Created:\n• Job #: ${jobNumber}\n• Customer: ${customerDisplay}\n• Location: ${locationDisplay}\n• Total: $${total.toFixed(2)}\n\nJob added to Project Tracker!\n\n⏱️ Time saved: 30+ minutes of manual entry`);
+                alert(`✅ SUCCESS!\n\nQuickBooks Estimate Created:\n• Job #: ${jobNumber}\n• Customer: ${customerDisplay}\n• Location: ${locationDisplay}\n• Total: $${total.toFixed(2)}\n\nJob added to Pipeline!\n\n⏱️ Time saved: 30+ minutes of manual entry`);
 
                 showView('projects');
             }
         }
 
-        function loadProjects() {
-            const list = document.getElementById('projectsList');
+        // Sample pipeline data representing jobs across all statuses
+        const PIPELINE_JOBS = [
+            { id: 'pl1', jobNumber: '17220', jobType: 'Repair', status: 'Estimate Sent', customer: 'Fayette County Schools', location: 'Fayette-Ware HS', description: 'Replace 3 gear motors, install safety tape on facing bleachers', amount: 8450, territory: 'Original', date: '2026-01-15' },
+            { id: 'pl2', jobNumber: '17218', jobType: 'Repair', status: 'Estimate Sent', customer: 'Wilson County Schools', location: 'Mt. Juliet HS', description: 'Install end caps, replace deck boards (6), install skirt board hardware', amount: 4280, territory: 'Original', date: '2026-01-13' },
+            { id: 'pl3', jobNumber: '17215', jobType: 'Repair', status: 'Estimate Sent', customer: 'Marshall County Schools', location: 'Forrest HS', description: 'Replace curved bullnose sections (4) and aisle step hardware', amount: 3175, territory: 'Original', date: '2026-01-10' },
+            { id: 'pl4', jobNumber: '17212', jobType: 'Inspection', status: 'Estimate Sent', customer: 'Houston County Schools', location: 'Houston County HS', description: 'Annual bleacher inspection - 3 gyms', amount: 1800, territory: 'Original', date: '2026-01-08' },
+            { id: 'pl5', jobNumber: '17225', jobType: 'Repair', status: 'Estimate Sent', customer: 'Morgan County Schools', location: 'Albert P Brewer HS', description: 'Replace floor mount hardware and L brackets on behind bleachers', amount: 2950, territory: 'Southern', date: '2026-01-20' },
+            { id: 'pl6', jobNumber: '17210', jobType: 'Repair', status: 'Accepted', customer: 'Williamson County Schools', location: 'Brentwood Academy', description: 'Replace deck boards (3) and seat slats (5) on home side bleachers Section B', amount: 5620, territory: 'Original', date: '2026-01-06' },
+            { id: 'pl7', jobNumber: '17205', jobType: 'Repair', status: 'Accepted', customer: 'Madison County Schools', location: 'Jackson Career & Technology Elementary', description: 'Replace gear motor, install safety tape, replace deck supports', amount: 7340, territory: 'Original', date: '2026-01-03' },
+            { id: 'pl8', jobNumber: '17222', jobType: 'Repair', status: 'Accepted', customer: 'Limestone County Schools', location: 'Ardmore HS', description: 'Install new basketball goals (4) with safety straps', amount: 12800, territory: 'Southern', date: '2026-01-17' },
+            { id: 'pl9', jobNumber: '17200', jobType: 'Repair', status: 'Parts Ordered', customer: 'Lauderdale County Schools', location: 'Ripley HS', description: 'Install safety strap on Goal 5, replace mounting brackets', amount: 3890, territory: 'Original', date: '2025-12-28' },
+            { id: 'pl10', jobNumber: '17198', jobType: 'Repair', status: 'Parts Ordered', customer: 'Blount County Schools', location: 'Fairview ES', description: 'Raise wall buck to new height, march bleachers back and attach to wall', amount: 4150, territory: 'Original', date: '2025-12-23' },
+            { id: 'pl11', jobNumber: '17208', jobType: 'Repair', status: 'Parts Received', customer: 'Lauderdale County Schools', location: 'Ripley HS', description: 'Install safety strap on Goal 5. Lift rental required.', amount: 2450, territory: 'Original', date: '2025-12-20' },
+            { id: 'pl12', jobNumber: '17202', jobType: 'Repair', status: 'Parts Received', customer: 'Tullahoma City Schools', location: 'East MS', description: 'Replace 4 damaged seats - customer provided seats', amount: 1200, territory: 'Original', date: '2025-12-30' },
+            { id: 'pl13', jobNumber: '17196', jobType: 'Repair', status: 'Parts Received', customer: 'Coffee County Schools', location: 'Coffee County HS', description: 'Replace tier catches (3), install end caps, replace flex row rod assembly', amount: 5890, territory: 'Original', date: '2025-12-18' },
+            { id: 'pl14', jobNumber: '17190', jobType: 'Repair', status: 'Scheduled', customer: 'Montgomery County Schools', location: 'Montgomery Co HS', description: 'Install seat back hardware, end caps, aisle step hardware, safety tape, skirt board bracket hardware', amount: 9200, territory: 'Original', date: '2025-12-10' },
+            { id: 'pl15', jobNumber: '17188', jobType: 'Repair', status: 'Scheduled', customer: 'Dyer County Schools', location: 'Dyersburg State CC', description: 'Adjust motor tension, install floor step feet, replace L brackets', amount: 6780, territory: 'Original', date: '2025-12-05' },
+            { id: 'pl16', jobNumber: '17185', jobType: 'Repair', status: 'In Progress', customer: 'Williamson County Schools', location: 'Ravenwood HS', description: 'Multi-gym repair: deck stabilizers, safety tape, anchors, seats, skirt board hardware across 8 locations', amount: 18500, territory: 'Original', date: '2025-11-28' },
+            { id: 'pl17', jobNumber: '17180', jobType: 'Repair', status: 'Complete', customer: 'Sumner County Schools', location: 'Gallatin HS', description: 'Annual inspection + replace 2 gear motors, install safety tape', amount: 6200, territory: 'Original', date: '2025-11-15' },
+            { id: 'pl18', jobNumber: '17175', jobType: 'Inspection', status: 'Complete', customer: 'Robertson County Schools', location: 'Springfield HS', description: 'Annual bleacher inspection - 2 gyms, all passed', amount: 1200, territory: 'Original', date: '2025-11-10' },
+            { id: 'pl19', jobNumber: '17170', jobType: 'Repair', status: 'Complete', customer: 'Maury County Schools', location: 'Spring Hill HS', description: 'Replace deck boards (8), install fence ties, replace bullnose', amount: 7800, territory: 'Original', date: '2025-11-05' },
+            { id: 'pl20', jobNumber: '17195', jobType: 'Repair', status: 'Pink', customer: 'Williamson County Schools', location: 'Brentwood Academy', description: 'Goal 3 safety strap installation - wrong bracket sent, need EC-457 not EC-450', amount: 1850, territory: 'Original', date: '2025-12-15', pinkReason: 'Wrong/Missing Part' },
+            { id: 'pl21', jobNumber: '17182', jobType: 'Repair', status: 'Pink', customer: 'Trousdale County Schools', location: 'Trousdale Co HS', description: 'Replace drive shaft - additional work discovered, floor anchors need replacement', amount: 3400, territory: 'Original', date: '2025-11-20', pinkReason: 'Additional Work Needed' },
+            { id: 'pl22', jobNumber: '17224', jobType: 'Repair', status: 'Parts Ordered', customer: 'Colbert County Schools', location: 'Colbert Co HS', description: 'Replace basketball goal winch system and cables', amount: 5500, territory: 'Southern', date: '2026-01-18' },
+            { id: 'pl23', jobNumber: '17226', jobType: 'Repair', status: 'Scheduled', customer: 'Lauderdale County AL Schools', location: 'Brooks HS', description: 'Install new Hussey bleacher system - auxiliary gym', amount: 22000, territory: 'Southern', date: '2026-01-22' }
+        ];
 
-            if (jobs.length === 0) {
-                list.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><p>No projects yet</p><p style="font-size: 14px; margin-top: 8px;">Generate an estimate to create your first project</p></div>';
-            } else {
-                const totalValue = jobs.reduce((sum, j) => sum + (j.amount || 0), 0);
+        let pipelineFilter = 'all';
 
-                list.innerHTML = `
-                    <div class="stats-grid" style="margin-bottom: 24px;">
-                        <div class="stat-card green">
-                            <div class="stat-value">${jobs.length}</div>
-                            <div class="stat-label">Total Projects</div>
-                        </div>
-                        <div class="stat-card blue">
-                            <div class="stat-value">$${totalValue.toFixed(0)}</div>
-                            <div class="stat-label">Pipeline Value</div>
-                        </div>
-                    </div>
-                    <div style="overflow-x: auto;">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Job #</th>
-                                    <th>Type</th>
-                                    <th>Description</th>
-                                    <th>Customer</th>
-                                    <th>Location</th>
-                                    <th>Status</th>
-                                    <th>Amount</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${jobs.map(job => {
-                                    const statusClass = job.status === 'Completed' ? 'badge-success' :
-                                                       job.status === 'In Progress' ? 'badge-warning' :
-                                                       job.status === 'Pink' ? 'badge-danger' : 'badge-info';
-                                    return `
-                                    <tr onclick="viewJobDetail('${job.id}')" style="cursor: pointer;">
-                                        <td><span class="part-number" style="color: #0066cc;">${job.jobNumber || job.estimateNumber}</span></td>
-                                        <td><span style="font-size: 12px;">${job.jobType || 'Repair'}</span></td>
-                                        <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${job.description || 'N/A'}</td>
-                                        <td>${job.customerName || job.customerId}</td>
-                                        <td style="font-size: 13px; color: #6c757d;">${job.locationName || job.customerLocation || 'N/A'}</td>
-                                        <td><span class="badge ${statusClass}">${job.status}</span></td>
-                                        <td style="font-weight: 600;">$${job.amount.toFixed(2)}</td>
-                                        <td style="font-size: 12px; color: #6c757d;">${new Date(job.createdAt).toLocaleDateString()}</td>
-                                    </tr>
-                                `}).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
+        function loadPipeline() {
+            const container = document.getElementById('pipelineContent');
+
+            // Merge sample pipeline data with any dynamically created jobs
+            var allJobs = PIPELINE_JOBS.slice();
+            jobs.forEach(function(j) {
+                allJobs.push({
+                    id: j.id,
+                    jobNumber: j.jobNumber || j.estimateNumber,
+                    jobType: j.jobType || 'Repair',
+                    status: j.status,
+                    customer: j.customerName || j.customerId,
+                    location: j.locationName || j.customerLocation || '',
+                    description: j.description || '',
+                    amount: j.amount || 0,
+                    territory: 'Original',
+                    date: j.createdAt ? j.createdAt.split('T')[0] : ''
+                });
+            });
+
+            // Define pipeline stages with colors
+            var stages = [
+                { key: 'Estimate Sent', label: 'Estimate Sent', color: '#6c757d', bg: '#f8f9fa' },
+                { key: 'Accepted', label: 'Accepted', color: '#0d6efd', bg: '#e7f1ff' },
+                { key: 'Parts Ordered', label: 'Parts Ordered', color: '#e65100', bg: '#fff3e0' },
+                { key: 'Parts Received', label: 'Parts Received', color: '#2e7d32', bg: '#e8f5e9' },
+                { key: 'Scheduled', label: 'Scheduled', color: '#1565c0', bg: '#e3f2fd' },
+                { key: 'In Progress', label: 'In Progress', color: '#f57f17', bg: '#fffde7' },
+                { key: 'Complete', label: 'Complete', color: '#388e3c', bg: '#e8f5e9' },
+                { key: 'Pink', label: 'Pink', color: '#c62828', bg: '#ffe0e6' }
+            ];
+
+            // Count jobs per stage
+            var stageCounts = {};
+            var stageValues = {};
+            stages.forEach(function(s) {
+                stageCounts[s.key] = 0;
+                stageValues[s.key] = 0;
+            });
+            allJobs.forEach(function(j) {
+                if (stageCounts[j.status] !== undefined) {
+                    stageCounts[j.status]++;
+                    stageValues[j.status] += j.amount || 0;
+                }
+            });
+
+            var totalActive = allJobs.filter(function(j) { return j.status !== 'Complete'; }).length;
+            var totalValue = allJobs.filter(function(j) { return j.status !== 'Complete'; }).reduce(function(s, j) { return s + (j.amount || 0); }, 0);
+
+            // Build pipeline flow
+            var pipelineHtml = '<div style="display: flex; gap: 8px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px;">';
+            stages.forEach(function(stage, i) {
+                var count = stageCounts[stage.key];
+                var value = stageValues[stage.key];
+                var isActive = pipelineFilter === stage.key;
+                var isAll = pipelineFilter === 'all';
+                pipelineHtml += '<div onclick="filterPipeline(\'' + stage.key + '\')" style="flex: 1; min-width: 110px; padding: 12px 10px; border-radius: 8px; background: ' + (isActive ? stage.color : stage.bg) + '; border: 2px solid ' + (isActive ? stage.color : (count > 0 ? stage.color + '40' : '#e0e0e0')) + '; cursor: pointer; text-align: center; transition: all 0.2s; opacity: ' + (isAll || isActive ? '1' : '0.7') + ';">';
+                pipelineHtml += '<div style="font-size: 24px; font-weight: 700; color: ' + (isActive ? '#fff' : stage.color) + ';">' + count + '</div>';
+                pipelineHtml += '<div style="font-size: 11px; font-weight: 600; color: ' + (isActive ? 'rgba(255,255,255,0.9)' : stage.color) + '; margin-bottom: 2px;">' + stage.label + '</div>';
+                pipelineHtml += '<div style="font-size: 11px; color: ' + (isActive ? 'rgba(255,255,255,0.7)' : '#6c757d') + ';">$' + (value / 1000).toFixed(1) + 'k</div>';
+                if (i < stages.length - 1) pipelineHtml += '</div><div style="display: flex; align-items: center; color: #ccc; font-size: 18px;">›</div>';
+                else pipelineHtml += '</div>';
+            });
+            pipelineHtml += '</div>';
+
+            // Summary bar
+            pipelineHtml += '<div style="display: flex; gap: 16px; margin-bottom: 20px; align-items: center;">';
+            pipelineHtml += '<div style="font-size: 14px; color: #6c757d;"><strong>' + totalActive + '</strong> active jobs &nbsp;·&nbsp; <strong>$' + totalValue.toLocaleString() + '</strong> in pipeline</div>';
+            pipelineHtml += '<div style="flex: 1;"></div>';
+            pipelineHtml += '<button onclick="filterPipeline(\'all\')" class="btn ' + (pipelineFilter === 'all' ? 'btn-primary' : 'btn-secondary') + '" style="padding: 6px 14px; font-size: 13px;">All</button>';
+            pipelineHtml += '<select onchange="filterPipelineTerritory(this.value)" id="pipelineTerritoryFilter" class="form-input" style="width: 160px; padding: 6px 10px; font-size: 13px;">';
+            pipelineHtml += '<option value="all">All Territories</option><option value="Original">Original (KY/TN)</option><option value="Southern">Southern (AL/FL)</option></select>';
+            pipelineHtml += '</div>';
+
+            // Filter jobs for table
+            var filtered = allJobs;
+            if (pipelineFilter !== 'all') {
+                filtered = filtered.filter(function(j) { return j.status === pipelineFilter; });
             }
+            var territoryFilter = document.getElementById('pipelineTerritoryFilter');
+            var tVal = territoryFilter ? territoryFilter.value : 'all';
+            if (tVal !== 'all') {
+                filtered = filtered.filter(function(j) { return j.territory === tVal; });
+            }
+
+            // Sort: active statuses first (by pipeline order), then by date desc
+            var statusOrder = {};
+            stages.forEach(function(s, i) { statusOrder[s.key] = i; });
+            filtered.sort(function(a, b) {
+                var sa = statusOrder[a.status] || 0;
+                var sb = statusOrder[b.status] || 0;
+                if (sa !== sb) return sa - sb;
+                return (b.date || '').localeCompare(a.date || '');
+            });
+
+            // Table
+            pipelineHtml += '<div class="card"><div class="card-body" style="padding: 0;">';
+            if (filtered.length === 0) {
+                pipelineHtml += '<div style="padding: 40px; text-align: center; color: #6c757d;">No jobs match the current filter</div>';
+            } else {
+                pipelineHtml += '<div style="overflow-x: auto;"><table class="data-table" style="margin: 0;">';
+                pipelineHtml += '<thead><tr><th style="width: 80px;">Job #</th><th style="width: 70px;">Type</th><th>Customer</th><th>Location</th><th>Description</th><th style="width: 120px;">Status</th><th style="width: 90px; text-align: right;">Amount</th></tr></thead>';
+                pipelineHtml += '<tbody>';
+                filtered.forEach(function(job) {
+                    var stageInfo = stages.find(function(s) { return s.key === job.status; }) || stages[0];
+                    var rowBg = job.status === 'Pink' ? '#fff5f5' : '';
+                    pipelineHtml += '<tr style="' + (rowBg ? 'background:' + rowBg + ';' : '') + '">';
+                    pipelineHtml += '<td><span style="color: #0066cc; font-weight: 600; font-size: 13px;">' + job.jobNumber + '</span></td>';
+                    pipelineHtml += '<td><span style="font-size: 12px; color: #6c757d;">' + job.jobType + '</span></td>';
+                    pipelineHtml += '<td style="font-weight: 500;">' + job.customer + '</td>';
+                    pipelineHtml += '<td style="font-size: 13px; color: #6c757d;">' + job.location + '</td>';
+                    pipelineHtml += '<td style="font-size: 13px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="' + (job.description || '').replace(/"/g, '&quot;') + '">' + job.description + '</td>';
+                    pipelineHtml += '<td><span style="display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; background: ' + stageInfo.bg + '; color: ' + stageInfo.color + '; border: 1px solid ' + stageInfo.color + '30;">' + job.status + (job.pinkReason ? ' - ' + job.pinkReason : '') + '</span></td>';
+                    pipelineHtml += '<td style="text-align: right; font-weight: 600;">$' + job.amount.toLocaleString() + '</td>';
+                    pipelineHtml += '</tr>';
+                });
+                pipelineHtml += '</tbody></table></div>';
+            }
+            pipelineHtml += '</div></div>';
+
+            container.innerHTML = pipelineHtml;
+        }
+
+        function filterPipeline(status) {
+            pipelineFilter = (pipelineFilter === status) ? 'all' : status;
+            loadPipeline();
+        }
+
+        function filterPipelineTerritory(val) {
+            loadPipeline();
         }
 
         function loadAccounts(filter = '') {
