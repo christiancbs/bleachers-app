@@ -1,0 +1,17 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large vendor files (keep local, don't push)
+vendor-data/*.pdf
+
+# Archives (keep local for reference)
+archive/
