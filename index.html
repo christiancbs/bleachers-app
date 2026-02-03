@@ -290,60 +290,7 @@
             overflow: hidden;
         }
 
-        .topbar {
-            height: 64px;
-            background: white;
-            border-bottom: 1px solid #e9ecef;
-            padding: 0 32px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .search-box {
-            flex: 1;
-            max-width: 500px;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 10px 16px;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-
-        .topbar-actions {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .notification-badge {
-            position: relative;
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: background 0.2s;
-        }
-
-        .notification-badge:hover {
-            background: #f8f9fa;
-        }
-
-        .notification-dot {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            width: 8px;
-            height: 8px;
-            background: #dc3545;
-            border-radius: 50%;
-        }
+        /* Topbar styles removed - using inline search per section */
 
         .content-area {
             flex: 1;
@@ -987,20 +934,9 @@
                 display: inline;
             }
 
-            .topbar {
-                padding: 0 16px 0 64px;
-                position: relative;
-            }
-
-            /* Tech dashboard has no topbar, needs top padding for hamburger */
-            #techDashboard .content-area {
+            .content-area {
                 padding: 16px;
                 padding-top: 68px;
-            }
-
-            /* Office dashboard has topbar, just reduce side padding */
-            #officeDashboard .content-area {
-                padding: 16px;
             }
 
             .stats-grid {
@@ -1322,18 +1258,6 @@
             </div>
 
             <div class="main-content">
-                <div class="topbar">
-                    <div class="search-box">
-                        <input type="text" class="search-input" placeholder="Search accounts, locations, equipment, parts...">
-                    </div>
-                    <div class="topbar-actions">
-                        <div class="notification-badge">
-                            🔔
-                            <div class="notification-dot"></div>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="content-area">
                     <!-- Dashboard View -->
                     <div id="dashboardView">
@@ -1446,8 +1370,19 @@
                     <!-- Estimates View -->
                     <div id="estimatesView" class="hidden">
                         <div class="page-header">
-                            <h1 class="page-title">Estimate Review Dashboard</h1>
-                            <p class="page-subtitle">Review parts specifications and create customer estimates</p>
+                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                                <div>
+                                    <h1 class="page-title">Estimate Review Dashboard</h1>
+                                    <p class="page-subtitle">Review parts specifications and create customer estimates</p>
+                                </div>
+                                <a href="https://app.qbo.intuit.com" target="_blank" rel="noopener" class="btn btn-outline" style="font-size: 13px; display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+                                    Open QuickBooks ↗
+                                </a>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <input type="text" id="estimateSearch" class="form-input" placeholder="Search estimates by customer, location, or job number..." oninput="loadEstimates()" style="max-width: 450px;">
                         </div>
 
                         <div class="card">
@@ -1473,6 +1408,10 @@
                         <div class="page-header">
                             <h1 class="page-title">Pipeline</h1>
                             <p class="page-subtitle">All jobs at a glance — from estimate to completion</p>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <input type="text" id="pipelineSearch" class="form-input" placeholder="Search jobs by customer, location, job number, or description..." oninput="loadPipeline()" style="max-width: 500px;">
                         </div>
 
                         <div id="pipelineContent">
@@ -7200,13 +7139,24 @@
         function loadEstimates() {
             const list = document.getElementById('estimatesList');
             const count = document.getElementById('pendingCount');
+            const searchEl = document.getElementById('estimateSearch');
+            const searchTerm = searchEl ? searchEl.value.toLowerCase() : '';
 
-            count.textContent = inspections.length;
+            var filtered = inspections;
+            if (searchTerm) {
+                filtered = inspections.filter(function(insp) {
+                    return (insp.customerName || '').toLowerCase().includes(searchTerm) ||
+                           (insp.location || '').toLowerCase().includes(searchTerm) ||
+                           (insp.id || '').toLowerCase().includes(searchTerm);
+                });
+            }
 
-            if (inspections.length === 0) {
-                list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>No inspections pending review</p></div>';
+            count.textContent = filtered.length;
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>' + (searchTerm ? 'No estimates match your search' : 'No inspections pending review') + '</p></div>';
             } else {
-                list.innerHTML = inspections.map(insp => {
+                list.innerHTML = filtered.map(insp => {
                     const typeIcon = insp.inspectionType === 'basketball' ? '🏀' :
                                      insp.inspectionType === 'bleacher' ? '🏟️' :
                                      insp.inspectionType === 'outdoor' ? '🪑' : '📋';
@@ -7527,6 +7477,16 @@
 
             // Filter jobs for table
             var filtered = allJobs;
+            var pipelineSearchEl = document.getElementById('pipelineSearch');
+            var pSearchTerm = pipelineSearchEl ? pipelineSearchEl.value.toLowerCase() : '';
+            if (pSearchTerm) {
+                filtered = filtered.filter(function(j) {
+                    return (j.customer || '').toLowerCase().includes(pSearchTerm) ||
+                           (j.location || '').toLowerCase().includes(pSearchTerm) ||
+                           (j.jobNumber || '').toLowerCase().includes(pSearchTerm) ||
+                           (j.description || '').toLowerCase().includes(pSearchTerm);
+                });
+            }
             if (pipelineFilter !== 'all') {
                 filtered = filtered.filter(function(j) { return j.status === pipelineFilter; });
             }
