@@ -1,0 +1,1264 @@
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f8f9fa;
+            color: #212529;
+        }
+
+        /* Login Screen */
+        .login-screen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .login-card {
+            background: white;
+            padding: 48px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .login-logo {
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 16px;
+        }
+
+        .login-title {
+            text-align: center;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: none; /* Hidden - using logo image instead */
+        }
+
+        .login-subtitle {
+            text-align: center;
+            color: #6c757d;
+            margin-bottom: 32px;
+        }
+
+        .demo-accounts {
+            background: #e7f3ff;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 24px;
+            font-size: 13px;
+        }
+
+        .demo-accounts strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #0066cc;
+        }
+
+        .demo-accounts div {
+            margin: 4px 0;
+            color: #495057;
+        }
+
+        /* App Layout */
+        .app-layout {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 240px;
+            min-width: 240px;
+            background: #2d3748;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        .sidebar.collapsed {
+            width: 64px;
+            min-width: 64px;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            height: 64px;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .sidebar-logo-icon {
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            object-fit: contain;
+            border-radius: 6px;
+            transition: opacity 0.2s ease, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            position: absolute;
+        }
+
+        .sidebar.collapsed .sidebar-logo-icon {
+            opacity: 1;
+            transform: rotate(360deg);
+        }
+
+        .sidebar-logo-full {
+            flex: 1;
+            min-width: 0;
+            object-fit: contain;
+            opacity: 1;
+            transition: opacity 0.25s ease;
+        }
+
+        .sidebar.collapsed .sidebar-logo-full {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .sidebar-close-btn {
+            margin-left: auto;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            color: rgba(255,255,255,0.4);
+            font-size: 16px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .sidebar-close-btn:hover {
+            color: white;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .sidebar.collapsed .sidebar-close-btn {
+            opacity: 0;
+            pointer-events: none;
+            width: 0;
+            overflow: hidden;
+        }
+
+        .sidebar-brand {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .sidebar-logo {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+            border-radius: 6px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .nav-item {
+            padding: 12px 20px;
+            color: rgba(255,255,255,0.7);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .sidebar.collapsed .nav-item {
+            padding: 12px 0;
+            justify-content: center;
+        }
+
+        .sidebar.collapsed .nav-item span:last-child {
+            display: none;
+        }
+
+        .nav-item:hover {
+            background: rgba(255,255,255,0.05);
+            color: white;
+        }
+
+        .nav-item.active {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+            border-left: 3px solid #4CAF50;
+        }
+
+        .sidebar.collapsed .nav-item.active {
+            border-left: none;
+            border-bottom: 2px solid #4CAF50;
+        }
+
+        /* Hide divider label when collapsed */
+        .sidebar.collapsed .sidebar-divider span {
+            display: none;
+        }
+
+        .sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .sidebar.collapsed .sidebar-footer {
+            padding: 12px 8px;
+        }
+
+        .sidebar.collapsed .sidebar-footer .user-info > div:last-child {
+            display: none;
+        }
+
+        .sidebar.collapsed .sidebar-footer .user-info {
+            justify-content: center;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .user-info:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: #4CAF50;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Topbar styles removed - using inline search per section */
+
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px;
+        }
+
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        /* Alert Boxes */
+        .alert-box {
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            color: #0c5460;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #6c757d;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #212529;
+        }
+
+        .stat-subtitle {
+            font-size: 13px;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+
+        /* Colored Stat Cards */
+        .stat-card.green {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .stat-card.green .stat-label,
+        .stat-card.green .stat-value,
+        .stat-card.green .stat-subtitle {
+            color: white;
+        }
+
+        .stat-card.blue {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+        }
+
+        .stat-card.blue .stat-label,
+        .stat-card.blue .stat-value,
+        .stat-card.blue .stat-subtitle {
+            color: white;
+        }
+
+        .stat-card.purple {
+            background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+            color: white;
+        }
+
+        .stat-card.purple .stat-label,
+        .stat-card.purple .stat-value,
+        .stat-card.purple .stat-subtitle {
+            color: white;
+        }
+
+        .stat-card.orange {
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+            color: white;
+        }
+
+        .stat-card.orange .stat-label,
+        .stat-card.orange .stat-value,
+        .stat-card.orange .stat-subtitle {
+            color: white;
+        }
+
+        /* Pipeline Status */
+        .pipeline-status {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .status-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .status-count {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .status-label {
+            font-size: 13px;
+            color: #6c757d;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .status-box.review { background: #fff3e0; color: #e65100; }
+        .status-box.ordering { background: #f3e5f5; color: #6a1b9a; }
+        .status-box.scheduled { background: #e3f2fd; color: #0d47a1; }
+        .status-box.progress { background: #e8f5e9; color: #2e7d32; }
+
+        /* Card */
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #5a6268;
+        }
+
+        .btn-outline {
+            background: white;
+            color: #4CAF50;
+            border: 2px solid #4CAF50;
+        }
+
+        .btn-outline:hover:not(:disabled) {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-lg {
+            padding: 14px 28px;
+            font-size: 16px;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        /* Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table thead {
+            background: #f8f9fa;
+        }
+
+        .data-table th {
+            padding: 12px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 700;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table td {
+            padding: 16px 12px;
+            border-top: 1px solid #e9ecef;
+            font-size: 14px;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Inspector List Item */
+        .inspection-item {
+            padding: 16px;
+            border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .inspection-item:hover {
+            background: #f8f9fa;
+        }
+
+        .inspection-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Parts Search Results */
+        .part-result {
+            padding: 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .part-result:hover {
+            border-color: #4CAF50;
+            background: #f1f8f4;
+            transform: translateY(-2px);
+        }
+
+        .part-number {
+            display: inline-block;
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .part-vendor {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .part-description {
+            font-size: 14px;
+            font-weight: 500;
+            margin: 8px 0;
+        }
+
+        .part-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .part-category {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .part-price {
+            font-size: 16px;
+            font-weight: 700;
+            color: #4CAF50;
+        }
+
+        /* Selected Parts */
+        .selected-part {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+        }
+
+        .remove-btn {
+            background: none;
+            border: none;
+            color: #dc3545;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .remove-btn:hover {
+            background: #f8d7da;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .gap-2 {
+            gap: 16px;
+        }
+
+        .mb-2 {
+            margin-bottom: 16px;
+        }
+
+        .mb-3 {
+            margin-bottom: 24px;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        /* Mobile hamburger button */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            z-index: 1001;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: #2d3748;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            transition: transform 0.2s;
+        }
+
+        .mobile-menu-btn:active {
+            transform: scale(0.92);
+        }
+
+        .mobile-menu-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 6px;
+        }
+
+        /* Mobile overlay backdrop */
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-backdrop.visible {
+            opacity: 1;
+        }
+
+        /* Login logo entrance animation */
+        @keyframes logoEntrance {
+            0% {
+                opacity: 0;
+                transform: scale(0.3) rotate(-180deg);
+            }
+            60% {
+                opacity: 1;
+                transform: scale(1.1) rotate(10deg);
+            }
+            80% {
+                transform: scale(0.95) rotate(-5deg);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+            }
+        }
+
+        .login-logo-animate {
+            animation: logoEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .sidebar-backdrop {
+                display: block;
+                pointer-events: none;
+            }
+
+            .sidebar-backdrop.visible {
+                pointer-events: auto;
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                z-index: 1000;
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                width: 260px;
+                min-width: 260px;
+            }
+
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            /* Override collapsed state on mobile - always show full sidebar when open */
+            .sidebar.collapsed.mobile-open {
+                width: 260px;
+                min-width: 260px;
+            }
+
+            .sidebar.collapsed.mobile-open .sidebar-logo-icon {
+                opacity: 0;
+            }
+
+            .sidebar.collapsed.mobile-open .sidebar-logo-full {
+                opacity: 1;
+            }
+
+            .sidebar.collapsed.mobile-open .nav-item span:last-child {
+                display: inline;
+            }
+
+            .sidebar.collapsed.mobile-open .sidebar-close-btn {
+                display: block;
+            }
+
+            .sidebar.collapsed.mobile-open .sidebar-footer .user-info > div:last-child {
+                display: block;
+            }
+
+            .sidebar.collapsed.mobile-open .sidebar-divider span {
+                display: inline;
+            }
+
+            .content-area {
+                padding: 16px;
+                padding-top: 68px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pipeline-status {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .page-header {
+                margin-top: 0;
+            }
+
+            /* Scheduling mobile fixes - all schedule views */
+            #schedulingView > .page-header,
+            #techTeamScheduleView > .page-header,
+            #techMyJobsView > .page-header {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 12px;
+            }
+
+            #schedulingView > .page-header > div:last-child,
+            #techTeamScheduleView > .page-header > div:last-child,
+            #techMyJobsView > .page-header > div:last-child {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 8px !important;
+            }
+
+            /* Week label - tighter on mobile */
+            #schedulingView > .page-header > div:last-child span,
+            #techTeamScheduleView > .page-header > div:last-child span,
+            #techMyJobsView > .page-header > div:last-child span {
+                min-width: 140px !important;
+                font-size: 13px;
+            }
+
+            /* Add Entry button - full width below arrows */
+            #schedulingView > .page-header > div:last-child .btn-primary {
+                width: 100%;
+                order: 1;
+                margin-top: 4px;
+            }
+
+            /* Territory & schedule tabs - shrink to fit */
+            .schedule-tab {
+                padding: 10px 10px !important;
+                font-size: 12px !important;
+                white-space: nowrap;
+            }
+
+            /* Schedule sub-tabs - scroll if needed */
+            #schedulingView > div:nth-child(4) {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
+        /* Schedule Styles */
+        .schedule-tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            color: #6c757d;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+
+        .schedule-tab:hover {
+            color: #212529;
+        }
+
+        .schedule-tab.active {
+            color: #4CAF50;
+            border-bottom-color: #4CAF50;
+        }
+
+        /* Table-based schedule layout */
+        .schedule-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 13px;
+            background: white;
+            border: 1px solid #e0e3e8;
+            border-radius: 12px;
+            overflow: hidden;
+            table-layout: fixed;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+        }
+
+        .schedule-table thead th {
+            background: linear-gradient(180deg, #f8f9fb 0%, #f0f2f5 100%);
+            padding: 10px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #5a6370;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 2px solid #e0e3e8;
+            border-right: 1px solid #e8eaed;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .schedule-table thead th:last-child {
+            border-right: none;
+        }
+
+        .schedule-table td {
+            border-bottom: 1px solid #f0f2f5;
+            border-right: 1px solid #f0f2f5;
+            padding: 8px 12px;
+            vertical-align: top;
+            line-height: 1.5;
+            color: #3a3f47;
+        }
+
+        .schedule-table td:last-child {
+            border-right: none;
+        }
+
+        .schedule-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+
+        .schedule-table .col-school {
+            width: 200px;
+            font-weight: 600;
+            color: #212529;
+        }
+
+        .schedule-table .col-tech {
+            width: 170px;
+        }
+
+        .schedule-table .col-parts {
+            width: 200px;
+        }
+
+        .schedule-day-row {
+            background: none;
+        }
+
+        .schedule-day-row td {
+            background: linear-gradient(135deg, #1a1a2e 0%, #2d2d50 100%);
+            color: white;
+            font-weight: 700;
+            font-size: 13px;
+            padding: 10px 14px;
+            letter-spacing: 0.3px;
+            border-bottom: none;
+            border-right: none;
+        }
+
+        .schedule-today-row td {
+            background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%) !important;
+            color: white !important;
+        }
+
+        .schedule-note-row {
+            background: #fffef5;
+        }
+
+        .schedule-note-row td {
+            font-weight: 600;
+            text-align: center;
+            font-style: italic;
+            color: #8d6e04;
+            border-left: 3px solid #ffd54f;
+            background: linear-gradient(90deg, #fffef5 0%, #fff 100%);
+        }
+
+        .schedule-continued-row {
+            background: #f5f9ff;
+        }
+
+        .schedule-continued-row td {
+            border-left: 3px solid #64b5f6;
+        }
+
+        .schedule-continued-row td:first-child {
+            color: #1565c0;
+        }
+
+        .schedule-pink-row td:first-child {
+            background: #ffe0e6;
+            color: #c62828;
+            font-weight: 700;
+            border-left: 3px solid #e91e63;
+        }
+
+        /* Mobile schedule cards */
+        .schedule-mobile-day {
+            font-weight: 700;
+            font-size: 13px;
+            padding: 10px 14px;
+            letter-spacing: 0.3px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #2d2d50 100%);
+            color: white;
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        .schedule-mobile-day.today {
+            background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
+        }
+
+        .schedule-mobile-card {
+            background: white;
+            border: 1px solid #e8eaed;
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-top: 8px;
+        }
+
+        .schedule-mobile-card .smc-school {
+            font-weight: 700;
+            font-size: 14px;
+            color: #212529;
+            margin-bottom: 4px;
+        }
+
+        .schedule-mobile-card .smc-tech {
+            display: inline-block;
+            background: #e7f1ff;
+            color: #1565c0;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-bottom: 6px;
+        }
+
+        .schedule-mobile-card .smc-details {
+            font-size: 13px;
+            color: #3a3f47;
+            line-height: 1.5;
+        }
+
+        .schedule-mobile-card .smc-parts {
+            font-size: 12px;
+            color: #e65100;
+            font-weight: 500;
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid #f0f2f5;
+        }
+
+        .schedule-mobile-card.smc-note {
+            background: linear-gradient(90deg, #fffef5 0%, #fff 100%);
+            border-left: 3px solid #ffd54f;
+            text-align: center;
+            font-weight: 600;
+            font-style: italic;
+            color: #8d6e04;
+        }
+
+        .schedule-mobile-card.smc-continued {
+            background: #f5f9ff;
+            border-left: 3px solid #64b5f6;
+        }
+
+        .schedule-mobile-card.smc-pink {
+            border-left: 3px solid #e91e63;
+        }
+
+        .schedule-mobile-card.smc-pink .smc-school {
+            color: #c62828;
+        }
+
+        .ready-job-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 16px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .ready-job-item:hover {
+            background: #f8f9fa;
+        }
+
+        .ready-job-item:last-child {
+            border-bottom: none;
+        }
+
+        .overnight-tag {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        /* Legacy schedule-day styles for My Jobs card view */
+        .schedule-day {
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border: 1px solid #e9ecef;
+            overflow: hidden;
+        }
+
+        .schedule-day-header {
+            background: #2d3748;
+            color: white;
+            padding: 12px 16px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .schedule-day-header.today {
+            background: #4CAF50;
+        }
+
+        .schedule-day-jobs {
+            padding: 0;
+        }

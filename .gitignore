@@ -13,9 +13,13 @@ Thumbs.db
 # Large vendor files (keep local, don't push)
 vendor-data/*.pdf
 
+# Config with API keys (never commit)
+js/config.js
+
 # Working files (have real API keys, edit these locally)
 bleachers-seats-demo-v2.html
 bleacher-app-reference.md
+bleacher-app-history.md
 
 # Archives (keep local for reference)
 archive/
