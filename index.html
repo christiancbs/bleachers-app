@@ -950,6 +950,51 @@
             .page-header {
                 margin-top: 0;
             }
+
+            /* Scheduling mobile fixes - all schedule views */
+            #schedulingView > .page-header,
+            #techTeamScheduleView > .page-header,
+            #techMyJobsView > .page-header {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 12px;
+            }
+
+            #schedulingView > .page-header > div:last-child,
+            #techTeamScheduleView > .page-header > div:last-child,
+            #techMyJobsView > .page-header > div:last-child {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 8px !important;
+            }
+
+            /* Week label - tighter on mobile */
+            #schedulingView > .page-header > div:last-child span,
+            #techTeamScheduleView > .page-header > div:last-child span,
+            #techMyJobsView > .page-header > div:last-child span {
+                min-width: 140px !important;
+                font-size: 13px;
+            }
+
+            /* Add Entry button - full width below arrows */
+            #schedulingView > .page-header > div:last-child .btn-primary {
+                width: 100%;
+                order: 1;
+                margin-top: 4px;
+            }
+
+            /* Territory & schedule tabs - shrink to fit */
+            .schedule-tab {
+                padding: 10px 10px !important;
+                font-size: 12px !important;
+                white-space: nowrap;
+            }
+
+            /* Schedule sub-tabs - scroll if needed */
+            #schedulingView > div:nth-child(4) {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
         }
 
         /* Schedule Styles */
@@ -4475,7 +4520,7 @@
         // Airtable API Configuration - 2,142 real Hussey parts
         const AIRTABLE_BASE_ID = 'appAT4ZwbRAgIyzUW';
         const AIRTABLE_TABLE_ID = 'tbl4mDv20NaJnaaN7';
-        const AIRTABLE_API_KEY = 'YOUR_AIRTABLE_API_KEY_HERE';
+        const AIRTABLE_API_KEY = 'YOUR_AIRTABLE_API_KEY';
 
         // Data Storage
         // Customer hierarchy: Customer (billing entity) → Locations (schools/sites)
