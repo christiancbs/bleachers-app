@@ -402,7 +402,7 @@ function loadAccounts(filter = '') {
 
     list.innerHTML = filteredCustomers.map(customer => {
         const typeIcon = customer.type === 'county' ? '🏛️' : '🏫';
-        const typeLabel = customer.type === 'county' ? 'County' : 'Private';
+        const typeLabel = customer.type === 'county' ? 'District' : 'Private';
         const typeBadgeClass = customer.type === 'county' ? 'badge-info' : 'badge-warning';
 
         return `
@@ -443,7 +443,7 @@ function viewCustomerDetail(customerId) {
     // Populate header
     const typeIcon = customer.type === 'county' ? '🏛️' : '🏫';
     document.getElementById('custDetailName').textContent = `${typeIcon} ${customer.name}`;
-    document.getElementById('custDetailType').textContent = customer.type === 'county' ? 'County' : 'Private';
+    document.getElementById('custDetailType').textContent = customer.type === 'county' ? 'District' : 'Private';
     document.getElementById('custDetailType').className = `badge ${customer.type === 'county' ? 'badge-info' : 'badge-warning'}`;
 
     // Populate info
