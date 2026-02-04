@@ -1344,6 +1344,10 @@
                         <span>🔍</span>
                         <span>Search</span>
                     </div>
+                    <div class="nav-item" onclick="showView('opsReview')">
+                        <span>📋</span>
+                        <span>Ops Review <span id="opsReviewBadge" class="badge" style="background: #fff3e0; color: #e65100; margin-left: 4px; font-size: 10px; padding: 2px 6px;">0</span></span>
+                    </div>
                     <div class="nav-item" onclick="showView('scheduling')">
                         <span>📅</span>
                         <span>Scheduling</span>
@@ -1715,6 +1719,41 @@
                                     <p style="color: #6c757d; text-align: center; padding: 40px;">Equipment registry coming soon...</p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Ops Review View -->
+                    <div id="opsReviewView" class="hidden">
+                        <div class="page-header">
+                            <h1 class="page-title">Ops Review</h1>
+                            <p class="page-subtitle">Review submitted inspections and generate estimates</p>
+                        </div>
+
+                        <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 24px;">
+                            <div class="stat-card" style="background: #fff3e0; cursor: pointer;" onclick="filterOpsReview('submitted')">
+                                <div class="stat-value" style="color: #e65100;" id="opsNeedsReviewCount">0</div>
+                                <div class="stat-label">Needs Review</div>
+                            </div>
+                            <div class="stat-card" style="background: #e3f2fd; cursor: pointer;" onclick="filterOpsReview('under_review')">
+                                <div class="stat-value" style="color: #1565c0;" id="opsUnderReviewCount">0</div>
+                                <div class="stat-label">Under Review</div>
+                            </div>
+                            <div class="stat-card" style="background: #e8f5e9; cursor: pointer;" onclick="filterOpsReview('approved')">
+                                <div class="stat-value" style="color: #2e7d32;" id="opsApprovedCount">0</div>
+                                <div class="stat-label">Approved</div>
+                            </div>
+                        </div>
+
+                        <!-- Filter Tabs -->
+                        <div style="display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e9ecef;">
+                            <button class="schedule-tab active" onclick="filterOpsReview('all')" id="opsFilterAll">All</button>
+                            <button class="schedule-tab" onclick="filterOpsReview('submitted')" id="opsFilterSubmitted">Needs Review</button>
+                            <button class="schedule-tab" onclick="filterOpsReview('under_review')" id="opsFilterUnderReview">Under Review</button>
+                            <button class="schedule-tab" onclick="filterOpsReview('approved')" id="opsFilterApproved">Approved</button>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-body" id="opsReviewList" style="padding: 0;"></div>
                         </div>
                     </div>
 
@@ -4878,6 +4917,7 @@
             }
 
             loadInspectionJobs();
+            updateOpsReviewBadge();
         }
 
         // Populate job customer dropdown
@@ -5478,14 +5518,20 @@
             // Update submit button based on job status
             const submitBtn = document.querySelector('#jobSummaryView .btn-primary');
             const backBtn = document.querySelector('#jobSummaryView .btn-secondary');
-            if (currentJob.status === 'submitted') {
+            if (currentJob.status === 'submitted' || currentJob.status === 'under_review') {
                 submitBtn.innerHTML = '📤 Generate QuickBooks Estimate';
                 submitBtn.onclick = () => generateEstimateFromJob();
-                backBtn.textContent = '← Back to Inspections';
+                submitBtn.style.display = '';
+                backBtn.textContent = '← Back to Ops Review';
+                backBtn.onclick = () => goBackFromInspection();
+            } else if (currentJob.status === 'approved') {
+                submitBtn.style.display = 'none';
+                backBtn.textContent = '← Back to Ops Review';
                 backBtn.onclick = () => goBackFromInspection();
             } else {
                 submitBtn.innerHTML = '✅ Submit Inspection';
                 submitBtn.onclick = () => submitJob();
+                submitBtn.style.display = '';
                 backBtn.textContent = '← Back to Inspection';
                 backBtn.onclick = () => backToInspection();
             }
@@ -5561,28 +5607,68 @@
             const partsCount = currentJob.selectedParts?.length || 0;
             const issueCount = issueLines.length;
 
-            let message = `📤 Generate QuickBooks Estimate\n\n`;
+            let message = `Generate QuickBooks Estimate?\n\n`;
             message += `Job #${currentJob.jobNumber}\n`;
             message += `Customer: ${currentJob.locationName}\n`;
             message += `Address: ${currentJob.locationAddress}\n\n`;
             message += `Banks: ${currentJob.banks.length}\n`;
             message += `Issues Found: ${issueCount}\n`;
-            message += `Parts Added: ${partsCount}\n\n`;
+            message += `Parts Added: ${partsCount}\n`;
 
-            if (issueCount > 0) {
-                message += `Issues to Quote:\n`;
-                issueLines.slice(0, 10).forEach(line => {
-                    message += `• ${line}\n`;
-                });
-                if (issueLines.length > 10) {
-                    message += `... and ${issueLines.length - 10} more\n`;
-                }
-            }
+            if (!confirm(message)) return;
 
-            message += `\n⚠️ QuickBooks integration coming soon!\n`;
-            message += `This will automatically create an estimate in QuickBooks.`;
+            // Mark inspection as approved
+            currentJob.status = 'approved';
+            currentJob.reviewedBy = currentRole === 'admin' ? 'Admin' : 'Office';
+            currentJob.reviewedAt = new Date().toISOString();
 
-            alert(message);
+            // Save inspection status
+            const idx = inspectionJobs.findIndex(j => j.jobNumber === currentJob.jobNumber);
+            if (idx >= 0) inspectionJobs[idx] = currentJob;
+            localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
+
+            // Determine job type
+            const jobType = currentJob.inspectionType === 'basketball' ? 'Repair' :
+                            (currentJob.selectedParts?.length > 0 ? 'Repair' : 'Inspection');
+
+            // Create work order with SAME job number
+            const newWorkOrder = {
+                jobNumber: String(currentJob.jobNumber),
+                jobType: jobType,
+                status: 'Estimate Sent',
+                customerId: currentJob.customerId,
+                locationId: currentJob.locationId,
+                locationName: currentJob.locationName,
+                address: currentJob.locationAddress,
+                contactName: '',
+                contactPhone: '',
+                description: `${currentJob.inspectionType === 'basketball' ? 'Basketball Goal' : currentJob.inspectionType === 'bleacher' ? 'Indoor Bleacher' : 'Outdoor Bleacher'} - ${jobType}. ${issueCount} issues found across ${currentJob.banks.length} bank(s).`,
+                partsLocation: '',
+                specialInstructions: '',
+                scheduledDate: '',
+                scheduledTime: '',
+                assignedTo: '',
+                confirmedWith: '',
+                confirmedBy: '',
+                confirmedDate: '',
+                inspectionJobNumber: currentJob.jobNumber,
+                createdAt: new Date().toISOString()
+            };
+
+            // Save work order
+            const workOrders = JSON.parse(localStorage.getItem('appWorkOrders') || '[]');
+            workOrders.push(newWorkOrder);
+            localStorage.setItem('appWorkOrders', JSON.stringify(workOrders));
+
+            alert(`Estimate generated for Job #${currentJob.jobNumber}\n\n` +
+                  `Customer: ${currentJob.locationName}\n` +
+                  `Status: Approved\n` +
+                  `Work order created.\n\n` +
+                  `QuickBooks integration coming soon - this will auto-push the estimate.`);
+
+            // Return to Ops Review
+            currentJob = null;
+            goBackFromInspection();
         }
 
         // Go back to job list
@@ -5978,7 +6064,7 @@
             document.querySelectorAll('#officeDashboard .nav-item').forEach(el => el.classList.remove('active'));
 
             var navItems = document.querySelectorAll('#officeDashboard .nav-item');
-            // Nav indices: 0=Dashboard, 1=Estimates, 2=Pipeline, 3=Accounts, 4=Search, 5=Schedule, 6=Parts, 7=Create, 8=Employees(admin), 9=DataMgmt(admin)
+            // Nav indices: 0=Dashboard, 1=Estimates, 2=Pipeline, 3=Accounts, 4=Search, 5=OpsReview, 6=Schedule, 7=Parts, 8=Create, 9=Employees(admin), 10=DataMgmt(admin)
 
             // Show selected view and update nav
             if (view === 'dashboard') {
@@ -5994,7 +6080,7 @@
                 loadPipeline();
             } else if (view === 'parts') {
                 document.getElementById('partsView').classList.remove('hidden');
-                navItems[6].classList.add('active');
+                navItems[7].classList.add('active');
             } else if (view === 'accounts') {
                 document.getElementById('accountsView').classList.remove('hidden');
                 navItems[3].classList.add('active');
@@ -6002,37 +6088,41 @@
             } else if (view === 'officeSearch') {
                 document.getElementById('officeSearchView').classList.remove('hidden');
                 navItems[4].classList.add('active');
+            } else if (view === 'opsReview') {
+                document.getElementById('opsReviewView').classList.remove('hidden');
+                navItems[5].classList.add('active');
+                loadOpsReview();
             } else if (view === 'scheduling') {
                 document.getElementById('schedulingView').classList.remove('hidden');
-                navItems[5].classList.add('active');
+                navItems[6].classList.add('active');
                 loadSchedule();
             } else if (view === 'officeCreate') {
                 document.getElementById('officeCreateView').classList.remove('hidden');
-                navItems[7].classList.add('active');
+                navItems[8].classList.add('active');
                 initOfficeCreateForm();
             } else if (view === 'estimateDetail') {
                 document.getElementById('estimateDetailView').classList.remove('hidden');
                 navItems[1].classList.add('active');
             } else if (view === 'workOrderDetail') {
                 document.getElementById('workOrderDetailView').classList.remove('hidden');
-                navItems[4].classList.add('active');
+                navItems[5].classList.add('active');
             } else if (view === 'customerDetail') {
                 document.getElementById('customerDetailView').classList.remove('hidden');
                 navItems[3].classList.add('active');
             } else if (view === 'inspections') {
                 document.getElementById('officeInspectionsView').classList.remove('hidden');
-                navItems[4].classList.add('active');
+                navItems[5].classList.add('active');
                 loadOfficeInspections();
             } else if (view === 'workorders') {
                 document.getElementById('officeWorkOrdersView').classList.remove('hidden');
-                navItems[4].classList.add('active');
+                navItems[5].classList.add('active');
             } else if (view === 'employees') {
                 document.getElementById('employeesView').classList.remove('hidden');
-                if (navItems[8]) navItems[8].classList.add('active');
+                if (navItems[9]) navItems[9].classList.add('active');
                 loadEmployees();
             } else if (view === 'dataManagement') {
                 document.getElementById('dataManagementView').classList.remove('hidden');
-                if (navItems[9]) navItems[9].classList.add('active');
+                if (navItems[10]) navItems[10].classList.add('active');
                 loadDataManagement();
             }
         }
@@ -7829,6 +7919,144 @@
             }
         }
 
+        // Ops Review state
+        let currentOpsFilter = 'all';
+
+        function loadOpsReview() {
+            const reviewJobs = inspectionJobs.filter(j => j.status === 'submitted' || j.status === 'under_review' || j.status === 'approved');
+            const submitted = reviewJobs.filter(j => j.status === 'submitted');
+            const underReview = reviewJobs.filter(j => j.status === 'under_review');
+            const approved = reviewJobs.filter(j => j.status === 'approved');
+
+            // Update stat cards
+            document.getElementById('opsNeedsReviewCount').textContent = submitted.length;
+            document.getElementById('opsUnderReviewCount').textContent = underReview.length;
+            document.getElementById('opsApprovedCount').textContent = approved.length;
+
+            // Update sidebar badge
+            const badge = document.getElementById('opsReviewBadge');
+            if (badge) {
+                badge.textContent = submitted.length;
+                badge.style.display = submitted.length > 0 ? 'inline-block' : 'none';
+            }
+
+            // Apply filter
+            let filteredJobs = reviewJobs;
+            if (currentOpsFilter !== 'all') {
+                filteredJobs = reviewJobs.filter(j => j.status === currentOpsFilter);
+            }
+
+            // Update filter tab active states
+            document.getElementById('opsFilterAll').classList.toggle('active', currentOpsFilter === 'all');
+            document.getElementById('opsFilterSubmitted').classList.toggle('active', currentOpsFilter === 'submitted');
+            document.getElementById('opsFilterUnderReview').classList.toggle('active', currentOpsFilter === 'under_review');
+            document.getElementById('opsFilterApproved').classList.toggle('active', currentOpsFilter === 'approved');
+
+            const list = document.getElementById('opsReviewList');
+            if (filteredJobs.length === 0) {
+                const emptyMsg = currentOpsFilter === 'all' ? 'No inspections to review yet' :
+                    currentOpsFilter === 'submitted' ? 'No inspections awaiting review' :
+                    currentOpsFilter === 'under_review' ? 'No inspections currently under review' :
+                    'No approved inspections';
+                list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>${emptyMsg}</p></div>`;
+                return;
+            }
+
+            list.innerHTML = filteredJobs.map(job => {
+                const typeIcon = job.inspectionType === 'basketball' ? '🏀' :
+                                 job.inspectionType === 'bleacher' ? '🏟️' :
+                                 job.inspectionType === 'outdoor' ? '🪑' : '📋';
+                const typeLabel = job.inspectionType === 'basketball' ? 'Basketball' :
+                                  job.inspectionType === 'bleacher' ? 'Indoor Bleacher' :
+                                  job.inspectionType === 'outdoor' ? 'Outdoor Bleacher' : 'Inspection';
+
+                let statusBadge, statusStyle;
+                if (job.status === 'submitted') {
+                    statusBadge = 'Needs Review';
+                    statusStyle = 'background: #fff3e0; color: #e65100;';
+                } else if (job.status === 'under_review') {
+                    statusBadge = 'Under Review';
+                    statusStyle = 'background: #e3f2fd; color: #1565c0;';
+                } else if (job.status === 'approved') {
+                    statusBadge = 'Approved';
+                    statusStyle = 'background: #e8f5e9; color: #2e7d32;';
+                }
+
+                const bankCount = job.banks?.length || 0;
+                const issueCount = job.banks?.reduce((sum, bank) => {
+                    return sum + (bank.understructureIssues?.length || 0) + (bank.topSideIssues?.length || 0);
+                }, 0) || 0;
+                const partsCount = job.selectedParts?.length || 0;
+
+                const submittedDate = job.submittedAt ? new Date(job.submittedAt).toLocaleDateString() : '';
+                const reviewedInfo = job.reviewedAt ? `<span style="font-size: 12px; color: #1565c0;">Reviewed ${new Date(job.reviewedAt).toLocaleDateString()}${job.reviewedBy ? ' by ' + job.reviewedBy : ''}</span>` : '';
+
+                return `
+                <div class="inspection-item" onclick="openOpsReviewJob(${job.jobNumber})" style="cursor: pointer; border-bottom: 1px solid #e9ecef; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                <span style="font-weight: 700; color: #0066cc; font-size: 15px;">#${job.jobNumber}</span>
+                                <span style="font-size: 12px; color: #6c757d;">${typeIcon} ${typeLabel}</span>
+                            </div>
+                            <div style="font-weight: 600; font-size: 15px;">${job.locationName}</div>
+                            <div style="font-size: 13px; color: #6c757d; margin-top: 2px;">${job.customerName}</div>
+                            <div style="font-size: 13px; color: #6c757d; margin-top: 8px;">
+                                ${bankCount} bank${bankCount !== 1 ? 's' : ''} &bull; ${issueCount} issue${issueCount !== 1 ? 's' : ''} &bull; ${partsCount} part${partsCount !== 1 ? 's' : ''}
+                            </div>
+                            <div style="font-size: 12px; color: #999; margin-top: 4px;">
+                                Inspector: ${job.inspectorName || 'Unknown'} &bull; Submitted ${submittedDate}
+                            </div>
+                            ${reviewedInfo ? `<div style="margin-top: 4px;">${reviewedInfo}</div>` : ''}
+                        </div>
+                        <div style="text-align: right; flex-shrink: 0;">
+                            <span class="badge" style="${statusStyle}">${statusBadge}</span>
+                            <div style="color: #4CAF50; font-size: 20px; margin-top: 8px;">→</div>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function filterOpsReview(filter) {
+            currentOpsFilter = filter;
+            loadOpsReview();
+        }
+
+        function openOpsReviewJob(jobNumber) {
+            const job = inspectionJobs.find(j => j.jobNumber === jobNumber);
+            if (!job) return;
+
+            // Auto-set to under_review when office opens a submitted job
+            if (job.status === 'submitted') {
+                job.status = 'under_review';
+                job.reviewStartedAt = new Date().toISOString();
+                const idx = inspectionJobs.findIndex(j => j.jobNumber === jobNumber);
+                if (idx >= 0) inspectionJobs[idx] = job;
+                localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
+            }
+
+            currentJob = job;
+
+            // Switch to tech dashboard to show job summary (existing pattern)
+            if (currentRole === 'office' || currentRole === 'admin') {
+                document.getElementById('officeDashboard').classList.add('hidden');
+                document.getElementById('techDashboard').classList.remove('hidden');
+            }
+            showJobSummary();
+        }
+
+        // Update ops review badge on page load
+        function updateOpsReviewBadge() {
+            const submitted = inspectionJobs.filter(j => j.status === 'submitted');
+            const badge = document.getElementById('opsReviewBadge');
+            if (badge) {
+                badge.textContent = submitted.length;
+                badge.style.display = submitted.length > 0 ? 'inline-block' : 'none';
+            }
+        }
+
         function loadOfficeInspections() {
             const list = document.getElementById('officeInspectionsList');
             const count = document.getElementById('officeInspectionsCount');
@@ -7928,11 +8156,10 @@
             document.getElementById('jobSummaryView')?.classList.add('hidden');
             document.getElementById('newInspectionView')?.classList.add('hidden');
 
-            if (currentRole === 'office') {
+            if (currentRole === 'office' || currentRole === 'admin') {
                 document.getElementById('techDashboard').classList.add('hidden');
                 document.getElementById('officeDashboard').classList.remove('hidden');
-                showView('inspections');
-                loadInspectionJobs(); // Refresh job list
+                showView('opsReview');
             } else {
                 showTechView('create');
             }
@@ -9329,8 +9556,9 @@
                 }
             });
 
-            // Search inspection jobs
+            // Search inspection jobs (field staff only sees approved inspections)
             (window.inspectionJobs || []).forEach(function(job) {
+                if (currentRole !== 'office' && currentRole !== 'admin' && job.status !== 'approved') return;
                 const searchText = (job.jobNumber + ' ' + (job.customerName || '') + ' ' + (job.locationName || '') + ' ' + job.status).toLowerCase();
                 if (searchText.includes(query)) {
                     results.push({ type: 'inspection', data: job });
