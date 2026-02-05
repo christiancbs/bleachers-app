@@ -278,7 +278,8 @@ function initCreateForm() {
     var html = '<option value="">Select a customer...</option>';
     CUSTOMERS.forEach(function(cust) {
         cust.locations.forEach(function(loc) {
-            html += '<option value="' + loc.id + '" data-customer-id="' + cust.id + '" data-customer-name="' + cust.name + '" data-location-name="' + loc.name + '" data-location-address="' + loc.address + '" data-contact="' + (loc.contact || '') + '" data-phone="' + (loc.phone || '') + '">  ' + loc.name + ' (' + cust.name + ')</option>';
+            var locContact = getPrimaryContact(loc.contacts);
+            html += '<option value="' + loc.id + '" data-customer-id="' + cust.id + '" data-customer-name="' + cust.name + '" data-location-name="' + loc.name + '" data-location-address="' + loc.address + '" data-contact="' + (locContact.name || '') + '" data-phone="' + (locContact.phone || '') + '">  ' + loc.name + ' (' + cust.name + ')</option>';
         });
     });
     select.innerHTML = html;

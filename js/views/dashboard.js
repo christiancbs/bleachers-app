@@ -404,6 +404,7 @@ function loadAccounts(filter = '') {
         const typeIcon = customer.type === 'county' ? '🏛️' : '🏫';
         const typeLabel = customer.type === 'county' ? 'District' : 'Private';
         const typeBadgeClass = customer.type === 'county' ? 'badge-info' : 'badge-warning';
+        const primaryContact = getPrimaryContact(customer.contacts);
 
         return `
         <div class="inspection-item" onclick="viewCustomerDetail('${customer.id}')" style="cursor: pointer;">
@@ -415,7 +416,7 @@ function loadAccounts(filter = '') {
                         <span class="badge ${typeBadgeClass}" style="margin-left: 8px;">${typeLabel}</span>
                     </div>
                     <p style="font-size: 13px; color: #6c757d;">${customer.billingAddress}</p>
-                    <p style="font-size: 12px; color: #6c757d; margin-top: 4px;">${customer.contact} • ${customer.phone}</p>
+                    <p style="font-size: 12px; color: #6c757d; margin-top: 4px;">${primaryContact.name} • ${primaryContact.phone || customer.phone}</p>
                     <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
                         ${customer.locations.map(loc => `
                             <span style="background: #e9ecef; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${loc.name}</span>
@@ -436,9 +437,14 @@ function filterAccounts() {
     loadAccounts(searchTerm);
 }
 
+// Store current customer ID for CRUD operations
+let currentCustomerId = null;
+
 function viewCustomerDetail(customerId) {
     const customer = CUSTOMERS.find(c => c.id === customerId);
     if (!customer) return;
+
+    currentCustomerId = customerId;
 
     // Populate header
     const typeIcon = customer.type === 'county' ? '🏛️' : '🏫';
@@ -447,67 +453,315 @@ function viewCustomerDetail(customerId) {
     document.getElementById('custDetailType').className = `badge ${customer.type === 'county' ? 'badge-info' : 'badge-warning'}`;
 
     // Populate info
+    const primaryContact = getPrimaryContact(customer.contacts);
     document.getElementById('custDetailAddress').textContent = customer.billingAddress;
-    document.getElementById('custDetailContact').textContent = customer.contact;
-    document.getElementById('custDetailPhone').textContent = customer.phone;
+    document.getElementById('custDetailContact').textContent = primaryContact.name || 'No contacts';
+    document.getElementById('custDetailPhone').textContent = primaryContact.phone || customer.phone;
 
-    // Stats (sample data)
+    // Stats
+    const totalContacts = (customer.contacts?.length || 0) +
+        customer.locations.reduce((sum, loc) => sum + (loc.contacts?.length || 0), 0);
     document.getElementById('custDetailLocations').textContent = customer.locations.length;
     document.getElementById('custDetailJobs').textContent = Math.floor(Math.random() * 30) + 10;
     document.getElementById('custDetailRevenue').textContent = '$' + (Math.floor(Math.random() * 50000) + 10000).toLocaleString();
 
-    // Populate locations
+    // Populate locations with contacts
     const locList = document.getElementById('custLocationsList');
-    locList.innerHTML = customer.locations.map(loc => `
-        <div class="inspection-item">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <div>
-                    <strong>${loc.name}</strong>
-                    <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">${loc.address}</p>
-                    <p style="font-size: 12px; color: #6c757d; margin-top: 4px;">${loc.contact} • ${loc.phone}</p>
+    locList.innerHTML = customer.locations.map(loc => {
+        const locContact = getPrimaryContact(loc.contacts);
+        const contactsHtml = (loc.contacts || []).map(c => {
+            const roleBadges = (c.roles || []).map(role => {
+                const roleInfo = CONTACT_ROLES[role] || { label: role, icon: '👤', color: '#999' };
+                return `<span style="background: ${roleInfo.color}20; color: ${roleInfo.color}; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px;">${roleInfo.icon} ${roleInfo.label}</span>`;
+            }).join('');
+            return `
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px; padding: 6px 8px; background: #f8f9fa; border-radius: 6px;">
+                    <div style="flex: 1;">
+                        <span style="font-weight: 500;">${c.name}</span>
+                        ${c.title ? `<span style="color: #6c757d; font-size: 12px;"> - ${c.title}</span>` : ''}
+                        <div style="margin-top: 4px;">${roleBadges}</div>
+                    </div>
+                    <div style="text-align: right; font-size: 12px; color: #6c757d;">
+                        ${c.phone ? `<div>${c.phone}</div>` : ''}
+                        ${c.email ? `<div>${c.email}</div>` : ''}
+                    </div>
                 </div>
-                <div>
+            `;
+        }).join('');
+
+        return `
+        <div class="inspection-item" style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <strong style="font-size: 15px;">${loc.name}</strong>
+                        <button class="btn btn-outline" style="font-size: 11px; padding: 4px 8px;" onclick="event.stopPropagation(); showAddContactModal('${customer.id}', '${loc.id}')">+ Contact</button>
+                    </div>
+                    <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">${loc.address}</p>
+                    ${contactsHtml || '<p style="font-size: 12px; color: #999; margin-top: 8px;">No contacts at this location</p>'}
+                </div>
+                <div style="display: flex; gap: 8px;">
                     <button class="btn btn-outline" style="font-size: 12px; padding: 6px 12px;">View Jobs</button>
                 </div>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 
-    // Show detail view
+    // Populate contacts tab (district-level contacts)
+    const contactsList = document.getElementById('custContactsList');
+    if (contactsList) {
+        const districtContactsHtml = (customer.contacts || []).map(c => {
+            const roleBadges = (c.roles || []).map(role => {
+                const roleInfo = CONTACT_ROLES[role] || { label: role, icon: '👤', color: '#999' };
+                return `<span style="background: ${roleInfo.color}20; color: ${roleInfo.color}; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 4px;">${roleInfo.icon} ${roleInfo.label}</span>`;
+            }).join('');
+            return `
+                <div class="inspection-item" style="margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <div style="font-weight: 600; font-size: 15px;">${c.name}</div>
+                            ${c.title ? `<div style="color: #6c757d; font-size: 13px; margin-top: 2px;">${c.title}</div>` : ''}
+                            <div style="margin-top: 8px;">${roleBadges}</div>
+                        </div>
+                        <div style="text-align: right; font-size: 13px;">
+                            ${c.phone ? `<div style="margin-bottom: 4px;"><a href="tel:${c.phone}" style="color: #0066cc;">${c.phone}</a></div>` : ''}
+                            ${c.mobile ? `<div style="margin-bottom: 4px; color: #6c757d;">${c.mobile} (mobile)</div>` : ''}
+                            ${c.email ? `<div><a href="mailto:${c.email}" style="color: #0066cc;">${c.email}</a></div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        contactsList.innerHTML = districtContactsHtml || '<div class="empty-state"><p>No district-level contacts</p></div>';
+    }
+
+    // Show detail view and default to locations tab
     showView('customerDetail');
+    showCustomerTab('locations');
 }
 
 function showCustomerTab(tab) {
-    // Hide all tabs
-    document.getElementById('customerLocationsTab').classList.add('hidden');
-    document.getElementById('customerHistoryTab').classList.add('hidden');
-    document.getElementById('customerEquipmentTab').classList.add('hidden');
+    // All tab IDs
+    const tabs = ['customerLocationsTab', 'customerContactsTab', 'customerHistoryTab', 'customerEquipmentTab'];
+    const buttons = ['tabLocations', 'tabContacts', 'tabHistory', 'tabEquipment'];
 
-    // Reset tab styles
-    document.getElementById('tabLocations').style.borderBottom = 'none';
-    document.getElementById('tabLocations').style.background = 'transparent';
-    document.getElementById('tabLocations').style.color = '#6c757d';
-    document.getElementById('tabHistory').style.borderBottom = 'none';
-    document.getElementById('tabHistory').style.background = 'transparent';
-    document.getElementById('tabHistory').style.color = '#6c757d';
-    document.getElementById('tabEquipment').style.borderBottom = 'none';
-    document.getElementById('tabEquipment').style.background = 'transparent';
-    document.getElementById('tabEquipment').style.color = '#6c757d';
+    // Hide all tabs and reset button styles
+    tabs.forEach(t => {
+        const el = document.getElementById(t);
+        if (el) el.classList.add('hidden');
+    });
+    buttons.forEach(b => {
+        const el = document.getElementById(b);
+        if (el) {
+            el.style.borderBottom = 'none';
+            el.style.background = 'transparent';
+            el.style.color = '#6c757d';
+        }
+    });
 
     // Show selected tab
-    if (tab === 'locations') {
-        document.getElementById('customerLocationsTab').classList.remove('hidden');
-        document.getElementById('tabLocations').style.borderBottom = '3px solid #4CAF50';
-        document.getElementById('tabLocations').style.color = '#212529';
-    } else if (tab === 'history') {
-        document.getElementById('customerHistoryTab').classList.remove('hidden');
-        document.getElementById('tabHistory').style.borderBottom = '3px solid #4CAF50';
-        document.getElementById('tabHistory').style.color = '#212529';
-    } else if (tab === 'equipment') {
-        document.getElementById('customerEquipmentTab').classList.remove('hidden');
-        document.getElementById('tabEquipment').style.borderBottom = '3px solid #4CAF50';
-        document.getElementById('tabEquipment').style.color = '#212529';
+    const tabMap = {
+        locations: { tab: 'customerLocationsTab', btn: 'tabLocations' },
+        contacts: { tab: 'customerContactsTab', btn: 'tabContacts' },
+        history: { tab: 'customerHistoryTab', btn: 'tabHistory' },
+        equipment: { tab: 'customerEquipmentTab', btn: 'tabEquipment' }
+    };
+
+    const selected = tabMap[tab];
+    if (selected) {
+        const tabEl = document.getElementById(selected.tab);
+        const btnEl = document.getElementById(selected.btn);
+        if (tabEl) tabEl.classList.remove('hidden');
+        if (btnEl) {
+            btnEl.style.borderBottom = '3px solid #4CAF50';
+            btnEl.style.color = '#212529';
+        }
     }
+}
+
+// ==========================================
+// CUSTOMER CRUD FUNCTIONS
+// ==========================================
+
+function showAddCustomerModal() {
+    document.getElementById('customerModalTitle').textContent = 'Add Customer';
+    document.getElementById('custName').value = '';
+    document.getElementById('custType').value = 'county';
+    document.getElementById('custAddress').value = '';
+    document.getElementById('custPhone').value = '';
+    document.getElementById('custTerritory').value = 'Original';
+    document.getElementById('customerModal').classList.remove('hidden');
+}
+
+function closeCustomerModal() {
+    document.getElementById('customerModal').classList.add('hidden');
+}
+
+function saveCustomer() {
+    const name = document.getElementById('custName').value.trim();
+    const type = document.getElementById('custType').value;
+    const address = document.getElementById('custAddress').value.trim();
+    const phone = document.getElementById('custPhone').value.trim();
+    const territory = document.getElementById('custTerritory').value;
+
+    if (!name || !address) {
+        alert('Please fill in required fields (Name and Address)');
+        return;
+    }
+
+    // Create new customer
+    const newCustomer = {
+        id: 'cust' + Date.now(),
+        name: name,
+        type: type,
+        billingAddress: address,
+        phone: phone,
+        territory: territory,
+        contacts: [],
+        locations: []
+    };
+
+    CUSTOMERS.push(newCustomer);
+    closeCustomerModal();
+    loadAccounts();
+
+    // Open the new customer detail to add contacts/locations
+    viewCustomerDetail(newCustomer.id);
+}
+
+// ==========================================
+// CONTACT CRUD FUNCTIONS
+// ==========================================
+
+function showAddContactModal(customerId, locationId = null) {
+    document.getElementById('contactModalTitle').textContent = locationId ? 'Add Location Contact' : 'Add District Contact';
+    document.getElementById('contactCustomerId').value = customerId;
+    document.getElementById('contactLocationId').value = locationId || '';
+    document.getElementById('contactName').value = '';
+    document.getElementById('contactTitle').value = '';
+    document.getElementById('contactPhone').value = '';
+    document.getElementById('contactMobile').value = '';
+    document.getElementById('contactEmail').value = '';
+
+    // Reset checkboxes
+    document.getElementById('roleScheduling').checked = false;
+    document.getElementById('roleContracts').checked = false;
+    document.getElementById('roleBilling').checked = false;
+    document.getElementById('roleEquipment').checked = false;
+    document.getElementById('roleAccess').checked = false;
+    document.getElementById('rolePrimary').checked = false;
+
+    document.getElementById('contactModal').classList.remove('hidden');
+}
+
+function closeContactModal() {
+    document.getElementById('contactModal').classList.add('hidden');
+}
+
+function saveContact() {
+    const customerId = document.getElementById('contactCustomerId').value;
+    const locationId = document.getElementById('contactLocationId').value;
+    const name = document.getElementById('contactName').value.trim();
+    const title = document.getElementById('contactTitle').value.trim();
+    const phone = document.getElementById('contactPhone').value.trim();
+    const mobile = document.getElementById('contactMobile').value.trim();
+    const email = document.getElementById('contactEmail').value.trim();
+
+    if (!name) {
+        alert('Please enter a contact name');
+        return;
+    }
+
+    // Gather selected roles
+    const roles = [];
+    if (document.getElementById('roleScheduling').checked) roles.push('scheduling');
+    if (document.getElementById('roleContracts').checked) roles.push('contracts');
+    if (document.getElementById('roleBilling').checked) roles.push('billing');
+    if (document.getElementById('roleEquipment').checked) roles.push('equipment');
+    if (document.getElementById('roleAccess').checked) roles.push('access');
+    if (document.getElementById('rolePrimary').checked) roles.push('primary');
+
+    const newContact = {
+        id: 'con' + Date.now(),
+        name: name,
+        title: title,
+        phone: phone,
+        mobile: mobile,
+        email: email,
+        roles: roles
+    };
+
+    // Find customer
+    const customer = CUSTOMERS.find(c => c.id === customerId);
+    if (!customer) {
+        alert('Customer not found');
+        return;
+    }
+
+    if (locationId) {
+        // Add to location
+        const location = customer.locations.find(l => l.id === locationId);
+        if (location) {
+            if (!location.contacts) location.contacts = [];
+            location.contacts.push(newContact);
+        }
+    } else {
+        // Add to customer (district level)
+        if (!customer.contacts) customer.contacts = [];
+        customer.contacts.push(newContact);
+    }
+
+    closeContactModal();
+    viewCustomerDetail(customerId); // Refresh the view
+}
+
+// ==========================================
+// LOCATION CRUD FUNCTIONS
+// ==========================================
+
+function showAddLocationModal() {
+    if (!currentCustomerId) {
+        alert('No customer selected');
+        return;
+    }
+    document.getElementById('locationModalTitle').textContent = 'Add Location';
+    document.getElementById('locationCustomerId').value = currentCustomerId;
+    document.getElementById('locationName').value = '';
+    document.getElementById('locationAddress').value = '';
+    document.getElementById('locationModal').classList.remove('hidden');
+}
+
+function closeLocationModal() {
+    document.getElementById('locationModal').classList.add('hidden');
+}
+
+function saveLocation() {
+    const customerId = document.getElementById('locationCustomerId').value;
+    const name = document.getElementById('locationName').value.trim();
+    const address = document.getElementById('locationAddress').value.trim();
+
+    if (!name || !address) {
+        alert('Please fill in required fields (Name and Address)');
+        return;
+    }
+
+    const customer = CUSTOMERS.find(c => c.id === customerId);
+    if (!customer) {
+        alert('Customer not found');
+        return;
+    }
+
+    const newLocation = {
+        id: 'loc' + Date.now(),
+        name: name,
+        address: address,
+        contacts: []
+    };
+
+    customer.locations.push(newLocation);
+    closeLocationModal();
+    viewCustomerDetail(customerId); // Refresh
 }
 
 // Tech Functions

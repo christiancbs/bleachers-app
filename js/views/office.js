@@ -499,12 +499,13 @@ function populateOfficeWorkOrderCustomerDropdown() {
         optgroup.label = `${icon} ${customer.name}`;
 
         customer.locations.forEach(loc => {
+            const locContact = getPrimaryContact(loc.contacts);
             const option = document.createElement('option');
             option.value = `${customer.id}|${loc.id}`;
             option.textContent = loc.name;
             option.dataset.address = loc.address;
-            option.dataset.contact = loc.contact;
-            option.dataset.phone = loc.phone;
+            option.dataset.contact = locContact.name || '';
+            option.dataset.phone = locContact.phone || '';
             optgroup.appendChild(option);
         });
 

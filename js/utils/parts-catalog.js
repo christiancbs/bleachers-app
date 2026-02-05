@@ -127,15 +127,19 @@ function updateCustomerInfo() {
         const location = customer?.locations.find(l => l.id === locationId);
 
         if (customer && location) {
+            // Get primary contacts
+            const custContact = getPrimaryContact(customer.contacts);
+            const locContact = getPrimaryContact(location.contacts);
+
             // Billing entity info
             const typeIcon = customer.type === 'county' ? '🏛️' : '🏫';
             document.getElementById('billingEntityName').textContent = `${typeIcon} ${customer.name}`;
-            document.getElementById('billingEntityContact').textContent = `${customer.contact} • ${customer.phone}`;
+            document.getElementById('billingEntityContact').textContent = `${custContact.name} • ${custContact.phone || customer.phone}`;
 
             // Service location info
             document.getElementById('customerName').textContent = location.name;
             document.getElementById('customerAddress').textContent = location.address;
-            document.getElementById('customerContact').textContent = `${location.contact} • ${location.phone}`;
+            document.getElementById('customerContact').textContent = `${locContact.name} • ${locContact.phone}`;
 
             info.classList.remove('hidden');
 
@@ -146,10 +150,10 @@ function updateCustomerInfo() {
             currentInspection.locationId = locationId;
             currentInspection.locationName = location.name;
             currentInspection.locationAddress = location.address;
-            currentInspection.locationContact = location.contact;
-            currentInspection.locationPhone = location.phone;
-            currentInspection.billingContact = customer.contact;
-            currentInspection.billingPhone = customer.phone;
+            currentInspection.locationContact = locContact.name;
+            currentInspection.locationPhone = locContact.phone;
+            currentInspection.billingContact = custContact.name;
+            currentInspection.billingPhone = custContact.phone || customer.phone;
             currentInspection.location = document.getElementById('locationInput').value || location.address;
         }
     } else {

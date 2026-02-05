@@ -8,22 +8,63 @@
 const AIRTABLE_BASE_ID = 'appAT4ZwbRAgIyzUW';
 const AIRTABLE_TABLE_ID = 'tbl4mDv20NaJnaaN7';
 
+// Contact roles - used for badges and filtering
+const CONTACT_ROLES = {
+    scheduling: { label: 'Scheduling', icon: '📅', color: '#2196F3' },
+    contracts: { label: 'Contracts', icon: '📝', color: '#9C27B0' },
+    billing: { label: 'Billing', icon: '💰', color: '#4CAF50' },
+    equipment: { label: 'Equipment', icon: '🔧', color: '#FF9800' },
+    access: { label: 'Access', icon: '🔑', color: '#795548' },
+    primary: { label: 'Primary', icon: '📞', color: '#607D8B' }
+};
+
 // Data Storage
 // Customer hierarchy: Customer (billing entity) → Locations (schools/sites)
+// Contacts can exist at customer level (district contacts) or location level (school contacts)
 const CUSTOMERS = [
     {
         id: 'cust1',
         name: 'Lauderdale County Schools',
         type: 'county',
         billingAddress: '100 S Jefferson St, Ripley, TN 38063',
-        contact: 'Mike Mann',
         phone: '(731) 635-2941',
-        mobile: '(479) 883-4283',
+        territory: 'Original',
+        contacts: [
+            { id: 'con1', name: 'Mike Mann', title: 'Director of Schools', phone: '(731) 635-2941', mobile: '(479) 883-4283', email: 'mmann@lauderdale.k12.tn.us', roles: ['contracts', 'billing'] }
+        ],
         locations: [
-            { id: 'loc1', name: 'Ripley High School', address: '254 S Jefferson St, Ripley, TN 38063', contact: 'Chris McCorkle', phone: '(731) 635-2642' },
-            { id: 'loc2', name: 'Ripley Middle School', address: '309 Charles Griggs St, Ripley, TN 38063', contact: 'Janet Williams', phone: '(731) 635-1500' },
-            { id: 'loc3', name: 'Ripley Elementary School', address: '100 Hwy 19 E, Ripley, TN 38063', contact: 'Tom Harris', phone: '(731) 635-1400' },
-            { id: 'loc4', name: 'Ripley Primary School', address: '225 Volz Rd, Ripley, TN 38063', contact: 'Sue Adams', phone: '(731) 635-1300' }
+            {
+                id: 'loc1',
+                name: 'Ripley High School',
+                address: '254 S Jefferson St, Ripley, TN 38063',
+                contacts: [
+                    { id: 'loc1con1', name: 'Chris McCorkle', title: 'Principal', phone: '(731) 635-2642', email: '', roles: ['scheduling', 'access'] }
+                ]
+            },
+            {
+                id: 'loc2',
+                name: 'Ripley Middle School',
+                address: '309 Charles Griggs St, Ripley, TN 38063',
+                contacts: [
+                    { id: 'loc2con1', name: 'Janet Williams', title: 'Principal', phone: '(731) 635-1500', email: '', roles: ['scheduling', 'access'] }
+                ]
+            },
+            {
+                id: 'loc3',
+                name: 'Ripley Elementary School',
+                address: '100 Hwy 19 E, Ripley, TN 38063',
+                contacts: [
+                    { id: 'loc3con1', name: 'Tom Harris', title: 'Principal', phone: '(731) 635-1400', email: '', roles: ['scheduling', 'access'] }
+                ]
+            },
+            {
+                id: 'loc4',
+                name: 'Ripley Primary School',
+                address: '225 Volz Rd, Ripley, TN 38063',
+                contacts: [
+                    { id: 'loc4con1', name: 'Sue Adams', title: 'Principal', phone: '(731) 635-1300', email: '', roles: ['scheduling', 'access'] }
+                ]
+            }
         ]
     },
     {
@@ -31,12 +72,36 @@ const CUSTOMERS = [
         name: 'Wilson County Schools',
         type: 'county',
         billingAddress: '415 Harding Dr, Lebanon, TN 37087',
-        contact: 'Tom Anderson',
         phone: '(615) 444-3282',
+        territory: 'Original',
+        contacts: [
+            { id: 'con2', name: 'Tom Anderson', title: 'Facilities Director', phone: '(615) 444-3282', mobile: '', email: 'tanderson@wcschools.com', roles: ['contracts', 'billing', 'primary'] }
+        ],
         locations: [
-            { id: 'loc5', name: 'Wilson Central High School', address: '1414 Baddour Pkwy, Lebanon, TN 37087', contact: 'David Brown', phone: '(615) 443-5765' },
-            { id: 'loc6', name: 'Mt. Juliet High School', address: '501 N Greenhill Rd, Mt Juliet, TN 37122', contact: 'Karen White', phone: '(615) 758-6004' },
-            { id: 'loc7', name: 'Lebanon High School', address: '907 Coles Ferry Pike, Lebanon, TN 37090', contact: 'James Miller', phone: '(615) 449-6040' }
+            {
+                id: 'loc5',
+                name: 'Wilson Central High School',
+                address: '1414 Baddour Pkwy, Lebanon, TN 37087',
+                contacts: [
+                    { id: 'loc5con1', name: 'David Brown', title: 'Athletic Director', phone: '(615) 443-5765', email: '', roles: ['scheduling', 'equipment'] }
+                ]
+            },
+            {
+                id: 'loc6',
+                name: 'Mt. Juliet High School',
+                address: '501 N Greenhill Rd, Mt Juliet, TN 37122',
+                contacts: [
+                    { id: 'loc6con1', name: 'Karen White', title: 'Principal', phone: '(615) 758-6004', email: '', roles: ['scheduling', 'access'] }
+                ]
+            },
+            {
+                id: 'loc7',
+                name: 'Lebanon High School',
+                address: '907 Coles Ferry Pike, Lebanon, TN 37090',
+                contacts: [
+                    { id: 'loc7con1', name: 'James Miller', title: 'Athletic Director', phone: '(615) 449-6040', email: '', roles: ['scheduling', 'equipment'] }
+                ]
+            }
         ]
     },
     {
@@ -44,12 +109,37 @@ const CUSTOMERS = [
         name: 'Williamson County Schools',
         type: 'county',
         billingAddress: '1320 W Main St, Franklin, TN 37064',
-        contact: 'Sarah Thompson',
         phone: '(615) 472-4000',
+        territory: 'Original',
+        contacts: [
+            { id: 'con3', name: 'Sarah Thompson', title: 'Director of Operations', phone: '(615) 472-4000', mobile: '', email: 'sthompson@wcs.edu', roles: ['contracts', 'primary'] },
+            { id: 'con3b', name: 'Mark Reynolds', title: 'Accounts Payable', phone: '(615) 472-4005', mobile: '', email: 'mreynolds@wcs.edu', roles: ['billing'] }
+        ],
         locations: [
-            { id: 'loc8', name: 'Franklin High School', address: '810 Hillsboro Rd, Franklin, TN 37064', contact: 'Mike Davis', phone: '(615) 794-6624' },
-            { id: 'loc9', name: 'Brentwood High School', address: '5304 Murray Ln, Brentwood, TN 37027', contact: 'Lisa Chen', phone: '(615) 472-4450' },
-            { id: 'loc10', name: 'Independence High School', address: '1776 Declaration Way, Thompson Station, TN 37179', contact: 'Robert Taylor', phone: '(615) 472-4980' }
+            {
+                id: 'loc8',
+                name: 'Franklin High School',
+                address: '810 Hillsboro Rd, Franklin, TN 37064',
+                contacts: [
+                    { id: 'loc8con1', name: 'Mike Davis', title: 'Maintenance Supervisor', phone: '(615) 794-6624', email: '', roles: ['scheduling', 'access', 'equipment'] }
+                ]
+            },
+            {
+                id: 'loc9',
+                name: 'Brentwood High School',
+                address: '5304 Murray Ln, Brentwood, TN 37027',
+                contacts: [
+                    { id: 'loc9con1', name: 'Lisa Chen', title: 'Athletic Director', phone: '(615) 472-4450', email: '', roles: ['scheduling', 'equipment'] }
+                ]
+            },
+            {
+                id: 'loc10',
+                name: 'Independence High School',
+                address: '1776 Declaration Way, Thompson Station, TN 37179',
+                contacts: [
+                    { id: 'loc10con1', name: 'Robert Taylor', title: 'Principal', phone: '(615) 472-4980', email: '', roles: ['scheduling', 'access'] }
+                ]
+            }
         ]
     },
     {
@@ -57,11 +147,28 @@ const CUSTOMERS = [
         name: 'Brentwood Academy',
         type: 'private',
         billingAddress: '219 Granny White Pike, Brentwood, TN 37027',
-        contact: 'John Smith',
         phone: '(615) 373-0611',
+        territory: 'Original',
+        contacts: [
+            { id: 'con4', name: 'John Smith', title: 'Facilities Manager', phone: '(615) 373-0611', mobile: '', email: 'jsmith@brentwoodacademy.com', roles: ['contracts', 'billing', 'scheduling', 'primary'] }
+        ],
         locations: [
-            { id: 'loc11', name: 'Main Campus', address: '219 Granny White Pike, Brentwood, TN 37027', contact: 'John Smith', phone: '(615) 373-0611' },
-            { id: 'loc12', name: 'Athletic Complex', address: '219 Granny White Pike, Brentwood, TN 37027', contact: 'Coach Roberts', phone: '(615) 373-0612' }
+            {
+                id: 'loc11',
+                name: 'Main Campus',
+                address: '219 Granny White Pike, Brentwood, TN 37027',
+                contacts: [
+                    { id: 'loc11con1', name: 'John Smith', title: 'Facilities Manager', phone: '(615) 373-0611', email: '', roles: ['scheduling', 'access'] }
+                ]
+            },
+            {
+                id: 'loc12',
+                name: 'Athletic Complex',
+                address: '219 Granny White Pike, Brentwood, TN 37027',
+                contacts: [
+                    { id: 'loc12con1', name: 'Coach Roberts', title: 'Athletic Director', phone: '(615) 373-0612', email: '', roles: ['scheduling', 'equipment'] }
+                ]
+            }
         ]
     },
     {
@@ -69,10 +176,20 @@ const CUSTOMERS = [
         name: 'Montgomery Bell Academy',
         type: 'private',
         billingAddress: '4001 Harding Rd, Nashville, TN 37205',
-        contact: 'Sarah Johnson',
         phone: '(615) 298-5514',
+        territory: 'Original',
+        contacts: [
+            { id: 'con5', name: 'Sarah Johnson', title: 'Business Manager', phone: '(615) 298-5514', mobile: '', email: 'sjohnson@montgomerybell.edu', roles: ['contracts', 'billing', 'primary'] }
+        ],
         locations: [
-            { id: 'loc13', name: 'Main Gymnasium', address: '4001 Harding Rd, Nashville, TN 37205', contact: 'Sarah Johnson', phone: '(615) 298-5514' }
+            {
+                id: 'loc13',
+                name: 'Main Gymnasium',
+                address: '4001 Harding Rd, Nashville, TN 37205',
+                contacts: [
+                    { id: 'loc13con1', name: 'Sarah Johnson', title: 'Business Manager', phone: '(615) 298-5514', email: '', roles: ['scheduling', 'access'] }
+                ]
+            }
         ]
     },
     {
@@ -80,11 +197,28 @@ const CUSTOMERS = [
         name: 'Lipscomb Academy',
         type: 'private',
         billingAddress: '3901 Granny White Pike, Nashville, TN 37204',
-        contact: 'Emily Wilson',
         phone: '(615) 966-1000',
+        territory: 'Original',
+        contacts: [
+            { id: 'con6', name: 'Emily Wilson', title: 'Director of Operations', phone: '(615) 966-1000', mobile: '', email: 'ewilson@lipscomb.edu', roles: ['contracts', 'billing', 'primary'] }
+        ],
         locations: [
-            { id: 'loc14', name: 'Allen Arena', address: '3901 Granny White Pike, Nashville, TN 37204', contact: 'Emily Wilson', phone: '(615) 966-1000' },
-            { id: 'loc15', name: 'Student Activity Center', address: '3901 Granny White Pike, Nashville, TN 37204', contact: 'Mark Jones', phone: '(615) 966-1001' }
+            {
+                id: 'loc14',
+                name: 'Allen Arena',
+                address: '3901 Granny White Pike, Nashville, TN 37204',
+                contacts: [
+                    { id: 'loc14con1', name: 'Emily Wilson', title: 'Director of Operations', phone: '(615) 966-1000', email: '', roles: ['scheduling'] }
+                ]
+            },
+            {
+                id: 'loc15',
+                name: 'Student Activity Center',
+                address: '3901 Granny White Pike, Nashville, TN 37204',
+                contacts: [
+                    { id: 'loc15con1', name: 'Mark Jones', title: 'Facility Coordinator', phone: '(615) 966-1001', email: '', roles: ['scheduling', 'access', 'equipment'] }
+                ]
+            }
         ]
     },
     {
@@ -92,11 +226,20 @@ const CUSTOMERS = [
         name: 'Madison County Schools',
         type: 'county',
         billingAddress: '668 Lexington Ave, Jackson TN 38301',
-        contact: 'Chris Johnson',
         phone: '(731) 506-3069',
-        mobile: '(731) 267-6834',
+        territory: 'Original',
+        contacts: [
+            { id: 'con7', name: 'Chris Johnson', title: 'Maintenance Director', phone: '(731) 506-3069', mobile: '(731) 267-6834', email: 'cjohnson@madisoncountyschools.org', roles: ['contracts', 'billing', 'equipment', 'primary'] }
+        ],
         locations: [
-            { id: 'jackson_career', name: 'Jackson Career And Technology Elementary', address: '668 Lexington Ave, Jackson TN 38301', contact: 'Chris Johnson', phone: '(731) 506-3069' }
+            {
+                id: 'jackson_career',
+                name: 'Jackson Career And Technology Elementary',
+                address: '668 Lexington Ave, Jackson TN 38301',
+                contacts: [
+                    { id: 'jacksoncon1', name: 'Chris Johnson', title: 'Maintenance Director', phone: '(731) 506-3069', email: '', roles: ['scheduling', 'access'] }
+                ]
+            }
         ]
     }
 ];
@@ -107,21 +250,49 @@ const JOB_TYPES = ['Go See', 'Service Call', 'Repair', 'Inspection'];
 // Job statuses
 const JOB_STATUSES = ['New', 'In Progress', 'Parts Ordered', 'Parts Received', 'Scheduled', 'Completed', 'Pink'];
 
+// Helper to get primary contact from contacts array
+function getPrimaryContact(contacts) {
+    if (!contacts || contacts.length === 0) return { name: '', phone: '', email: '' };
+    // Look for primary role first, then just return first contact
+    const primary = contacts.find(c => c.roles && c.roles.includes('primary'));
+    return primary || contacts[0];
+}
+
+// Helper to get contact for a specific role
+function getContactForRole(customer, location, role) {
+    // Check location contacts first
+    if (location && location.contacts) {
+        const locContact = location.contacts.find(c => c.roles && c.roles.includes(role));
+        if (locContact) return locContact;
+    }
+    // Fall back to customer-level contacts
+    if (customer && customer.contacts) {
+        const custContact = customer.contacts.find(c => c.roles && c.roles.includes(role));
+        if (custContact) return custContact;
+    }
+    // Fall back to any primary or first contact
+    return getPrimaryContact(customer?.contacts) || getPrimaryContact(location?.contacts);
+}
+
 // Legacy support - flat customer list for backwards compatibility
 const SAMPLE_CUSTOMERS = CUSTOMERS.flatMap(c =>
-    c.locations.map(loc => ({
-        id: loc.id,
-        customerId: c.id,
-        customerName: c.name,
-        customerType: c.type,
-        name: loc.name,
-        address: loc.address,
-        contact: loc.contact,
-        phone: loc.phone,
-        billingContact: c.contact,
-        billingPhone: c.phone,
-        billingAddress: c.billingAddress
-    }))
+    c.locations.map(loc => {
+        const locContact = getPrimaryContact(loc.contacts);
+        const custContact = getPrimaryContact(c.contacts);
+        return {
+            id: loc.id,
+            customerId: c.id,
+            customerName: c.name,
+            customerType: c.type,
+            name: loc.name,
+            address: loc.address,
+            contact: locContact.name,
+            phone: locContact.phone,
+            billingContact: custContact.name,
+            billingPhone: custContact.phone,
+            billingAddress: c.billingAddress
+        };
+    })
 );
 
 // Categories loaded from Airtable
