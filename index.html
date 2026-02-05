@@ -53,45 +53,45 @@
                     <div class="sidebar-close-btn">✕</div>
                 </div>
                 <div class="sidebar-nav">
-                    <div class="nav-item active" onclick="showView('officeSearch')">
+                    <div class="nav-item" data-view="officeSearch" onclick="showView('officeSearch')">
                         <span>🔍</span>
                         <span>Search</span>
                     </div>
                     <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
                         <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Office & Sales</span>
                     </div>
-                    <div class="nav-item" onclick="showView('dashboard')">
+                    <div class="nav-item active" data-view="dashboard" onclick="showView('dashboard')">
                         <span>📊</span>
                         <span>Dashboard</span>
                     </div>
-                    <div class="nav-item" onclick="showView('estimates')">
+                    <div class="nav-item" data-view="estimates" onclick="showView('estimates')">
                         <span>📄</span>
                         <span>Estimates</span>
                     </div>
-                    <div class="nav-item" onclick="showView('projects')">
+                    <div class="nav-item" data-view="projects" onclick="showView('projects')">
                         <span>🔄</span>
                         <span>Pipeline</span>
                     </div>
-                    <div class="nav-item" onclick="showView('accounts')">
+                    <div class="nav-item" data-view="accounts" onclick="showView('accounts')">
                         <span>🏫</span>
                         <span>Accounts</span>
                     </div>
                     <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
                         <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Inspections & Service</span>
                     </div>
-                    <div class="nav-item" onclick="showView('opsReview')">
+                    <div class="nav-item" data-view="opsReview" onclick="showView('opsReview')">
                         <span>📋</span>
                         <span>Ops Review <span id="opsReviewBadge" class="badge" style="background: #fff3e0; color: #e65100; margin-left: 4px; font-size: 10px; padding: 2px 6px;">0</span></span>
                     </div>
-                    <div class="nav-item" onclick="showView('scheduling')">
+                    <div class="nav-item" data-view="scheduling" onclick="showView('scheduling')">
                         <span>📅</span>
                         <span>Scheduling</span>
                     </div>
-                    <div class="nav-item" onclick="showView('parts')">
+                    <div class="nav-item" data-view="parts" onclick="showView('parts')">
                         <span>📦</span>
                         <span>Parts & Orders</span>
                     </div>
-                    <div class="nav-item" onclick="showView('officeCreate')">
+                    <div class="nav-item" data-view="officeCreate" onclick="showView('officeCreate')">
                         <span>+</span>
                         <span>Create</span>
                     </div>
@@ -99,11 +99,11 @@
                         <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
                             <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Admin</span>
                         </div>
-                        <div class="nav-item" onclick="showView('employees')">
+                        <div class="nav-item" data-view="employees" onclick="showView('employees')">
                             <span>👥</span>
                             <span>Employees</span>
                         </div>
-                        <div class="nav-item" onclick="showView('dataManagement')">
+                        <div class="nav-item" data-view="dataManagement" onclick="showView('dataManagement')">
                             <span>🗄️</span>
                             <span>Data Management</span>
                         </div>
@@ -1964,22 +1964,22 @@
                     <div class="sidebar-close-btn">✕</div>
                 </div>
                 <div class="sidebar-nav">
-                    <div class="nav-item active" onclick="showTechView('search')">
+                    <div class="nav-item" data-view="search" onclick="showTechView('search')">
                         <span>🔍</span>
                         <span>Search</span>
                     </div>
                     <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
                         <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Inspections & Service</span>
                     </div>
-                    <div class="nav-item" onclick="showTechView('teamschedule')">
-                        <span>👥</span>
-                        <span>Team Schedule</span>
-                    </div>
-                    <div class="nav-item" onclick="showTechView('myjobs')">
+                    <div class="nav-item active" data-view="myjobs" onclick="showTechView('myjobs')">
                         <span>📅</span>
                         <span>My Jobs</span>
                     </div>
-                    <div class="nav-item" onclick="showTechView('create')">
+                    <div class="nav-item" data-view="teamschedule" onclick="showTechView('teamschedule')">
+                        <span>👥</span>
+                        <span>Team Schedule</span>
+                    </div>
+                    <div class="nav-item" data-view="create" onclick="showTechView('create')">
                         <span>+</span>
                         <span>Create</span>
                     </div>

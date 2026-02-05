@@ -104,10 +104,11 @@ function login(role) {
             document.getElementById('officeUserName').textContent = 'Office Manager';
         }
         loadOfficeDashboard();
-        showView('officeSearch'); // Default to Search view
+        showView('dashboard'); // Default to Dashboard view
     } else {
         document.getElementById('techDashboard').classList.remove('hidden');
         loadTechDashboard();
+        showTechView('myjobs'); // Default to My Jobs view
     }
 }
 
@@ -156,72 +157,75 @@ function showView(view) {
     // Hide all views
     document.querySelectorAll('[id$="View"]').forEach(el => el.classList.add('hidden'));
 
-    // Update nav active state
+    // Update nav active state - remove active from all, add to matching data-view
     document.querySelectorAll('#officeDashboard .nav-item').forEach(el => el.classList.remove('active'));
 
-    var navItems = document.querySelectorAll('#officeDashboard .nav-item');
-    // Nav indices: 0=Search, 1=Dashboard, 2=Estimates, 3=Pipeline, 4=Accounts, 5=OpsReview, 6=Schedule, 7=Parts, 8=Create, 9=Employees(admin), 10=DataMgmt(admin)
+    // Helper to set active nav by data-view attribute
+    function setActiveNav(viewName) {
+        var navItem = document.querySelector('#officeDashboard .nav-item[data-view="' + viewName + '"]');
+        if (navItem) navItem.classList.add('active');
+    }
 
     // Show selected view and update nav
     if (view === 'officeSearch') {
         document.getElementById('officeSearchView').classList.remove('hidden');
-        navItems[0].classList.add('active');
+        setActiveNav('officeSearch');
     } else if (view === 'dashboard') {
         document.getElementById('dashboardView').classList.remove('hidden');
-        navItems[1].classList.add('active');
+        setActiveNav('dashboard');
     } else if (view === 'estimates') {
         document.getElementById('estimatesView').classList.remove('hidden');
-        navItems[2].classList.add('active');
+        setActiveNav('estimates');
         loadEstimates();
     } else if (view === 'projects') {
         document.getElementById('projectsView').classList.remove('hidden');
-        navItems[3].classList.add('active');
+        setActiveNav('projects');
         loadPipeline();
     } else if (view === 'accounts') {
         document.getElementById('accountsView').classList.remove('hidden');
-        navItems[4].classList.add('active');
+        setActiveNav('accounts');
         loadAccounts();
     } else if (view === 'parts') {
         document.getElementById('partsView').classList.remove('hidden');
-        navItems[7].classList.add('active');
+        setActiveNav('parts');
     } else if (view === 'opsReview') {
         document.getElementById('opsReviewView').classList.remove('hidden');
-        navItems[5].classList.add('active');
+        setActiveNav('opsReview');
         loadOpsReview();
     } else if (view === 'opsReviewDetail') {
         document.getElementById('opsReviewDetailView').classList.remove('hidden');
-        navItems[5].classList.add('active');
+        setActiveNav('opsReview');
     } else if (view === 'scheduling') {
         document.getElementById('schedulingView').classList.remove('hidden');
-        navItems[6].classList.add('active');
+        setActiveNav('scheduling');
         loadSchedule();
     } else if (view === 'officeCreate') {
         document.getElementById('officeCreateView').classList.remove('hidden');
-        navItems[8].classList.add('active');
+        setActiveNav('officeCreate');
         initOfficeCreateForm();
     } else if (view === 'estimateDetail') {
         document.getElementById('estimateDetailView').classList.remove('hidden');
-        navItems[2].classList.add('active');
+        setActiveNav('estimates');
     } else if (view === 'workOrderDetail') {
         document.getElementById('workOrderDetailView').classList.remove('hidden');
-        navItems[5].classList.add('active');
+        setActiveNav('opsReview');
     } else if (view === 'customerDetail') {
         document.getElementById('customerDetailView').classList.remove('hidden');
-        navItems[4].classList.add('active');
+        setActiveNav('accounts');
     } else if (view === 'inspections') {
         document.getElementById('officeInspectionsView').classList.remove('hidden');
-        navItems[5].classList.add('active');
+        setActiveNav('opsReview');
         loadOfficeInspections();
     } else if (view === 'workorders') {
         document.getElementById('officeWorkOrdersView').classList.remove('hidden');
-        navItems[5].classList.add('active');
+        setActiveNav('opsReview');
     } else if (view === 'employees') {
         document.getElementById('employeesView').classList.remove('hidden');
-        if (navItems[9]) navItems[9].classList.add('active');
+        setActiveNav('employees');
         loadEmployees();
     } else if (view === 'dataManagement') {
         document.getElementById('dataManagementView').classList.remove('hidden');
-        if (navItems[10]) navItems[10].classList.add('active');
+        setActiveNav('dataManagement');
         loadDataManagement();
     }
 }
@@ -238,35 +242,41 @@ function showTechView(view) {
     document.getElementById('newInspectionView')?.classList.add('hidden');
     document.querySelectorAll('#techDashboard .nav-item').forEach(el => el.classList.remove('active'));
 
+    // Helper to set active nav by data-view attribute
+    function setActiveNav(viewName) {
+        var navItem = document.querySelector('#techDashboard .nav-item[data-view="' + viewName + '"]');
+        if (navItem) navItem.classList.add('active');
+    }
+
     if (view === 'search') {
         document.getElementById('techSearchView').classList.remove('hidden');
-        document.querySelectorAll('#techDashboard .nav-item')[0].classList.add('active');
+        setActiveNav('search');
     } else if (view === 'teamschedule') {
         document.getElementById('techTeamScheduleView').classList.remove('hidden');
-        document.querySelectorAll('#techDashboard .nav-item')[1].classList.add('active');
+        setActiveNav('teamschedule');
         loadTeamSchedule();
     } else if (view === 'myjobs' || view === 'dashboard') {
         document.getElementById('techMyJobsView').classList.remove('hidden');
-        document.querySelectorAll('#techDashboard .nav-item')[2].classList.add('active');
+        setActiveNav('myjobs');
         loadMyJobs();
     } else if (view === 'create') {
         document.getElementById('techCreateView').classList.remove('hidden');
-        document.querySelectorAll('#techDashboard .nav-item')[3].classList.add('active');
+        setActiveNav('create');
         initCreateForm();
     } else if (view === 'inspections') {
         document.getElementById('techInspectionsView').classList.remove('hidden');
-        document.querySelectorAll('#techDashboard .nav-item')[3].classList.add('active');
+        setActiveNav('create');
         loadInspectionJobs();
         loadTechInspections();
     } else if (view === 'parts') {
         startNewJob();
-        document.querySelectorAll('#techDashboard .nav-item')[3].classList.add('active');
+        setActiveNav('create');
     } else if (view === 'workorders') {
         document.getElementById('techWorkOrdersView').classList.remove('hidden');
-        document.querySelectorAll('#techDashboard .nav-item')[3].classList.add('active');
+        setActiveNav('create');
     } else if (view === 'workorderdetail') {
         document.getElementById('techWorkOrderDetailView').classList.remove('hidden');
-        document.querySelectorAll('#techDashboard .nav-item')[3].classList.add('active');
+        setActiveNav('create');
     }
 }
 
