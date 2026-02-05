@@ -53,10 +53,14 @@
                     <div class="sidebar-close-btn">✕</div>
                 </div>
                 <div class="sidebar-nav">
-                    <div class="sidebar-divider" style="margin: 8px 20px 12px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
+                    <div class="nav-item active" onclick="showView('officeSearch')">
+                        <span>🔍</span>
+                        <span>Search</span>
+                    </div>
+                    <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
                         <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Office & Sales</span>
                     </div>
-                    <div class="nav-item active" onclick="showView('dashboard')">
+                    <div class="nav-item" onclick="showView('dashboard')">
                         <span>📊</span>
                         <span>Dashboard</span>
                     </div>
@@ -74,10 +78,6 @@
                     </div>
                     <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
                         <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Inspections & Service</span>
-                    </div>
-                    <div class="nav-item" onclick="showView('officeSearch')">
-                        <span>🔍</span>
-                        <span>Search</span>
                     </div>
                     <div class="nav-item" onclick="showView('opsReview')">
                         <span>📋</span>
@@ -1967,6 +1967,9 @@
                     <div class="nav-item active" onclick="showTechView('search')">
                         <span>🔍</span>
                         <span>Search</span>
+                    </div>
+                    <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
+                        <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Inspections & Service</span>
                     </div>
                     <div class="nav-item" onclick="showTechView('teamschedule')">
                         <span>👥</span>
