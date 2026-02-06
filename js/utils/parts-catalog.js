@@ -189,8 +189,10 @@ async function searchParts() {
                     const price = parseFloat(part.price) || 0;
                     const priceDisplay = part.priceNote || (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
                     const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'");
+                    const safeProductName = (part.productName || '').replace(/'/g, "\\'");
+                    const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'");
                     const imageHtml = part.imageUrl
-                        ? `<img src="${part.imageUrl}" onclick="event.stopPropagation(); showPartImage('${part.imageUrl}', '${safePartNumber}')" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px; cursor: pointer;" title="Click to enlarge">`
+                        ? `<img src="${part.imageUrl}" onclick="event.stopPropagation(); showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${price}', '${safeVendor}')" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px; cursor: pointer;" title="Tap image to enlarge">`
                         : '';
                     return `
                         <div class="part-result" onclick="selectPart('${part.id}')" style="display: flex; align-items: flex-start;">
@@ -199,6 +201,7 @@ async function searchParts() {
                                 <div style="margin-bottom: 8px;">
                                     <span class="part-number">${part.partNumber || '—'}</span>
                                     <span class="part-vendor">${part.vendor || 'Hussey Seating Co'}</span>
+                                    ${part.imageUrl ? '<span style="color: #0066cc; font-size: 10px; margin-left: 6px;">📷</span>' : ''}
                                 </div>
                                 <div class="part-description">${part.productName || 'Unknown Part'}</div>
                                 <div class="part-meta">
@@ -246,16 +249,20 @@ async function searchTechParts() {
                     const price = parseFloat(part.price) || 0;
                     const priceDisplay = part.priceNote || (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
                     const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'");
+                    const safeProductName = (part.productName || '').replace(/'/g, "\\'");
+                    const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'");
+                    const clickHandler = part.imageUrl ? `onclick="showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${price}', '${safeVendor}')"` : '';
                     const imageHtml = part.imageUrl
-                        ? `<img src="${part.imageUrl}" onclick="event.stopPropagation(); showPartImage('${part.imageUrl}', '${safePartNumber}')" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px; cursor: pointer;" title="Click to enlarge">`
+                        ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px;">`
                         : '';
                     return `
-                        <div class="part-result" style="cursor: default; display: flex; align-items: flex-start;">
+                        <div class="part-result" ${clickHandler} style="cursor: ${part.imageUrl ? 'pointer' : 'default'}; display: flex; align-items: flex-start;">
                             ${imageHtml}
                             <div style="flex: 1;">
                                 <div style="margin-bottom: 8px;">
                                     <span class="part-number">${part.partNumber || '—'}</span>
                                     <span class="part-vendor">${part.vendor || 'Hussey Seating Co'}</span>
+                                    ${part.imageUrl ? '<span style="color: #0066cc; font-size: 11px; margin-left: 8px;">📷 Tap to view</span>' : ''}
                                 </div>
                                 <div class="part-description">${part.productName || 'Unknown Part'}</div>
                                 <div class="part-meta">
@@ -303,16 +310,20 @@ async function searchOfficeParts() {
                     const price = parseFloat(part.price) || 0;
                     const priceDisplay = part.priceNote || (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
                     const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'");
+                    const safeProductName = (part.productName || '').replace(/'/g, "\\'");
+                    const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'");
+                    const clickHandler = part.imageUrl ? `onclick="showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${price}', '${safeVendor}')"` : '';
                     const imageHtml = part.imageUrl
-                        ? `<img src="${part.imageUrl}" onclick="event.stopPropagation(); showPartImage('${part.imageUrl}', '${safePartNumber}')" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px; cursor: pointer;" title="Click to enlarge">`
+                        ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px;">`
                         : '';
                     return `
-                        <div class="part-result" style="cursor: default; display: flex; align-items: flex-start;">
+                        <div class="part-result" ${clickHandler} style="cursor: ${part.imageUrl ? 'pointer' : 'default'}; display: flex; align-items: flex-start;">
                             ${imageHtml}
                             <div style="flex: 1;">
                                 <div style="margin-bottom: 8px;">
                                     <span class="part-number">${part.partNumber || '—'}</span>
                                     <span class="part-vendor">${part.vendor || 'Hussey Seating Co'}</span>
+                                    ${part.imageUrl ? '<span style="color: #0066cc; font-size: 11px; margin-left: 8px;">📷 Tap to view</span>' : ''}
                                 </div>
                                 <div class="part-description">${part.productName || 'Unknown Part'}</div>
                                 <div class="part-meta">
