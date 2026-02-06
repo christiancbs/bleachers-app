@@ -1693,7 +1693,11 @@
                             <div class="form-group">
                                 <label class="form-label">Part Image</label>
                                 <div id="partImagePreview" style="margin-bottom: 8px;"></div>
-                                <input type="file" id="partImageInput" accept="image/*" onchange="handlePartImageUpload(this)" class="form-input" style="padding: 8px;">
+                                <div id="partImagePasteZone" tabindex="0" style="border: 2px dashed #ddd; border-radius: 8px; padding: 16px; text-align: center; cursor: pointer; margin-bottom: 8px; transition: all 0.2s;" onclick="document.getElementById('partImageInput').click()" onpaste="handlePartImagePaste(event)">
+                                    <div style="color: #6c757d; font-size: 13px;">📋 Paste screenshot here (Ctrl/Cmd+V)</div>
+                                    <div style="color: #999; font-size: 11px; margin-top: 4px;">or click to browse files</div>
+                                </div>
+                                <input type="file" id="partImageInput" accept="image/*" onchange="handlePartImageUpload(this)" style="display: none;">
                             </div>
                             <div style="display: flex; gap: 12px; margin-top: 24px;">
                                 <button class="btn btn-primary" onclick="savePart()" style="flex: 1;">Save</button>

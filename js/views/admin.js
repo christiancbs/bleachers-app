@@ -440,9 +440,19 @@ function showAddPartModal() {
     if (preview) preview.innerHTML = '';
     var imgInput = document.getElementById('partImageInput');
     if (imgInput) imgInput.value = '';
+    resetPasteZone();
     var modal = document.getElementById('partModal');
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
+}
+
+function resetPasteZone() {
+    var pasteZone = document.getElementById('partImagePasteZone');
+    if (pasteZone) {
+        pasteZone.style.borderColor = '#ddd';
+        pasteZone.style.background = '';
+        pasteZone.innerHTML = '<div style="color: #6c757d; font-size: 13px;">📋 Paste screenshot here (Ctrl/Cmd+V)</div><div style="color: #999; font-size: 11px; margin-top: 4px;">or click to browse files</div>';
+    }
 }
 
 function editPart(id) {
@@ -458,10 +468,11 @@ function editPart(id) {
     document.getElementById('partPriceInput').value = part.price || '';
     var preview = document.getElementById('partImagePreview');
     if (preview) {
-        preview.innerHTML = part.imageUrl ? '<img src="' + part.imageUrl + '" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">' : '';
+        preview.innerHTML = part.imageUrl ? '<img src="' + part.imageUrl + '" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;"><button onclick="clearPartImage()" style="margin-left: 8px; padding: 4px 8px; font-size: 11px; cursor: pointer;">Remove</button>' : '';
     }
     var imgInput = document.getElementById('partImageInput');
     if (imgInput) imgInput.value = '';
+    resetPasteZone();
     var modal = document.getElementById('partModal');
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
@@ -474,11 +485,58 @@ function handlePartImageUpload(input) {
             partImageData = e.target.result;
             var preview = document.getElementById('partImagePreview');
             if (preview) {
-                preview.innerHTML = '<img src="' + e.target.result + '" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">';
+                preview.innerHTML = '<img src="' + e.target.result + '" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;"><button onclick="clearPartImage()" style="margin-left: 8px; padding: 4px 8px; font-size: 11px; cursor: pointer;">Remove</button>';
+            }
+            // Update paste zone to show success
+            var pasteZone = document.getElementById('partImagePasteZone');
+            if (pasteZone) {
+                pasteZone.style.borderColor = '#4caf50';
+                pasteZone.style.background = '#e8f5e9';
             }
         };
         reader.readAsDataURL(input.files[0]);
     }
+}
+
+function handlePartImagePaste(event) {
+    var items = (event.clipboardData || event.originalEvent.clipboardData).items;
+    for (var i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+            event.preventDefault();
+            var blob = items[i].getAsFile();
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                partImageData = e.target.result;
+                var preview = document.getElementById('partImagePreview');
+                if (preview) {
+                    preview.innerHTML = '<img src="' + e.target.result + '" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;"><button onclick="clearPartImage()" style="margin-left: 8px; padding: 4px 8px; font-size: 11px; cursor: pointer;">Remove</button>';
+                }
+                // Update paste zone to show success
+                var pasteZone = document.getElementById('partImagePasteZone');
+                if (pasteZone) {
+                    pasteZone.style.borderColor = '#4caf50';
+                    pasteZone.style.background = '#e8f5e9';
+                    pasteZone.innerHTML = '<div style="color: #2e7d32; font-size: 13px;">✓ Image pasted!</div><div style="color: #999; font-size: 11px; margin-top: 4px;">Paste again to replace</div>';
+                }
+            };
+            reader.readAsDataURL(blob);
+            return;
+        }
+    }
+}
+
+function clearPartImage() {
+    partImageData = null;
+    var preview = document.getElementById('partImagePreview');
+    if (preview) preview.innerHTML = '';
+    var pasteZone = document.getElementById('partImagePasteZone');
+    if (pasteZone) {
+        pasteZone.style.borderColor = '#ddd';
+        pasteZone.style.background = '';
+        pasteZone.innerHTML = '<div style="color: #6c757d; font-size: 13px;">📋 Paste screenshot here (Ctrl/Cmd+V)</div><div style="color: #999; font-size: 11px; margin-top: 4px;">or click to browse files</div>';
+    }
+    var imgInput = document.getElementById('partImageInput');
+    if (imgInput) imgInput.value = '';
 }
 
 async function savePart() {
