@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JS Test</title>
+</head>
+<body>
+    <h1>Testing JS Load</h1>
+    <div id="output"></div>
+
+    <script src="js/config.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/views/scheduling.js"></script>
+    <script src="js/views/my-jobs.js"></script>
+
+    <script>
+        const output = document.getElementById('output');
+        output.innerHTML = '<p>Testing functions...</p>';
+        output.innerHTML += '<p>loadOfficeJobs: ' + (typeof loadOfficeJobs) + '</p>';
+        output.innerHTML += '<p>loadMyJobs: ' + (typeof loadMyJobs) + '</p>';
+        output.innerHTML += '<p>prevMyJobsWeek: ' + (typeof prevMyJobsWeek) + '</p>';
+        output.innerHTML += '<p>getWeekStart: ' + (typeof getWeekStart) + '</p>';
+    </script>
+</body>
+</html>

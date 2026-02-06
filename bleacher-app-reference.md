@@ -1,8 +1,8 @@
 # Bleachers & Seats - App Development Reference
 
-**Last Updated:** February 5, 2026
-**Version:** v2.1.2
-**Active Branch:** `main`
+**Last Updated:** February 6, 2026
+**Version:** v2.1.3 (stable) | v3.0.0 (in development)
+**Active Branch:** `v3-feedback-implementation`
 
 ---
 
@@ -46,7 +46,9 @@ python3 -m http.server 8080
 - `v2.0` - Navigation refactor + field create
 - `v2.1` - Live status tracking + Jobs view
 - `v2.1.1` - Bug fixes + test data for status tracking
-- `v2.1.2` - Current: Code organization improvements
+- `v2.1.2` - Code organization improvements
+- `v2.1.3` - **Stable on `main`:** Bug fix for logout error (adminNavSection null check)
+- `v3.0.0` - **In Development on `v3-feedback-implementation`:** Sales/Operations separation + Story/Atiba feedback implementation
 
 ---
 
@@ -64,10 +66,15 @@ python3 -m http.server 8080
 - Unified job numbering (Job # = Estimate # = Work Order # = QB #)
 - Week progress tracking (X/Y jobs completed with percentage)
 
-**Navigation:**
+**Navigation (v2.1.3):**
 - **Office/Admin:** Search | Sales (Pipeline, Accounts) | Procurement (Ops Review, Estimates, Parts Orders) | Logistics (Shipping, **Jobs**, Scheduling) | Resources (Parts Catalog) | Settings
 - **Field:** Search | Inspections & Service (My Jobs with "+ Create Job", Team Schedule) | Resources (Parts Catalog) | Settings
 - Role-based settings: Profile (all), QB Integration (Office+Admin), Manage (Admin only)
+
+**Navigation (v3.0 - In Development):**
+- **Office/Admin:** Search | Sales (**Sales Pipeline**, Accounts) | Procurement (Ops Review, Estimates, Parts Orders) | Logistics (Shipping, **Jobs**, Scheduling, **Project Tracker**) | Resources (Parts Catalog) | Settings
+- **Field:** Unchanged
+- Key change: "Pipeline" split into "Sales Pipeline" (pre-sale) and "Project Tracker" (post-sale operations)
 
 **v2.1 Highlights:**
 - **Live Status Tracking:** Jobs update in real-time as techs check in, complete, or mark unable to complete
@@ -176,13 +183,121 @@ python3 -m http.server 8080
 
 ---
 
-## Recent Bug Fixes (v2.1.1)
+## Recent Bug Fixes
 
-**Fixed:** Syntax error in `js/views/inspection.js` line 976
+**v2.1.3 (Feb 6, 2026):**
+- **Fixed:** `logout()` function crashing due to null reference
+- Issue: Attempted to access `adminNavSection` element that doesn't exist in HTML
+- Impact: Prevented Jobs view from loading (error blocked subsequent JavaScript execution)
+- Fix: Added null check before accessing element classList
+- Location: [app.js:166](js/app.js#L166)
+
+**v2.1.1:**
+- **Fixed:** Syntax error in `js/views/inspection.js` line 976
 - Issue: Unescaped double quote in placeholder attribute broke JavaScript loading
 - Impact: Prevented `loadOfficeJobs` and other functions from loading
 - Fix: Escaped quote as `&quot;` in HTML attribute
 - Files affected: All JS files after `inspection.js` in load order
+
+---
+
+## v3.0 Development Plan (In Progress)
+
+**Branch:** `v3-feedback-implementation`
+**Timeline:** 3-4 weeks (Feb 6 - Mar 7, 2026)
+**Goal:** Address team feedback from Story (Director of Operations) and Atiba prototype review
+
+### Key Changes: Sales vs Operations Separation
+
+**Problem Identified:**
+Current "Pipeline" view mixes pre-sale (estimates, follow-ups) with post-sale (operational execution). This creates confusion between sales tracking and project management.
+
+**Solution:**
+Split into two distinct views:
+1. **Sales Pipeline** - Pre-sale: estimates, client follow-ups, deal grading (A/B/C)
+2. **Project Tracker** - Post-sale: operational execution, scheduling, completion tracking
+
+### Implementation Phases
+
+#### **PHASE 1: Pipeline Restructure (Week 1)**
+
+**Rename & Relocate Current Pipeline:**
+1. ✅ Rename "Pipeline" view → "Project Tracker"
+2. ✅ Move from Sales nav section → Logistics nav section
+3. ✅ Add date fields (date received, date started, target date, completed date)
+4. ✅ Add sort by oldest→newest
+5. ✅ Add Labor Amount and Total Project Value to project cards
+
+**Create New Sales Pipeline:**
+6. ✅ New "Sales Pipeline" view in Sales section
+7. ✅ Sales-specific stages (matching Salesmate workflow):
+   - Estimate in Process
+   - Operations Review
+   - Estimate Complete (Ready to be Sent)
+   - Client Review/Follow Up
+   - In Process/PO Received
+   - Complete
+8. ✅ Add A/B/C deal grading system (replaces probability %)
+9. ✅ Add estimate delivery status indicators
+10. ✅ Add follow-up tracking features
+
+#### **PHASE 2: Quick Win Features (Week 2-3)**
+
+**Work Orders & Scheduling:**
+11. ✅ Add "Special Instructions" field to work orders (prominent at top)
+12. ✅ Add "Confirmed/Unconfirmed" checkbox to schedule entries
+13. ✅ Add "Equipment Rental Required" tag to schedule
+
+**Estimates Enhancement:**
+14. ✅ Add Shipping line item to estimate form
+15. ✅ Add Labor line item to estimate form
+
+**Internal Tools:**
+16. ✅ Add Internal Notes field (not visible to customers)
+
+**Note:** Pink List/Go Backs tab already exists in Scheduling → Shit List (not duplicating)
+
+#### **PHASE 3: Testing & Polish (Week 4)**
+17. Field beta testing with 2-3 techs
+18. QuickBooks integration testing
+19. Bug fixes and refinements
+
+### Total Features: 17 items
+- Pipeline restructure: 10 items
+- Quick wins: 6 items
+- Testing phase: 1 item
+
+### Estimated Effort: ~20 hours development time
+
+---
+
+## Atiba Comparison & Decision
+
+**Date:** February 6, 2026
+**Status:** Decided to continue DIY approach instead of waiting for Atiba
+
+**Atiba's Issues (from Story's feedback):**
+- ❌ Tech view only showed "today's jobs" (not weekly schedule)
+- ❌ "Extremely limited" inspection module
+- ❌ Office Manager couldn't see work orders
+- ❌ Manual time tracking required
+- ❌ Dashboard guessing at metrics with unnecessary clutter
+
+**Our Strengths:**
+- ✅ Tech weekly schedule (Mon-Fri grid for all roles)
+- ✅ Multi-bank inspection with issue tracking
+- ✅ Jobs operational view for Office/Admin
+- ✅ Automated timestamp capture
+- ✅ Clean, purposeful interface
+
+**Comparison Score:** 72% of team requirements already built or partially built
+- 18 items fully built (38%)
+- 16 items partially built (34%)
+- 13 items not yet built (28%)
+
+**Decision:** Continue DIY. We're further along than Atiba after their months of design work.
+
+See `atiba-feedback-comparison.md` for detailed breakdown.
 
 ---
 
@@ -267,20 +382,32 @@ python3 -m http.server 8080
 
 ## Next Steps
 
-**Immediate:**
-1. Get Draper CSV and add to Airtable
-2. Test with inspector - gather feedback
-3. Receive Hussey part images (PNG)
+**Immediate (v3 Development - Feb 6-28):**
+1. **Week 1:** Phase 1 - Pipeline restructure (Sales vs Project Tracker separation)
+2. **Week 2:** Phase 2 - Quick win features (special instructions, confirmed status, estimate lines)
+3. **Week 3:** Field beta testing with 2-3 techs on real jobs
+4. **Week 4:** QB integration testing + bug fixes
 
-**QuickBooks Integration:**
-1. Set `QB_CLIENT_ID` and `QB_CLIENT_SECRET` in Vercel
-2. Create sandbox company at developer.intuit.com
-3. Test OAuth flow and estimate creation
+**Post-v3 (March 2026):**
+1. Get Draper CSV and add to Airtable
+2. Receive Hussey part images (PNG)
+3. Signature capture for work orders
+4. Archived jobs tab (for 1000+ completed jobs)
+5. PO view pulling from estimates
+6. Notification/email system
+
+**QuickBooks Integration (Built, needs testing):**
+1. Set `QB_CLIENT_ID` and `QB_CLIENT_SECRET` in Vercel (1 hour)
+2. Create sandbox company at developer.intuit.com (30 min)
+3. Test OAuth flow and estimate creation (2-3 hours)
+4. Note: QB API backend already exists at bleachers-api.vercel.app
 
 **Medium-term:**
 1. Proxy Airtable calls through Vercel (for live site)
-2. Offline capability (cache parts locally)
+2. Enhanced offline capability (cache parts locally with service worker)
 3. Work order PDF generation
+4. Form editing after submission
+5. Audit history tracking
 
 ---
 

@@ -443,8 +443,127 @@ function initEstimateCreate() {
 }
 
 // ==========================================
-// PIPELINE
-// 8-stage pipeline view with filtering
+// SALES PIPELINE (v3)
+// Pre-sale: estimates, follow-ups, deal tracking
+// ==========================================
+
+function loadSalesPipeline() {
+    const container = document.getElementById('salesPipelineContent');
+    if (!container) {
+        console.error('salesPipelineContent container not found');
+        return;
+    }
+
+    // Sales-specific stages from Salesmate (Story's feedback)
+    var salesStages = [
+        { key: 'Estimate in Process', label: 'Estimate in Process', color: '#6c757d', bg: '#f8f9fa' },
+        { key: 'Operations Review', label: 'Operations Review', color: '#e65100', bg: '#fff3e0' },
+        { key: 'Estimate Complete', label: 'Estimate Complete', color: '#1565c0', bg: '#e3f2fd' },
+        { key: 'Client Review', label: 'Client Review/Follow Up', color: '#7b1fa2', bg: '#f3e5f5' },
+        { key: 'In Process/PO Received', label: 'In Process/PO Received', color: '#2e7d32', bg: '#e8f5e9' },
+        { key: 'Complete', label: 'Complete', color: '#388e3c', bg: '#c8e6c9' }
+    ];
+
+    // For now, use same data but will filter/adapt for sales context
+    var allJobs = PIPELINE_JOBS.slice();
+
+    // Map current statuses to sales stages
+    allJobs = allJobs.map(function(j) {
+        var salesStatus = j.status;
+        if (j.status === 'Estimate Sent') salesStatus = 'Estimate Complete';
+        if (j.status === 'Accepted') salesStatus = 'In Process/PO Received';
+        return Object.assign({}, j, { salesStatus: salesStatus, dealGrade: j.dealGrade || 'B' });
+    });
+
+    // Count jobs per stage
+    var stageCounts = {};
+    var stageValues = {};
+    salesStages.forEach(function(s) {
+        stageCounts[s.key] = 0;
+        stageValues[s.key] = 0;
+    });
+    allJobs.forEach(function(j) {
+        var status = j.salesStatus || j.status;
+        if (stageCounts[status] !== undefined) {
+            stageCounts[status]++;
+            stageValues[status] += j.amount || 0;
+        }
+    });
+
+    var totalActive = allJobs.filter(function(j) { return j.salesStatus !== 'Complete' && j.status !== 'Complete'; }).length;
+    var totalValue = allJobs.filter(function(j) { return j.salesStatus !== 'Complete' && j.status !== 'Complete'; }).reduce(function(s, j) { return s + (j.amount || 0); }, 0);
+
+    // Build sales pipeline flow
+    var html = '<div style="display: flex; gap: 8px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px;">';
+    salesStages.forEach(function(stage, i) {
+        var count = stageCounts[stage.key];
+        var value = stageValues[stage.key];
+        html += '<div onclick="filterSalesPipeline(\'' + stage.key + '\')" style="flex: 1; min-width: 130px; padding: 12px 10px; border-radius: 8px; background: ' + stage.bg + '; border: 2px solid ' + (count > 0 ? stage.color + '40' : '#e0e0e0') + '; cursor: pointer; text-align: center; transition: all 0.2s;">';
+        html += '<div style="font-size: 24px; font-weight: 700; color: ' + stage.color + ';">' + count + '</div>';
+        html += '<div style="font-size: 11px; font-weight: 600; color: ' + stage.color + '; margin-bottom: 2px;">' + stage.label + '</div>';
+        html += '<div style="font-size: 11px; color: #6c757d;">$' + (value / 1000).toFixed(1) + 'k</div>';
+        if (i < salesStages.length - 1) html += '</div><div style="display: flex; align-items: center; color: #ccc; font-size: 18px;">›</div>';
+        else html += '</div>';
+    });
+    html += '</div>';
+
+    // Summary bar
+    html += '<div style="display: flex; gap: 16px; margin-bottom: 20px; align-items: center;">';
+    html += '<div style="font-size: 14px; color: #6c757d;"><strong>' + totalActive + '</strong> active deals &nbsp;·&nbsp; <strong>$' + totalValue.toLocaleString() + '</strong> in pipeline</div>';
+    html += '<div style="flex: 1;"></div>';
+    html += '</div>';
+
+    // Filter jobs
+    var filtered = allJobs;
+    var searchEl = document.getElementById('salesPipelineSearch');
+    var searchTerm = searchEl ? searchEl.value.toLowerCase() : '';
+    if (searchTerm) {
+        filtered = filtered.filter(function(j) {
+            return (j.customer || '').toLowerCase().includes(searchTerm) ||
+                   (j.location || '').toLowerCase().includes(searchTerm) ||
+                   (j.jobNumber || '').toLowerCase().includes(searchTerm);
+        });
+    }
+
+    // Table with A/B/C grading
+    html += '<div class="card"><div class="card-body" style="padding: 0;">';
+    if (filtered.length === 0) {
+        html += '<div style="padding: 40px; text-align: center; color: #6c757d;">No deals in pipeline</div>';
+    } else {
+        html += '<div style="overflow-x: auto;"><table class="data-table" style="margin: 0;">';
+        html += '<thead><tr><th style="width: 80px;">Job #</th><th style="width: 50px;">Grade</th><th>Customer</th><th>Location</th><th>Description</th><th style="width: 95px;">Est. Date</th><th style="width: 130px;">Status</th><th style="width: 90px; text-align: right;">Value</th></tr></thead>';
+        html += '<tbody>';
+        filtered.forEach(function(job) {
+            var stageInfo = salesStages.find(function(s) { return s.key === (job.salesStatus || job.status); }) || salesStages[0];
+            var gradeColors = { 'A': '#2e7d32', 'B': '#1976d2', 'C': '#f57c00' };
+            var gradeColor = gradeColors[job.dealGrade] || '#6c757d';
+
+            html += '<tr>';
+            html += '<td><span style="color: #0066cc; font-weight: 600; font-size: 13px;">' + job.jobNumber + '</span></td>';
+            html += '<td><span style="display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 50%; background: ' + gradeColor + '; color: white; font-weight: 700; font-size: 12px;">' + job.dealGrade + '</span></td>';
+            html += '<td style="font-weight: 500;">' + job.customer + '</td>';
+            html += '<td style="font-size: 13px; color: #6c757d;">' + job.location + '</td>';
+            html += '<td style="font-size: 13px; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="' + (job.description || '').replace(/"/g, '&quot;') + '">' + job.description + '</td>';
+            html += '<td style="font-size: 12px; color: #495057;">' + (job.date ? new Date(job.date).toLocaleDateString('en-US', {month: 'numeric', day: 'numeric'}) : '—') + '</td>';
+            html += '<td><span style="display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: ' + stageInfo.bg + '; color: ' + stageInfo.color + '; border: 1px solid ' + stageInfo.color + '30;">' + (job.salesStatus || job.status) + '</span></td>';
+            html += '<td style="text-align: right; font-weight: 600;">$' + job.amount.toLocaleString() + '</td>';
+            html += '</tr>';
+        });
+        html += '</tbody></table></div>';
+    }
+    html += '</div></div>';
+
+    container.innerHTML = html;
+}
+
+function filterSalesPipeline(status) {
+    // Placeholder for future filtering
+    console.log('Filter sales pipeline by:', status);
+}
+
+// ==========================================
+// PROJECT TRACKER (v3 - formerly PIPELINE)
+// Post-sale: operational execution, scheduling, completion
 // ==========================================
 
 // PIPELINE_JOBS and pipelineFilter are defined in js/data.js
@@ -523,9 +642,11 @@ function loadPipeline() {
     pipelineHtml += '</div>';
 
     // Summary bar
-    pipelineHtml += '<div style="display: flex; gap: 16px; margin-bottom: 20px; align-items: center;">';
+    pipelineHtml += '<div style="display: flex; gap: 16px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">';
     pipelineHtml += '<div style="font-size: 14px; color: #6c757d;"><strong>' + totalActive + '</strong> active jobs &nbsp;·&nbsp; <strong>$' + totalValue.toLocaleString() + '</strong> in pipeline</div>';
     pipelineHtml += '<div style="flex: 1;"></div>';
+    pipelineHtml += '<select onchange="sortPipelineBy(this.value)" id="pipelineSortSelect" class="form-input" style="width: 160px; padding: 6px 10px; font-size: 13px;">';
+    pipelineHtml += '<option value="status">Sort by Status</option><option value="oldest">Sort by Oldest</option><option value="newest">Sort by Newest</option></select>';
     pipelineHtml += '<button onclick="filterPipeline(\'all\')" class="btn ' + (pipelineFilter === 'all' ? 'btn-primary' : 'btn-secondary') + '" style="padding: 6px 14px; font-size: 13px;">All</button>';
     pipelineHtml += '<select onchange="filterPipelineTerritory(this.value)" id="pipelineTerritoryFilter" class="form-input" style="width: 160px; padding: 6px 10px; font-size: 13px;">';
     pipelineHtml += '<option value="all">All Territories</option><option value="Original">Original (KY/TN)</option><option value="Southern">Southern (AL/FL)</option></select>';
@@ -552,14 +673,29 @@ function loadPipeline() {
         filtered = filtered.filter(function(j) { return j.territory === tVal; });
     }
 
-    // Sort: active statuses first (by pipeline order), then by date desc
+    // Sort: check user preference
+    var sortBy = (typeof pipelineSortBy !== 'undefined') ? pipelineSortBy : 'status';
     var statusOrder = {};
     stages.forEach(function(s, i) { statusOrder[s.key] = i; });
+
     filtered.sort(function(a, b) {
-        var sa = statusOrder[a.status] || 0;
-        var sb = statusOrder[b.status] || 0;
-        if (sa !== sb) return sa - sb;
-        return (b.date || '').localeCompare(a.date || '');
+        if (sortBy === 'oldest') {
+            // Sort by dateReceived, oldest first (or date if no dateReceived)
+            var dateA = a.dateReceived || a.date || '';
+            var dateB = b.dateReceived || b.date || '';
+            return dateA.localeCompare(dateB);
+        } else if (sortBy === 'newest') {
+            // Sort by dateReceived, newest first
+            var dateA = a.dateReceived || a.date || '';
+            var dateB = b.dateReceived || b.date || '';
+            return dateB.localeCompare(dateA);
+        } else {
+            // Default: sort by status, then by date desc
+            var sa = statusOrder[a.status] || 0;
+            var sb = statusOrder[b.status] || 0;
+            if (sa !== sb) return sa - sb;
+            return (b.date || '').localeCompare(a.date || '');
+        }
     });
 
     // Table
@@ -568,18 +704,29 @@ function loadPipeline() {
         pipelineHtml += '<div style="padding: 40px; text-align: center; color: #6c757d;">No jobs match the current filter</div>';
     } else {
         pipelineHtml += '<div style="overflow-x: auto;"><table class="data-table" style="margin: 0;">';
-        pipelineHtml += '<thead><tr><th style="width: 80px;">Job #</th><th style="width: 70px;">Type</th><th>Customer</th><th>Location</th><th>Description</th><th style="width: 120px;">Status</th><th style="width: 90px; text-align: right;">Amount</th></tr></thead>';
+        pipelineHtml += '<thead><tr><th style="width: 80px;">Job #</th><th style="width: 70px;">Type</th><th>Customer</th><th>Location</th><th>Description</th><th style="width: 95px;">PO Received</th><th style="width: 95px;">Target Date</th><th style="width: 120px;">Status</th><th style="width: 90px; text-align: right;">Labor</th><th style="width: 90px; text-align: right;">Total</th></tr></thead>';
         pipelineHtml += '<tbody>';
         filtered.forEach(function(job) {
             var stageInfo = stages.find(function(s) { return s.key === job.status; }) || stages[0];
             var rowBg = job.status === 'Pink' ? '#fff5f5' : '';
+
+            // Format dates
+            function formatShortDate(dateStr) {
+                if (!dateStr) return '<span style="color: #ccc;">—</span>';
+                var d = new Date(dateStr);
+                return (d.getMonth() + 1) + '/' + d.getDate();
+            }
+
             pipelineHtml += '<tr style="' + (rowBg ? 'background:' + rowBg + ';' : '') + '">';
             pipelineHtml += '<td><span style="color: #0066cc; font-weight: 600; font-size: 13px;">' + job.jobNumber + '</span></td>';
             pipelineHtml += '<td><span style="font-size: 12px; color: #6c757d;">' + job.jobType + '</span></td>';
             pipelineHtml += '<td style="font-weight: 500;">' + job.customer + '</td>';
             pipelineHtml += '<td style="font-size: 13px; color: #6c757d;">' + job.location + '</td>';
-            pipelineHtml += '<td style="font-size: 13px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="' + (job.description || '').replace(/"/g, '&quot;') + '">' + job.description + '</td>';
+            pipelineHtml += '<td style="font-size: 13px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="' + (job.description || '').replace(/"/g, '&quot;') + '">' + job.description + '</td>';
+            pipelineHtml += '<td style="font-size: 12px; color: #495057;">' + formatShortDate(job.dateReceived) + '</td>';
+            pipelineHtml += '<td style="font-size: 12px; color: #495057;">' + formatShortDate(job.targetDate) + '</td>';
             pipelineHtml += '<td><span style="display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; background: ' + stageInfo.bg + '; color: ' + stageInfo.color + '; border: 1px solid ' + stageInfo.color + '30;">' + job.status + (job.pinkReason ? ' - ' + job.pinkReason : '') + '</span></td>';
+            pipelineHtml += '<td style="text-align: right; font-weight: 600; font-size: 13px;">$' + (job.laborAmount || 0).toLocaleString() + '</td>';
             pipelineHtml += '<td style="text-align: right; font-weight: 600;">$' + job.amount.toLocaleString() + '</td>';
             pipelineHtml += '</tr>';
         });
@@ -596,6 +743,11 @@ function filterPipeline(status) {
 }
 
 function filterPipelineTerritory(val) {
+    loadPipeline();
+}
+
+function sortPipelineBy(sortType) {
+    pipelineSortBy = sortType;
     loadPipeline();
 }
 

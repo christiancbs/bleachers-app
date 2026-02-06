@@ -196,14 +196,18 @@ function showView(view) {
         document.getElementById('estimatesView').classList.remove('hidden');
         setActiveNav('estimates');
         loadEstimates();
+    } else if (view === 'salesPipeline') {
+        document.getElementById('salesPipelineView').classList.remove('hidden');
+        setActiveNav('salesPipeline');
+        loadSalesPipeline();
     } else if (view === 'projects') {
-        console.log('showView: projects');
+        console.log('showView: Project Tracker');
         var projectsView = document.getElementById('projectsView');
         console.log('projectsView element:', projectsView);
         projectsView.classList.remove('hidden');
         setActiveNav('projects');
-        // Call loadPipeline directly
-        console.log('About to call loadPipeline');
+        // Call loadPipeline directly (renamed in v3 but keeping function name for now)
+        console.log('About to call loadPipeline (Project Tracker)');
         loadPipeline();
         console.log('loadPipeline called');
     } else if (view === 'accounts') {

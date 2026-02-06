@@ -638,11 +638,10 @@ let twoWrongPartSentPhoto = null;
 let twoMoreWorkPhoto = null;
 
 // Sample pipeline data representing jobs across all statuses
-// v3: Added laborAmount, dateReceived, dateStarted, targetDate, dateCompleted for Project Tracker
 const PIPELINE_JOBS = [
-    { id: 'pl1', jobNumber: '17220', jobType: 'Repair', status: 'Estimate Sent', customer: 'Fayette County Schools', location: 'Fayette-Ware HS', description: 'Replace 3 gear motors, install safety tape on facing bleachers', amount: 8450, laborAmount: 3200, territory: 'Original', date: '2026-01-15', dateReceived: null, dateStarted: null, targetDate: null, dateCompleted: null },
-    { id: 'pl2', jobNumber: '17218', jobType: 'Repair', status: 'Estimate Sent', customer: 'Wilson County Schools', location: 'Mt. Juliet HS', description: 'Install end caps, replace deck boards (6), install skirt board hardware', amount: 4280, laborAmount: 1850, territory: 'Original', date: '2026-01-13', dateReceived: null, dateStarted: null, targetDate: null, dateCompleted: null },
-    { id: 'pl3', jobNumber: '17215', jobType: 'Repair', status: 'Estimate Sent', customer: 'Marshall County Schools', location: 'Forrest HS', description: 'Replace curved bullnose sections (4) and aisle step hardware', amount: 3175, laborAmount: 1200, territory: 'Original', date: '2026-01-10', dateReceived: null, dateStarted: null, targetDate: null, dateCompleted: null },
+    { id: 'pl1', jobNumber: '17220', jobType: 'Repair', status: 'Estimate Sent', customer: 'Fayette County Schools', location: 'Fayette-Ware HS', description: 'Replace 3 gear motors, install safety tape on facing bleachers', amount: 8450, territory: 'Original', date: '2026-01-15' },
+    { id: 'pl2', jobNumber: '17218', jobType: 'Repair', status: 'Estimate Sent', customer: 'Wilson County Schools', location: 'Mt. Juliet HS', description: 'Install end caps, replace deck boards (6), install skirt board hardware', amount: 4280, territory: 'Original', date: '2026-01-13' },
+    { id: 'pl3', jobNumber: '17215', jobType: 'Repair', status: 'Estimate Sent', customer: 'Marshall County Schools', location: 'Forrest HS', description: 'Replace curved bullnose sections (4) and aisle step hardware', amount: 3175, territory: 'Original', date: '2026-01-10' },
     { id: 'pl4', jobNumber: '17212', jobType: 'Inspection', status: 'Estimate Sent', customer: 'Houston County Schools', location: 'Houston County HS', description: 'Annual bleacher inspection - 3 gyms', amount: 1800, territory: 'Original', date: '2026-01-08' },
     { id: 'pl5', jobNumber: '17225', jobType: 'Repair', status: 'Estimate Sent', customer: 'Morgan County Schools', location: 'Albert P Brewer HS', description: 'Replace floor mount hardware and L brackets on behind bleachers', amount: 2950, territory: 'Southern', date: '2026-01-20' },
     { id: 'pl6', jobNumber: '17210', jobType: 'Repair', status: 'Accepted', customer: 'Williamson County Schools', location: 'Brentwood Academy', description: 'Replace deck boards (3) and seat slats (5) on home side bleachers Section B', amount: 5620, territory: 'Original', date: '2026-01-06' },
@@ -655,8 +654,8 @@ const PIPELINE_JOBS = [
     { id: 'pl13', jobNumber: '17196', jobType: 'Repair', status: 'Parts Received', customer: 'Coffee County Schools', location: 'Coffee County HS', description: 'Replace tier catches (3), install end caps, replace flex row rod assembly', amount: 5890, territory: 'Original', date: '2025-12-18' },
     { id: 'pl14', jobNumber: '17190', jobType: 'Repair', status: 'Scheduled', customer: 'Montgomery County Schools', location: 'Montgomery Co HS', description: 'Install seat back hardware, end caps, aisle step hardware, safety tape, skirt board bracket hardware', amount: 9200, territory: 'Original', date: '2025-12-10' },
     { id: 'pl15', jobNumber: '17188', jobType: 'Repair', status: 'Scheduled', customer: 'Dyer County Schools', location: 'Dyersburg State CC', description: 'Adjust motor tension, install floor step feet, replace L brackets', amount: 6780, territory: 'Original', date: '2025-12-05' },
-    { id: 'pl16', jobNumber: '17185', jobType: 'Repair', status: 'In Progress', customer: 'Williamson County Schools', location: 'Ravenwood HS', description: 'Multi-gym repair: deck stabilizers, safety tape, anchors, seats, skirt board hardware across 8 locations', amount: 18500, laborAmount: 8500, territory: 'Original', date: '2025-11-28', dateReceived: '2025-12-05', dateStarted: '2026-01-22', targetDate: '2026-02-15', dateCompleted: null },
-    { id: 'pl17', jobNumber: '17180', jobType: 'Repair', status: 'Complete', customer: 'Sumner County Schools', location: 'Gallatin HS', description: 'Annual inspection + replace 2 gear motors, install safety tape', amount: 6200, laborAmount: 2200, territory: 'Original', date: '2025-11-15', dateReceived: '2025-11-22', dateStarted: '2025-12-10', targetDate: '2026-01-15', dateCompleted: '2026-01-12' },
+    { id: 'pl16', jobNumber: '17185', jobType: 'Repair', status: 'In Progress', customer: 'Williamson County Schools', location: 'Ravenwood HS', description: 'Multi-gym repair: deck stabilizers, safety tape, anchors, seats, skirt board hardware across 8 locations', amount: 18500, territory: 'Original', date: '2025-11-28' },
+    { id: 'pl17', jobNumber: '17180', jobType: 'Repair', status: 'Complete', customer: 'Sumner County Schools', location: 'Gallatin HS', description: 'Annual inspection + replace 2 gear motors, install safety tape', amount: 6200, territory: 'Original', date: '2025-11-15' },
     { id: 'pl18', jobNumber: '17175', jobType: 'Inspection', status: 'Complete', customer: 'Robertson County Schools', location: 'Springfield HS', description: 'Annual bleacher inspection - 2 gyms, all passed', amount: 1200, territory: 'Original', date: '2025-11-10' },
     { id: 'pl19', jobNumber: '17170', jobType: 'Repair', status: 'Complete', customer: 'Maury County Schools', location: 'Spring Hill HS', description: 'Replace deck boards (8), install fence ties, replace bullnose', amount: 7800, territory: 'Original', date: '2025-11-05' },
     { id: 'pl20', jobNumber: '17195', jobType: 'Repair', status: 'Pink', customer: 'Williamson County Schools', location: 'Brentwood Academy', description: 'Goal 3 safety strap installation - wrong bracket sent, need EC-457 not EC-450', amount: 1850, territory: 'Original', date: '2025-12-15', pinkReason: 'Wrong/Missing Part' },
@@ -666,7 +665,6 @@ const PIPELINE_JOBS = [
 ];
 
 let pipelineFilter = 'all';
-let pipelineSortBy = 'status'; // 'status', 'oldest', or 'newest'
 
 // ========== ADMIN: EMPLOYEES ==========
 var EMPLOYEES = JSON.parse(localStorage.getItem('employees') || 'null') || [

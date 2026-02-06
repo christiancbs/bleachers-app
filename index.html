@@ -63,9 +63,9 @@
                     <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
                         <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Sales</span>
                     </div>
-                    <div class="nav-item active" data-view="projects" onclick="showView('projects')">
-                        <span>🔄</span>
-                        <span>Pipeline</span>
+                    <div class="nav-item active" data-view="salesPipeline" onclick="showView('salesPipeline')">
+                        <span>💼</span>
+                        <span>Sales Pipeline</span>
                     </div>
                     <div class="nav-item" data-view="accounts" onclick="showView('accounts')">
                         <span>🏫</span>
@@ -104,6 +104,10 @@
                     <div class="nav-item" data-view="scheduling" onclick="showView('scheduling')">
                         <span>📅</span>
                         <span>Scheduling</span>
+                    </div>
+                    <div class="nav-item" data-view="projects" onclick="showView('projects')">
+                        <span>📊</span>
+                        <span>Project Tracker</span>
                     </div>
 
                     <!-- Resources -->
@@ -321,15 +325,31 @@
                         <div id="estimateDetailContent"></div>
                     </div>
 
-                    <!-- Projects View -->
-                    <div id="projectsView" class="hidden">
+                    <!-- Sales Pipeline View -->
+                    <div id="salesPipelineView" class="hidden">
                         <div class="page-header">
-                            <h1 class="page-title">Pipeline</h1>
-                            <p class="page-subtitle">All jobs at a glance — from estimate to completion</p>
+                            <h1 class="page-title">Sales Pipeline</h1>
+                            <p class="page-subtitle">Track estimates from creation to acceptance</p>
                         </div>
 
                         <div style="margin-bottom: 20px;">
-                            <input type="text" id="pipelineSearch" class="form-input" placeholder="Search jobs by customer, location, job number, or description..." oninput="loadPipeline()" style="max-width: 500px;">
+                            <input type="text" id="salesPipelineSearch" class="form-input" placeholder="Search by customer, location, or job number..." oninput="loadSalesPipeline()" style="max-width: 500px;">
+                        </div>
+
+                        <div id="salesPipelineContent">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Projects View (Project Tracker) -->
+                    <div id="projectsView" class="hidden">
+                        <div class="page-header">
+                            <h1 class="page-title">Project Tracker</h1>
+                            <p class="page-subtitle">Track all active projects from PO received to completion</p>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <input type="text" id="pipelineSearch" class="form-input" placeholder="Search projects by customer, location, job number, or description..." oninput="loadPipeline()" style="max-width: 500px;">
                         </div>
 
                         <div id="pipelineContent">
