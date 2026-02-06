@@ -28,6 +28,15 @@ python3 -m http.server 8080
 5. Click "Unable to Complete" → Fill modal → Auto-moves to Shit List
 6. Switch to **Office** login → Go to **Jobs** → See same data with progress stats
 
+**Test v3.0 Features (Branch: `v3-feedback-implementation`):**
+1. Login as **Office/Admin** → Default view is now **Sales Pipeline** (not Project Tracker)
+2. See Sales Pipeline with 6 stages, A/B/C deal grading circles, deal values
+3. Go to **Project Tracker** (in Logistics section) → See post-sale jobs with dates, sorting, labor amounts
+4. Go to **Scheduling** → See "Confirmed" column with ✓✓/✓/— icons, 🚜 EQUIPMENT badges
+5. Go to **Jobs** → Find Fairview ES (Monday 2/3) → See green 🔒 Internal Notes section
+6. Login as **Field** → Go to **My Jobs** → See Ripley HS with amber Special Instructions box at top
+7. See Brentwood HS with 🚜 Equipment Rental Required badge
+
 ---
 
 ## Quick Reference
@@ -85,6 +94,15 @@ python3 -m http.server 8080
 - **Week Progress:** Visual progress tracker showing X/Y jobs completed with percentage
 - Status badges and action buttons on My Jobs (Field) and Jobs (Office/Admin) views
 - Status column added to Scheduling spreadsheet view
+
+**v3.0 Highlights (In Development - 16/17 Complete):**
+- **Sales Pipeline:** Pre-sale view with A/B/C deal grading, 6 Salesmate stages, deal values
+- **Project Tracker:** Post-sale operations view with date tracking (received, started, target, completed), oldest→newest sorting, labor amounts
+- **Special Instructions:** Prominent amber warning box at top of work orders for critical job info
+- **Confirmed Status:** Visual confirmation tracking (✓✓/✓/—) in schedule views
+- **Equipment Rental Tags:** 🚜 badges identify jobs requiring lifts/equipment
+- **Estimate Line Items:** Shipping and Labor as separate, visible line items
+- **Internal Notes:** Office-only notes section with 🔒 icon, not visible to customers/field
 
 **v2.0 Highlights:**
 - Field staff can create jobs from My Jobs view
@@ -205,6 +223,7 @@ python3 -m http.server 8080
 
 **Branch:** `v3-feedback-implementation`
 **Timeline:** 3-4 weeks (Feb 6 - Mar 7, 2026)
+**Status:** Phase 1 & 2 Complete (16/17 items) - Ready for Phase 3 Testing
 **Goal:** Address team feedback from Story (Director of Operations) and Atiba prototype review
 
 ### Key Changes: Sales vs Operations Separation
@@ -256,6 +275,21 @@ Split into two distinct views:
 16. ✅ Add Internal Notes field (not visible to customers)
 
 **Note:** Pink List/Go Backs tab already exists in Scheduling → Shit List (not duplicating)
+
+**Phase 2 Implementation Details (Completed Feb 6, 2026):**
+- **Special Instructions:** Amber warning box with ⚠️ icon, displays prominently at top of work order cards in My Jobs view
+- **Confirmed Status:** Added "Confirmed" column to schedule tables with visual indicators (✓✓ green = confirmed, ✓ orange = attempted, — gray = not confirmed)
+- **Equipment Rental:** 🚜 EQUIPMENT badge displays next to job names when equipment rental required, checkbox in schedule entry form
+- **Shipping Line Item:** Separate line in estimate breakdown between Parts and Labor, included in grand total
+- **Labor Line Item:** Already calculated, now explicitly shown as separate line (not buried in total)
+- **Internal Notes:** Green-bordered section with 🔒 icon, visible only in Office Jobs view, not shown to customers or field techs
+
+**Commits:**
+- `71e5a8a` - Special Instructions field
+- `f07d376` - Confirmed/Unconfirmed status column
+- `a33eb4b` - Equipment rental tag
+- `73c343e` - Shipping and Labor line items
+- `89106f6` - Internal Notes field
 
 #### **PHASE 3: Testing & Polish (Week 4)**
 17. Field beta testing with 2-3 techs
@@ -383,10 +417,11 @@ See `atiba-feedback-comparison.md` for detailed breakdown.
 ## Next Steps
 
 **Immediate (v3 Development - Feb 6-28):**
-1. **Week 1:** Phase 1 - Pipeline restructure (Sales vs Project Tracker separation)
-2. **Week 2:** Phase 2 - Quick win features (special instructions, confirmed status, estimate lines)
-3. **Week 3:** Field beta testing with 2-3 techs on real jobs
-4. **Week 4:** QB integration testing + bug fixes
+1. ✅ **Week 1 (Feb 6):** Phase 1 - Pipeline restructure complete (10 features)
+2. ✅ **Week 1 (Feb 6):** Phase 2 - Quick wins complete (6 features)
+3. **Week 2-3:** Phase 3 - Field beta testing with 2-3 techs on real jobs
+4. **Week 3-4:** QB integration testing + bug fixes
+5. **Week 4:** Merge `v3-feedback-implementation` → `main`, release v3.0.0
 
 **Post-v3 (March 2026):**
 1. Get Draper CSV and add to Airtable
