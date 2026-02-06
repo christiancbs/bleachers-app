@@ -119,7 +119,7 @@ function login(role) {
         loadOfficeDashboard();
         // Defer showing pipeline to next frame to ensure DOM is painted
         requestAnimationFrame(function() {
-            showView('projects'); // Default to Pipeline
+            showView('salesPipeline'); // Default to Sales Pipeline
         });
     } else {
         document.getElementById('techDashboard').classList.remove('hidden');
