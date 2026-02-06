@@ -140,6 +140,13 @@ function loadMyJobs() {
                             <div style="font-weight: 600; font-size: 15px;">${job.school}</div>
                             <span class="badge" style="background: ${statusStyle.bg}; color: ${statusStyle.color}; margin-left: 12px; white-space: nowrap;">${statusStyle.label}</span>
                         </div>
+                        ${job.specialInstructions ? `<div style="background: #fff3e0; border-left: 4px solid #f57c00; padding: 12px; margin-bottom: 12px; border-radius: 4px;">
+                            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                <span style="font-size: 16px;">⚠️</span>
+                                <strong style="color: #e65100; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Special Instructions</strong>
+                            </div>
+                            <div style="color: #5d4037; font-size: 14px; line-height: 1.4;">${job.specialInstructions}</div>
+                        </div>` : ''}
                         <div style="color: #495057; font-size: 14px; line-height: 1.5; margin-bottom: 8px;">
                             ${isContinued ? '<em>Continued from previous day</em>' : job.details}
                         </div>

@@ -83,6 +83,7 @@ function initializeSampleScheduleData() {
                 details: 'Install safety strap on Goal 5. Lift rental required - 40\' lift will be on site.',
                 tech: 'Field Tech',
                 partsLocation: 'TN Shop',
+                specialInstructions: 'Customer will have gym cleared by 8am. Enter through back door - front office doesn\'t open until 9.',
                 isPink: false,
                 status: 'complete',
                 completedAt: '2025-02-03T11:15:00'
@@ -199,6 +200,7 @@ function initializeSampleScheduleData() {
                 details: 'Replace 2 gear motors, install safety tape on all aisles',
                 tech: 'Field Tech',
                 partsLocation: 'TN Shop',
+                specialInstructions: 'School in session. Work during gym class break 1:30-3:00 PM only. Check in with front office first.',
                 isPink: false,
                 status: 'en_route'
             },
