@@ -188,6 +188,8 @@
             padding: 16px 0;
             overflow-y: auto;
             overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         .nav-item {
@@ -225,6 +227,52 @@
         .sidebar.collapsed .nav-item.active {
             border-left: none;
             border-bottom: 2px solid #4CAF50;
+        }
+
+        /* Expandable nav items */
+        .nav-item-expandable {
+            justify-content: flex-start;
+        }
+
+        .nav-expand-arrow {
+            margin-left: auto;
+            transition: transform 0.2s;
+            font-size: 16px;
+            opacity: 0.6;
+        }
+
+        .nav-item-expandable.open .nav-expand-arrow {
+            transform: rotate(90deg);
+        }
+
+        .nav-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+            background: rgba(0,0,0,0.15);
+        }
+
+        .nav-submenu.open {
+            max-height: 200px;
+        }
+
+        .nav-subitem {
+            padding-left: 52px !important;
+            font-size: 13px !important;
+        }
+
+        .nav-subitem span:first-child {
+            display: none;
+        }
+
+        .sidebar.collapsed .nav-submenu {
+            display: none;
+        }
+
+        /* Spacer to push Admin section to bottom */
+        .sidebar-spacer {
+            flex: 1;
+            min-height: 20px;
         }
 
         /* Hide divider label when collapsed */

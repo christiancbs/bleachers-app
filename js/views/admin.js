@@ -9,6 +9,7 @@ function saveEmployeesData() {
 
 function loadEmployees() {
     var tbody = document.getElementById('employeesTableBody');
+    if (!tbody) return;
     var roleColors = { Admin: '#dc3545', Office: '#0066cc', Inspector: '#28a745', Technician: '#6f42c1' };
     var html = '';
     EMPLOYEES.forEach(function(emp) {
@@ -25,6 +26,43 @@ function loadEmployees() {
             '</td></tr>';
     });
     tbody.innerHTML = html;
+}
+
+function loadEmployeesManage() {
+    var container = document.getElementById('employeesListManage');
+    var roleColors = { Admin: '#dc3545', Office: '#0066cc', Inspector: '#28a745', Technician: '#6f42c1' };
+
+    if (EMPLOYEES.length === 0) {
+        container.innerHTML = '<div class="empty-state" style="padding: 40px; text-align: center;"><div style="font-size: 48px; margin-bottom: 12px;">👥</div><p style="color: #6c757d;">No employees yet</p></div>';
+        return;
+    }
+
+    var html = '<div class="card"><div class="card-body" style="padding: 0;"><table style="width: 100%; border-collapse: collapse; font-size: 13px;">' +
+        '<thead><tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">' +
+        '<th style="padding: 10px 12px; text-align: left; font-weight: 600;">Name</th>' +
+        '<th style="padding: 10px 12px; text-align: left; font-weight: 600;">Role</th>' +
+        '<th style="padding: 10px 12px; text-align: left; font-weight: 600;">Email</th>' +
+        '<th style="padding: 10px 12px; text-align: left; font-weight: 600;">Phone</th>' +
+        '<th style="padding: 10px 12px; text-align: left; font-weight: 600;">Territory</th>' +
+        '<th style="padding: 10px 12px; text-align: center; font-weight: 600; width: 120px;">Actions</th>' +
+        '</tr></thead><tbody>';
+
+    EMPLOYEES.forEach(function(emp) {
+        var color = roleColors[emp.role] || '#6c757d';
+        html += '<tr style="border-bottom: 1px solid #f0f2f5;">' +
+            '<td style="padding: 12px; font-weight: 600;">' + emp.firstName + ' ' + emp.lastName + '</td>' +
+            '<td style="padding: 12px;"><span style="background:' + color + '15; color:' + color + '; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">' + emp.role + '</span></td>' +
+            '<td style="padding: 12px; color: #495057;">' + (emp.email || '—') + '</td>' +
+            '<td style="padding: 12px; color: #495057;">' + (emp.phone || '—') + '</td>' +
+            '<td style="padding: 12px; color: #495057;">' + (emp.territory || '—') + '</td>' +
+            '<td style="padding: 12px; text-align: center;">' +
+                '<button class="btn btn-sm" onclick="editEmployee(\'' + emp.id + '\')" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;">Edit</button>' +
+                '<button class="btn btn-sm" onclick="deleteEmployee(\'' + emp.id + '\')" style="padding: 4px 10px; font-size: 12px; color: #dc3545;">Delete</button>' +
+            '</td></tr>';
+    });
+
+    html += '</tbody></table></div></div>';
+    container.innerHTML = html;
 }
 
 function showAddEmployeeModal() {
@@ -95,13 +133,132 @@ function closeEmployeeModal() {
 }
 
 function loadDataManagement() {
-    switchDataTab('parts');
+    switchDataTab('employees');
+}
+
+function loadSettings() {
+    // Load user profile
+    loadUserProfile();
+
+    // Show QB section for Office and Admin
+    if (currentRole === 'office' || currentRole === 'admin') {
+        document.getElementById('settingsQBSection').classList.remove('hidden');
+        checkQuickBooksStatus();
+    } else {
+        document.getElementById('settingsQBSection').classList.add('hidden');
+    }
+
+    // Show Data Management section for Admin only
+    if (currentRole === 'admin') {
+        document.getElementById('settingsDataSection').classList.remove('hidden');
+        loadDataManagement();
+    } else {
+        document.getElementById('settingsDataSection').classList.add('hidden');
+    }
+}
+
+function loadUserProfile() {
+    // Load from localStorage or use defaults based on role
+    const savedProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+
+    document.getElementById('settingsUserName').value = savedProfile.name || document.getElementById('officeUserName')?.textContent || '';
+    document.getElementById('settingsUserPhone').value = savedProfile.phone || '';
+    document.getElementById('settingsUserEmail').value = savedProfile.email || '';
+}
+
+function saveUserProfile() {
+    const profile = {
+        name: document.getElementById('settingsUserName').value,
+        phone: document.getElementById('settingsUserPhone').value,
+        email: document.getElementById('settingsUserEmail').value
+    };
+
+    localStorage.setItem('userProfile', JSON.stringify(profile));
+
+    // Update the sidebar user name if changed
+    if (profile.name) {
+        const nameEl = document.getElementById('officeUserName');
+        if (nameEl) nameEl.textContent = profile.name;
+    }
+
+    alert('Profile saved!');
+}
+
+// Tech/Field Settings
+function loadTechSettings() {
+    const savedProfile = JSON.parse(localStorage.getItem('techUserProfile') || '{}');
+
+    document.getElementById('techSettingsUserName').value = savedProfile.name || document.getElementById('techUserName')?.textContent || '';
+    document.getElementById('techSettingsUserPhone').value = savedProfile.phone || '';
+    document.getElementById('techSettingsUserEmail').value = savedProfile.email || '';
+}
+
+function saveTechUserProfile() {
+    const profile = {
+        name: document.getElementById('techSettingsUserName').value,
+        phone: document.getElementById('techSettingsUserPhone').value,
+        email: document.getElementById('techSettingsUserEmail').value
+    };
+
+    localStorage.setItem('techUserProfile', JSON.stringify(profile));
+
+    // Update the sidebar user name if changed
+    if (profile.name) {
+        const nameEl = document.getElementById('techUserName');
+        if (nameEl) nameEl.textContent = profile.name;
+    }
+
+    alert('Profile saved!');
+}
+
+function checkQuickBooksStatus() {
+    const indicator = document.getElementById('qbStatusIndicator');
+    const statusText = document.getElementById('qbStatusText');
+    const statusDetail = document.getElementById('qbStatusDetail');
+    const reconnectBtn = document.getElementById('qbReconnectBtn');
+
+    // Check QB connection status via API
+    fetch('https://bleachers-api.vercel.app/api/auth/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.connected) {
+                indicator.style.background = '#4caf50';
+                statusText.textContent = 'Connected';
+                statusDetail.textContent = 'QuickBooks Online is connected and working';
+                reconnectBtn.style.display = 'none';
+            } else {
+                indicator.style.background = '#f44336';
+                statusText.textContent = 'Not Connected';
+                statusDetail.textContent = data.error || 'QuickBooks connection needs to be established';
+                reconnectBtn.style.display = 'block';
+            }
+        })
+        .catch(err => {
+            indicator.style.background = '#ff9800';
+            statusText.textContent = 'Unable to Check';
+            statusDetail.textContent = 'Could not reach the API to verify status';
+            reconnectBtn.style.display = 'block';
+        });
+}
+
+function reconnectQuickBooks() {
+    // Open QB OAuth flow in new window
+    window.open('https://bleachers-api.vercel.app/api/auth/connect', '_blank', 'width=600,height=700');
+
+    // Re-check status after a delay (user may complete OAuth)
+    setTimeout(checkQuickBooksStatus, 5000);
 }
 
 function switchDataTab(tab) {
+    // Hide all tabs
+    document.getElementById('dmEmployeesTab').classList.add('hidden');
     document.getElementById('dmPartsTab').classList.add('hidden');
     document.getElementById('dmImportTab').classList.add('hidden');
     document.getElementById('dmVendorsTab').classList.add('hidden');
+
+    // Reset all tab buttons
+    document.getElementById('dmTabEmployees').style.borderBottomColor = 'transparent';
+    document.getElementById('dmTabEmployees').style.color = '#6c757d';
     document.getElementById('dmTabParts').style.borderBottomColor = 'transparent';
     document.getElementById('dmTabParts').style.color = '#6c757d';
     document.getElementById('dmTabImport').style.borderBottomColor = 'transparent';
@@ -109,7 +266,12 @@ function switchDataTab(tab) {
     document.getElementById('dmTabVendors').style.borderBottomColor = 'transparent';
     document.getElementById('dmTabVendors').style.color = '#6c757d';
 
-    if (tab === 'parts') {
+    if (tab === 'employees') {
+        document.getElementById('dmEmployeesTab').classList.remove('hidden');
+        document.getElementById('dmTabEmployees').style.borderBottomColor = '#4f46e5';
+        document.getElementById('dmTabEmployees').style.color = '#4f46e5';
+        loadEmployeesManage();
+    } else if (tab === 'parts') {
         document.getElementById('dmPartsTab').classList.remove('hidden');
         document.getElementById('dmTabParts').style.borderBottomColor = '#4f46e5';
         document.getElementById('dmTabParts').style.color = '#4f46e5';

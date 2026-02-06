@@ -6,50 +6,190 @@ function loadOfficeDashboard() {
     updateDashboardStats();
 }
 
+// Track current estimates filter
+var currentEstimatesFilter = 'all';
+
 function loadEstimates() {
-    const list = document.getElementById('estimatesList');
-    const count = document.getElementById('pendingCount');
-    const searchEl = document.getElementById('estimateSearch');
+    // Update badge counts
+    const pendingCount = inspections.length + jobs.filter(j => j.status === 'estimate_sent').length;
+    const acceptedCount = jobs.filter(j => j.status === 'approved' || j.status === 'parts_ordered').length;
+
+    document.getElementById('estPendingCount').textContent = pendingCount;
+    document.getElementById('estAcceptedCount').textContent = acceptedCount;
+
+    // Load the current tab content
+    filterEstimates(currentEstimatesFilter);
+}
+
+function filterEstimates(filter) {
+    currentEstimatesFilter = filter;
+
+    // Update tab active states
+    document.getElementById('estFilterAll').classList.remove('active');
+    document.getElementById('estFilterPending').classList.remove('active');
+    document.getElementById('estFilterAccepted').classList.remove('active');
+    document.getElementById('estFilterCreate').classList.remove('active');
+    document.getElementById('estFilter' + filter.charAt(0).toUpperCase() + filter.slice(1)).classList.add('active');
+
+    // Hide all tab content
+    document.getElementById('estimatesAllTab').classList.add('hidden');
+    document.getElementById('estimatesPendingTab').classList.add('hidden');
+    document.getElementById('estimatesAcceptedTab').classList.add('hidden');
+    document.getElementById('estimatesCreateTab').classList.add('hidden');
+
+    // Show selected tab and load content
+    if (filter === 'all') {
+        document.getElementById('estimatesAllTab').classList.remove('hidden');
+        loadEstimatesAll();
+    } else if (filter === 'pending') {
+        document.getElementById('estimatesPendingTab').classList.remove('hidden');
+        loadEstimatesPending();
+    } else if (filter === 'accepted') {
+        document.getElementById('estimatesAcceptedTab').classList.remove('hidden');
+        loadEstimatesAccepted();
+    } else if (filter === 'create') {
+        document.getElementById('estimatesCreateTab').classList.remove('hidden');
+        initEstimateCreate();
+    }
+}
+
+function loadEstimatesAll() {
+    const list = document.getElementById('allEstimatesList');
+    const searchEl = document.getElementById('allEstimateSearch');
     const searchTerm = searchEl ? searchEl.value.toLowerCase() : '';
 
-    var filtered = inspections;
+    // Combine all estimates
+    var allItems = [];
+
+    inspections.forEach(insp => {
+        allItems.push({
+            id: insp.id,
+            customerName: insp.customerName,
+            location: insp.location,
+            inspectionType: insp.inspectionType,
+            createdAt: insp.createdAt,
+            status: 'pending',
+            jobNumber: null
+        });
+    });
+
+    jobs.filter(j => j.status === 'estimate_sent' || j.status === 'approved' || j.status === 'parts_ordered').forEach(j => {
+        allItems.push({
+            id: j.id,
+            customerName: j.customerName || j.customer,
+            location: j.locationName || j.location,
+            inspectionType: 'job',
+            createdAt: j.createdAt || new Date().toISOString(),
+            status: j.status === 'estimate_sent' ? 'pending' : 'accepted',
+            jobNumber: j.jobNumber
+        });
+    });
+
     if (searchTerm) {
-        filtered = inspections.filter(function(insp) {
-            return (insp.customerName || '').toLowerCase().includes(searchTerm) ||
-                   (insp.location || '').toLowerCase().includes(searchTerm) ||
-                   (insp.id || '').toLowerCase().includes(searchTerm);
+        allItems = allItems.filter(function(item) {
+            return (item.customerName || '').toLowerCase().includes(searchTerm) ||
+                   (item.location || '').toLowerCase().includes(searchTerm) ||
+                   (item.id || '').toLowerCase().includes(searchTerm);
         });
     }
 
-    count.textContent = filtered.length;
-
-    if (filtered.length === 0) {
-        list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>' + (searchTerm ? 'No estimates match your search' : 'No inspections pending review') + '</p></div>';
+    if (allItems.length === 0) {
+        list.innerHTML = '<div class="empty-state" style="padding: 40px;"><div class="empty-icon">📋</div><p>' + (searchTerm ? 'No estimates match your search' : 'No estimates') + '</p></div>';
     } else {
-        list.innerHTML = filtered.map(insp => {
-            const typeIcon = insp.inspectionType === 'basketball' ? '🏀' :
-                             insp.inspectionType === 'bleacher' ? '🏟️' :
-                             insp.inspectionType === 'outdoor' ? '🪑' : '📋';
-            const typeLabel = insp.inspectionType === 'basketball' ? 'Basketball' :
-                              insp.inspectionType === 'bleacher' ? 'Indoor Bleacher' :
-                              insp.inspectionType === 'outdoor' ? 'Outdoor Bleacher' : 'PSF';
+        list.innerHTML = allItems.map(item => {
+            const statusBadge = item.status === 'pending'
+                ? '<span class="badge badge-warning">Pending</span>'
+                : '<span class="badge badge-success">Accepted</span>';
+            const typeIcon = item.inspectionType === 'basketball' ? '🏀' :
+                             item.inspectionType === 'bleacher' ? '🏟️' :
+                             item.inspectionType === 'outdoor' ? '🪑' :
+                             item.inspectionType === 'job' ? '📄' : '📋';
             return `
-            <div class="inspection-item" onclick="viewEstimate('${insp.id}')">
+            <div class="inspection-item" onclick="viewEstimate('${item.id}')" style="padding: 16px; border-bottom: 1px solid #e9ecef; cursor: pointer;">
+                <div class="flex-between">
+                    <div>
+                        <div style="margin-bottom: 4px;">
+                            <span class="badge badge-info">${typeIcon}</span>
+                        </div>
+                        <strong>${item.customerName}</strong>
+                        <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">${item.location || 'No location specified'}</p>
+                        <p style="font-size: 12px; color: #6c757d; margin-top: 4px;">
+                            ${item.jobNumber ? 'Job #' + item.jobNumber + ' • ' : ''}${new Date(item.createdAt).toLocaleDateString()}
+                        </p>
+                    </div>
+                    ${statusBadge}
+                </div>
+            </div>
+        `}).join('');
+    }
+}
+
+function loadEstimatesPending() {
+    const list = document.getElementById('estimatesList');
+    const searchEl = document.getElementById('estimateSearch');
+    const searchTerm = searchEl ? searchEl.value.toLowerCase() : '';
+
+    // Combine inspections (PSFs) and jobs with estimate_sent status
+    var pendingItems = inspections.slice();
+    jobs.filter(j => j.status === 'estimate_sent').forEach(j => {
+        pendingItems.push({
+            id: j.id,
+            customerName: j.customerName || j.customer,
+            location: j.locationName || j.location,
+            inspectionType: 'job',
+            createdAt: j.createdAt || new Date().toISOString(),
+            jobNumber: j.jobNumber
+        });
+    });
+
+    if (searchTerm) {
+        pendingItems = pendingItems.filter(function(item) {
+            return (item.customerName || '').toLowerCase().includes(searchTerm) ||
+                   (item.location || '').toLowerCase().includes(searchTerm) ||
+                   (item.id || '').toLowerCase().includes(searchTerm);
+        });
+    }
+
+    if (pendingItems.length === 0) {
+        list.innerHTML = '<div class="empty-state" style="padding: 40px;"><div class="empty-icon">📋</div><p>' + (searchTerm ? 'No estimates match your search' : 'No pending estimates') + '</p></div>';
+    } else {
+        list.innerHTML = pendingItems.map(item => {
+            const typeIcon = item.inspectionType === 'basketball' ? '🏀' :
+                             item.inspectionType === 'bleacher' ? '🏟️' :
+                             item.inspectionType === 'outdoor' ? '🪑' :
+                             item.inspectionType === 'job' ? '📄' : '📋';
+            const typeLabel = item.inspectionType === 'basketball' ? 'Basketball' :
+                              item.inspectionType === 'bleacher' ? 'Indoor Bleacher' :
+                              item.inspectionType === 'outdoor' ? 'Outdoor Bleacher' :
+                              item.inspectionType === 'job' ? 'Estimate' : 'PSF';
+            return `
+            <div class="inspection-item" onclick="viewEstimate('${item.id}')" style="padding: 16px; border-bottom: 1px solid #e9ecef; cursor: pointer;">
                 <div class="flex-between">
                     <div>
                         <div style="margin-bottom: 4px;">
                             <span class="badge badge-info">${typeIcon} ${typeLabel}</span>
                         </div>
-                        <strong>${insp.customerName}</strong>
-                        <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">${insp.location || 'No location specified'}</p>
+                        <strong>${item.customerName}</strong>
+                        <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">${item.location || 'No location specified'}</p>
                         <p style="font-size: 12px; color: #6c757d; margin-top: 4px;">
-                            ${new Date(insp.createdAt).toLocaleDateString()} • ${insp.selectedParts?.length || 0} parts
+                            ${item.jobNumber ? 'Job #' + item.jobNumber + ' • ' : ''}${new Date(item.createdAt).toLocaleDateString()}
                         </p>
                     </div>
-                    <span class="badge badge-warning">pending</span>
+                    <span class="badge badge-warning">Pending</span>
                 </div>
             </div>
         `}).join('');
+    }
+}
+
+function loadEstimatesList() {
+    // Called by search input - just reload current tab
+    if (currentEstimatesFilter === 'all') {
+        loadEstimatesAll();
+    } else if (currentEstimatesFilter === 'pending') {
+        loadEstimatesPending();
+    } else if (currentEstimatesFilter === 'accepted') {
+        loadEstimatesAccepted();
     }
 }
 
@@ -242,6 +382,52 @@ function generateEstimate(inspectionId, total) {
     }
 }
 
+function loadEstimatesAccepted() {
+    const list = document.getElementById('acceptedEstimatesList');
+    const searchEl = document.getElementById('acceptedEstimateSearch');
+    const searchTerm = searchEl ? searchEl.value.toLowerCase() : '';
+
+    // Filter for accepted/approved estimates
+    var acceptedEstimates = jobs.filter(j => j.status === 'approved' || j.status === 'parts_ordered');
+
+    if (searchTerm) {
+        acceptedEstimates = acceptedEstimates.filter(function(est) {
+            return (est.customerName || est.customer || '').toLowerCase().includes(searchTerm) ||
+                   (est.locationName || est.location || '').toLowerCase().includes(searchTerm) ||
+                   (est.jobNumber || est.id || '').toString().toLowerCase().includes(searchTerm);
+        });
+    }
+
+    if (acceptedEstimates.length === 0) {
+        list.innerHTML = '<div class="empty-state" style="padding: 40px;"><div class="empty-icon">✅</div><p>' + (searchTerm ? 'No estimates match your search' : 'No accepted estimates') + '</p></div>';
+    } else {
+        list.innerHTML = acceptedEstimates.map(est => `
+            <div class="inspection-item" onclick="viewEstimate('${est.id}')" style="padding: 16px; border-bottom: 1px solid #e9ecef; cursor: pointer;">
+                <div class="flex-between">
+                    <div>
+                        <strong>${est.customerName || est.customer}</strong>
+                        <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">${est.locationName || est.location || 'No location'}</p>
+                        <p style="font-size: 12px; color: #6c757d; margin-top: 4px;">
+                            Job #${est.jobNumber || est.id} • ${est.jobType || 'Service'}
+                        </p>
+                    </div>
+                    <span class="badge badge-success">Accepted</span>
+                </div>
+            </div>
+        `).join('');
+    }
+}
+
+function initEstimateCreate() {
+    const form = document.getElementById('createEstimateForm');
+    form.innerHTML = `
+        <p style="color: #6c757d; text-align: center; padding: 40px;">
+            Estimate creation form coming soon.<br><br>
+            For now, use the inspection flow to generate estimates.
+        </p>
+    `;
+}
+
 // PIPELINE_JOBS and pipelineFilter are defined in js/data.js
 
 function loadPipeline() {
@@ -386,12 +572,15 @@ function filterPipelineTerritory(val) {
     loadPipeline();
 }
 
-function loadAccounts(filter = '') {
+function loadAccounts(filter = '', territory = '') {
     const list = document.getElementById('accountsList');
     const countEl = document.getElementById('accountCount');
     const searchTerm = filter.toLowerCase();
 
     const filteredCustomers = CUSTOMERS.filter(c => {
+        // Territory filter
+        if (territory && c.territory !== territory) return false;
+        // Search filter
         if (!searchTerm) return true;
         if (c.name.toLowerCase().includes(searchTerm)) return true;
         if (c.locations.some(l => l.name.toLowerCase().includes(searchTerm))) return true;
@@ -434,7 +623,8 @@ function loadAccounts(filter = '') {
 
 function filterAccounts() {
     const searchTerm = document.getElementById('accountSearch').value;
-    loadAccounts(searchTerm);
+    const territory = document.getElementById('accountTerritoryFilter').value;
+    loadAccounts(searchTerm, territory);
 }
 
 // Store current customer ID for CRUD operations

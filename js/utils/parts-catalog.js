@@ -240,6 +240,141 @@ async function searchParts() {
     }
 }
 
+// Tech/Field parts catalog search (read-only, no selection)
+async function searchTechParts() {
+    const searchTerm = document.getElementById('techPartSearchInput').value.trim();
+    const results = document.getElementById('techPartSearchResults');
+
+    if (!searchTerm) {
+        results.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">Enter a part name, number, or description to search</div>';
+        return;
+    }
+
+    if (searchTerm.length < 2) {
+        results.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">Enter at least 2 characters</div>';
+        return;
+    }
+
+    results.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">🔍 Searching parts catalog...</div>';
+
+    try {
+        const formula = `OR(
+            FIND(LOWER("${searchTerm}"), LOWER({Product Name})),
+            FIND(LOWER("${searchTerm}"), LOWER({Part Number})),
+            FIND(LOWER("${searchTerm}"), LOWER({Description})),
+            FIND(LOWER("${searchTerm}"), LOWER({Category}))
+        )`;
+        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}?filterByFormula=${encodeURIComponent(formula)}&pageSize=30`;
+
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` }
+        });
+
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
+
+        const data = await response.json();
+        const records = data.records;
+
+        if (records.length === 0) {
+            results.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">No parts found matching your search</div>';
+        } else {
+            results.innerHTML = `
+                <p style="font-size: 12px; color: #6c757d; margin: 12px 0;">Found ${records.length} parts</p>
+                ${records.map(record => {
+                    const part = record.fields;
+                    const price = parseFloat(part['Price 2025']) || 0;
+                    const priceDisplay = part['Price 2025'] === 'Call for Price' ? 'Call for Price' : (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
+                    return `
+                        <div class="part-result" style="cursor: default;">
+                            <div style="margin-bottom: 8px;">
+                                <span class="part-number">${part['Part Number'] || '—'}</span>
+                                <span class="part-vendor">Hussey Seating Co</span>
+                            </div>
+                            <div class="part-description">${part['Product Name'] || 'Unknown Part'}</div>
+                            <div class="part-meta">
+                                <span class="part-category">${part['Category'] || ''}</span>
+                                <span class="part-price">${priceDisplay}</span>
+                            </div>
+                            ${part['Product Line'] ? `<div style="font-size: 11px; color: #888; margin-top: 4px;">${part['Product Line']}</div>` : ''}
+                        </div>
+                    `;
+                }).join('')}
+            `;
+        }
+    } catch (err) {
+        results.innerHTML = `<div style="text-align: center; padding: 20px; color: #dc3545;">Search failed: ${err.message}</div>`;
+    }
+}
+
+// Office parts catalog search (read-only directory)
+async function searchOfficeParts() {
+    const searchTerm = document.getElementById('officePartSearchInput').value.trim();
+    const results = document.getElementById('officePartSearchResults');
+
+    if (!searchTerm) {
+        results.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Enter a part name, number, or description to search the catalog</div>';
+        return;
+    }
+
+    if (searchTerm.length < 2) {
+        results.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">Enter at least 2 characters</div>';
+        return;
+    }
+
+    results.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">🔍 Searching parts catalog...</div>';
+
+    try {
+        const formula = `OR(
+            FIND(LOWER("${searchTerm}"), LOWER({Product Name})),
+            FIND(LOWER("${searchTerm}"), LOWER({Part Number})),
+            FIND(LOWER("${searchTerm}"), LOWER({Description})),
+            FIND(LOWER("${searchTerm}"), LOWER({Category})),
+            FIND(LOWER("${searchTerm}"), LOWER({Subcategory})),
+            FIND(LOWER("${searchTerm}"), LOWER({Product Line}))
+        )`;
+        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}?filterByFormula=${encodeURIComponent(formula)}&pageSize=50`;
+
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` }
+        });
+
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
+
+        const data = await response.json();
+        const records = data.records;
+
+        if (records.length === 0) {
+            results.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">No parts found matching your search</div>';
+        } else {
+            results.innerHTML = `
+                <p style="font-size: 12px; color: #6c757d; margin: 12px 0;">Found ${records.length} parts</p>
+                ${records.map(record => {
+                    const part = record.fields;
+                    const price = parseFloat(part['Price 2025']) || 0;
+                    const priceDisplay = part['Price 2025'] === 'Call for Price' ? 'Call for Price' : (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
+                    return `
+                        <div class="part-result" style="cursor: default;">
+                            <div style="margin-bottom: 8px;">
+                                <span class="part-number">${part['Part Number'] || '—'}</span>
+                                <span class="part-vendor">Hussey Seating Co</span>
+                            </div>
+                            <div class="part-description">${part['Product Name'] || 'Unknown Part'}</div>
+                            <div class="part-meta">
+                                <span class="part-category">${part['Category'] || ''}</span>
+                                <span class="part-price">${priceDisplay}</span>
+                            </div>
+                            ${part['Product Line'] ? `<div style="font-size: 11px; color: #888; margin-top: 4px;">${part['Product Line']}</div>` : ''}
+                            ${part['Description'] ? `<div style="font-size: 12px; color: #666; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">${part['Description']}</div>` : ''}
+                        </div>
+                    `;
+                }).join('')}
+            `;
+        }
+    } catch (err) {
+        results.innerHTML = `<div style="text-align: center; padding: 20px; color: #dc3545;">Search failed: ${err.message}</div>`;
+    }
+}
+
 function selectPart(recordId) {
     // Get part data from stored search results
     const partData = searchResults[recordId];
