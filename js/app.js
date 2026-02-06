@@ -104,7 +104,10 @@ function login(role) {
             document.getElementById('officeUserName').textContent = 'Office Manager';
         }
         loadOfficeDashboard();
-        showView('projects'); // Default to Pipeline
+        // Defer showing pipeline to next frame to ensure DOM is painted
+        requestAnimationFrame(function() {
+            showView('projects'); // Default to Pipeline
+        });
     } else {
         document.getElementById('techDashboard').classList.remove('hidden');
         loadTechDashboard();
@@ -180,8 +183,12 @@ function showView(view) {
     } else if (view === 'projects') {
         document.getElementById('projectsView').classList.remove('hidden');
         setActiveNav('projects');
-        // Use setTimeout to ensure DOM is ready before loading content
-        setTimeout(function() { loadPipeline(); }, 0);
+        // Use requestAnimationFrame to ensure view is painted before loading content
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                loadPipeline();
+            });
+        });
     } else if (view === 'accounts') {
         document.getElementById('accountsView').classList.remove('hidden');
         setActiveNav('accounts');
