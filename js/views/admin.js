@@ -332,6 +332,9 @@ function switchDataTab(tab) {
 var partImageData = null;
 
 async function loadAdminParts() {
+    var tbody = document.getElementById('dmPartsTableBody');
+    tbody.innerHTML = '<tr><td colspan="6" style="padding: 24px; text-align: center; color: #6c757d;">Loading parts...</td></tr>';
+
     try {
         var data = await PartsAPI.search('', null, null, 100);
         ADMIN_PARTS = data.parts;
@@ -346,24 +349,46 @@ async function loadAdminParts() {
             catSelect.innerHTML += '<option value="' + c + '">' + c + '</option>';
         });
         catSelect.value = currentVal;
-        filterAdminParts();
+        renderAdminPartsTable(ADMIN_PARTS);
     } catch (err) {
         console.error('Failed to load parts:', err);
-        document.getElementById('dmPartsTableBody').innerHTML = '<tr><td colspan="6" style="padding: 24px; text-align: center; color: #dc3545;">Failed to load parts: ' + err.message + '</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="padding: 24px; text-align: center; color: #dc3545;">Failed to load parts: ' + err.message + '</td></tr>';
     }
 }
 
-function filterAdminParts() {
-    var search = (document.getElementById('dmPartsSearch').value || '').toLowerCase();
+var adminPartsSearchTimeout = null;
+
+async function filterAdminParts() {
+    var search = (document.getElementById('dmPartsSearch').value || '').trim();
     var cat = document.getElementById('dmPartsCategoryFilter').value;
-    var filtered = ADMIN_PARTS.filter(function(p) {
-        var matchSearch = !search || (p.partNumber || '').toLowerCase().indexOf(search) !== -1 || (p.productName || '').toLowerCase().indexOf(search) !== -1 || (p.category || '').toLowerCase().indexOf(search) !== -1 || (p.vendor || '').toLowerCase().indexOf(search) !== -1;
-        var matchCat = !cat || p.category === cat;
-        return matchSearch && matchCat;
-    });
+    var tbody = document.getElementById('dmPartsTableBody');
+
+    // Debounce API calls
+    if (adminPartsSearchTimeout) clearTimeout(adminPartsSearchTimeout);
+
+    // For empty search, show initial load
+    if (!search && !cat) {
+        loadAdminParts();
+        return;
+    }
+
+    adminPartsSearchTimeout = setTimeout(async function() {
+        tbody.innerHTML = '<tr><td colspan="6" style="padding: 24px; text-align: center; color: #6c757d;">Searching...</td></tr>';
+
+        try {
+            var data = await PartsAPI.search(search, cat, null, 100);
+            ADMIN_PARTS = data.parts;
+            renderAdminPartsTable(data.parts);
+        } catch (err) {
+            tbody.innerHTML = '<tr><td colspan="6" style="padding: 24px; text-align: center; color: #dc3545;">Search failed: ' + err.message + '</td></tr>';
+        }
+    }, 300);
+}
+
+function renderAdminPartsTable(parts) {
     var tbody = document.getElementById('dmPartsTableBody');
     var html = '';
-    filtered.slice(0, 100).forEach(function(p) {
+    parts.slice(0, 100).forEach(function(p) {
         var imgHtml = p.imageUrl ? '<img src="' + p.imageUrl + '" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px; margin-right: 8px; vertical-align: middle;">' : '';
         html += '<tr style="border-bottom: 1px solid #f0f2f5;">' +
             '<td style="padding: 10px 12px; font-family: monospace; font-size: 12px;">' + (p.partNumber || '—') + '</td>' +
@@ -377,7 +402,7 @@ function filterAdminParts() {
             '</td></tr>';
     });
     tbody.innerHTML = html || '<tr><td colspan="6" style="padding: 24px; text-align: center; color: #6c757d;">No parts found</td></tr>';
-    document.getElementById('dmPartsCount').textContent = 'Showing ' + Math.min(filtered.length, 100) + ' of ' + filtered.length + ' parts (' + ADMIN_PARTS.length + ' total)';
+    document.getElementById('dmPartsCount').textContent = 'Showing ' + Math.min(parts.length, 100) + ' of ' + parts.length + ' parts';
 }
 
 function showAddPartModal() {
