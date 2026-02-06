@@ -171,65 +171,41 @@ async function searchParts() {
         return;
     }
 
-    results.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">🔍 Searching 2,142 Hussey parts...</div>';
+    results.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Searching parts catalog...</div>';
 
     try {
-        // Build Airtable filter formula
-        let filters = [];
-        if (searchTerm) {
-            filters.push(`OR(
-                FIND(LOWER("${searchTerm}"), LOWER({Product Name})),
-                FIND(LOWER("${searchTerm}"), LOWER({Part Number})),
-                FIND(LOWER("${searchTerm}"), LOWER({Description})),
-                FIND(LOWER("${searchTerm}"), LOWER({Category})),
-                FIND(LOWER("${searchTerm}"), LOWER({Subcategory})),
-                FIND(LOWER("${searchTerm}"), LOWER({Product Line})),
-                FIND(LOWER("${searchTerm}"), LOWER({Model Info}))
-            )`);
-        }
-        if (category) {
-            filters.push(`{Category} = "${category}"`);
-        }
-
-        const formula = filters.length > 1 ? `AND(${filters.join(',')})` : filters[0];
-        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}?filterByFormula=${encodeURIComponent(formula)}&pageSize=50`;
-
-        const response = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` }
-        });
-
-        if (!response.ok) {
-            throw new Error(`API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const records = data.records;
+        const data = await PartsAPI.search(searchTerm, category, null, 50);
 
         // Store results for selection
         searchResults = {};
-        records.forEach(r => { searchResults[r.id] = r.fields; });
+        data.parts.forEach(p => { searchResults[p.id] = p; });
 
-        if (records.length === 0) {
+        if (data.parts.length === 0) {
             results.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">No parts found matching your search</div>';
         } else {
             results.innerHTML = `
-                <p style="font-size: 12px; color: #6c757d; margin: 12px 0;">Found ${records.length} parts from Hussey catalog</p>
-                ${records.map(record => {
-                    const part = record.fields;
-                    const price = parseFloat(part['Price 2025']) || 0;
-                    const priceDisplay = part['Price 2025'] === 'Call for Price' ? 'Call for Price' : (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
+                <p style="font-size: 12px; color: #6c757d; margin: 12px 0;">Found ${data.parts.length} parts</p>
+                ${data.parts.map(part => {
+                    const price = parseFloat(part.price) || 0;
+                    const priceDisplay = part.priceNote || (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
+                    const imageHtml = part.imageUrl
+                        ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px;">`
+                        : '';
                     return `
-                        <div class="part-result" onclick="selectPart('${record.id}')">
-                            <div style="margin-bottom: 8px;">
-                                <span class="part-number">${part['Part Number'] || '—'}</span>
-                                <span class="part-vendor">Hussey Seating Co</span>
+                        <div class="part-result" onclick="selectPart('${part.id}')" style="display: flex; align-items: flex-start;">
+                            ${imageHtml}
+                            <div style="flex: 1;">
+                                <div style="margin-bottom: 8px;">
+                                    <span class="part-number">${part.partNumber || '—'}</span>
+                                    <span class="part-vendor">${part.vendor || 'Hussey Seating Co'}</span>
+                                </div>
+                                <div class="part-description">${part.productName || 'Unknown Part'}</div>
+                                <div class="part-meta">
+                                    <span class="part-category">${part.category || ''}</span>
+                                    <span class="part-price">${priceDisplay}</span>
+                                </div>
+                                ${part.productLine ? `<div style="font-size: 11px; color: #888; margin-top: 4px;">${part.productLine}</div>` : ''}
                             </div>
-                            <div class="part-description">${part['Product Name'] || 'Unknown Part'}</div>
-                            <div class="part-meta">
-                                <span class="part-category">${part['Category'] || ''}</span>
-                                <span class="part-price">${priceDisplay}</span>
-                            </div>
-                            ${part['Product Line'] ? `<div style="font-size: 11px; color: #888; margin-top: 4px;">${part['Product Line']}</div>` : ''}
                         </div>
                     `;
                 }).join('')}
@@ -255,47 +231,37 @@ async function searchTechParts() {
         return;
     }
 
-    results.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">🔍 Searching parts catalog...</div>';
+    results.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Searching parts catalog...</div>';
 
     try {
-        const formula = `OR(
-            FIND(LOWER("${searchTerm}"), LOWER({Product Name})),
-            FIND(LOWER("${searchTerm}"), LOWER({Part Number})),
-            FIND(LOWER("${searchTerm}"), LOWER({Description})),
-            FIND(LOWER("${searchTerm}"), LOWER({Category}))
-        )`;
-        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}?filterByFormula=${encodeURIComponent(formula)}&pageSize=30`;
+        const data = await PartsAPI.search(searchTerm, null, null, 30);
 
-        const response = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` }
-        });
-
-        if (!response.ok) throw new Error(`API error: ${response.status}`);
-
-        const data = await response.json();
-        const records = data.records;
-
-        if (records.length === 0) {
+        if (data.parts.length === 0) {
             results.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">No parts found matching your search</div>';
         } else {
             results.innerHTML = `
-                <p style="font-size: 12px; color: #6c757d; margin: 12px 0;">Found ${records.length} parts</p>
-                ${records.map(record => {
-                    const part = record.fields;
-                    const price = parseFloat(part['Price 2025']) || 0;
-                    const priceDisplay = part['Price 2025'] === 'Call for Price' ? 'Call for Price' : (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
+                <p style="font-size: 12px; color: #6c757d; margin: 12px 0;">Found ${data.parts.length} parts</p>
+                ${data.parts.map(part => {
+                    const price = parseFloat(part.price) || 0;
+                    const priceDisplay = part.priceNote || (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
+                    const imageHtml = part.imageUrl
+                        ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px;">`
+                        : '';
                     return `
-                        <div class="part-result" style="cursor: default;">
-                            <div style="margin-bottom: 8px;">
-                                <span class="part-number">${part['Part Number'] || '—'}</span>
-                                <span class="part-vendor">Hussey Seating Co</span>
+                        <div class="part-result" style="cursor: default; display: flex; align-items: flex-start;">
+                            ${imageHtml}
+                            <div style="flex: 1;">
+                                <div style="margin-bottom: 8px;">
+                                    <span class="part-number">${part.partNumber || '—'}</span>
+                                    <span class="part-vendor">${part.vendor || 'Hussey Seating Co'}</span>
+                                </div>
+                                <div class="part-description">${part.productName || 'Unknown Part'}</div>
+                                <div class="part-meta">
+                                    <span class="part-category">${part.category || ''}</span>
+                                    <span class="part-price">${priceDisplay}</span>
+                                </div>
+                                ${part.productLine ? `<div style="font-size: 11px; color: #888; margin-top: 4px;">${part.productLine}</div>` : ''}
                             </div>
-                            <div class="part-description">${part['Product Name'] || 'Unknown Part'}</div>
-                            <div class="part-meta">
-                                <span class="part-category">${part['Category'] || ''}</span>
-                                <span class="part-price">${priceDisplay}</span>
-                            </div>
-                            ${part['Product Line'] ? `<div style="font-size: 11px; color: #888; margin-top: 4px;">${part['Product Line']}</div>` : ''}
                         </div>
                     `;
                 }).join('')}
@@ -321,50 +287,38 @@ async function searchOfficeParts() {
         return;
     }
 
-    results.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">🔍 Searching parts catalog...</div>';
+    results.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Searching parts catalog...</div>';
 
     try {
-        const formula = `OR(
-            FIND(LOWER("${searchTerm}"), LOWER({Product Name})),
-            FIND(LOWER("${searchTerm}"), LOWER({Part Number})),
-            FIND(LOWER("${searchTerm}"), LOWER({Description})),
-            FIND(LOWER("${searchTerm}"), LOWER({Category})),
-            FIND(LOWER("${searchTerm}"), LOWER({Subcategory})),
-            FIND(LOWER("${searchTerm}"), LOWER({Product Line}))
-        )`;
-        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}?filterByFormula=${encodeURIComponent(formula)}&pageSize=50`;
+        const data = await PartsAPI.search(searchTerm, null, null, 50);
 
-        const response = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` }
-        });
-
-        if (!response.ok) throw new Error(`API error: ${response.status}`);
-
-        const data = await response.json();
-        const records = data.records;
-
-        if (records.length === 0) {
+        if (data.parts.length === 0) {
             results.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">No parts found matching your search</div>';
         } else {
             results.innerHTML = `
-                <p style="font-size: 12px; color: #6c757d; margin: 12px 0;">Found ${records.length} parts</p>
-                ${records.map(record => {
-                    const part = record.fields;
-                    const price = parseFloat(part['Price 2025']) || 0;
-                    const priceDisplay = part['Price 2025'] === 'Call for Price' ? 'Call for Price' : (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
+                <p style="font-size: 12px; color: #6c757d; margin: 12px 0;">Found ${data.parts.length} parts</p>
+                ${data.parts.map(part => {
+                    const price = parseFloat(part.price) || 0;
+                    const priceDisplay = part.priceNote || (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
+                    const imageHtml = part.imageUrl
+                        ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px;">`
+                        : '';
                     return `
-                        <div class="part-result" style="cursor: default;">
-                            <div style="margin-bottom: 8px;">
-                                <span class="part-number">${part['Part Number'] || '—'}</span>
-                                <span class="part-vendor">Hussey Seating Co</span>
+                        <div class="part-result" style="cursor: default; display: flex; align-items: flex-start;">
+                            ${imageHtml}
+                            <div style="flex: 1;">
+                                <div style="margin-bottom: 8px;">
+                                    <span class="part-number">${part.partNumber || '—'}</span>
+                                    <span class="part-vendor">${part.vendor || 'Hussey Seating Co'}</span>
+                                </div>
+                                <div class="part-description">${part.productName || 'Unknown Part'}</div>
+                                <div class="part-meta">
+                                    <span class="part-category">${part.category || ''}</span>
+                                    <span class="part-price">${priceDisplay}</span>
+                                </div>
+                                ${part.productLine ? `<div style="font-size: 11px; color: #888; margin-top: 4px;">${part.productLine}</div>` : ''}
+                                ${part.description ? `<div style="font-size: 12px; color: #666; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">${part.description}</div>` : ''}
                             </div>
-                            <div class="part-description">${part['Product Name'] || 'Unknown Part'}</div>
-                            <div class="part-meta">
-                                <span class="part-category">${part['Category'] || ''}</span>
-                                <span class="part-price">${priceDisplay}</span>
-                            </div>
-                            ${part['Product Line'] ? `<div style="font-size: 11px; color: #888; margin-top: 4px;">${part['Product Line']}</div>` : ''}
-                            ${part['Description'] ? `<div style="font-size: 12px; color: #666; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">${part['Description']}</div>` : ''}
                         </div>
                     `;
                 }).join('')}
@@ -383,21 +337,21 @@ function selectPart(recordId) {
         return;
     }
 
-    const partName = partData['Product Name'] || 'Unknown Part';
+    const partName = partData.productName || 'Unknown Part';
     const quantity = parseInt(prompt(`How many "${partName}"?`, '1'));
 
     if (quantity > 0) {
         if (!currentInspection.selectedParts) currentInspection.selectedParts = [];
 
-        // Convert Airtable format to our internal format
+        // Part data is already in correct format from API
         const part = {
             id: recordId,
-            partNumber: partData['Part Number'] || '—',
-            description: partData['Product Name'] || 'Unknown Part',
-            vendor: 'Hussey Seating Co',
-            category: partData['Category'] || '',
-            price: parseFloat(partData['Price 2025']) || 0,
-            productLine: partData['Product Line'] || '',
+            partNumber: partData.partNumber || '—',
+            description: partData.productName || 'Unknown Part',
+            vendor: partData.vendor || 'Hussey Seating Co',
+            category: partData.category || '',
+            price: parseFloat(partData.price) || 0,
+            productLine: partData.productLine || '',
             quantity: quantity
         };
 

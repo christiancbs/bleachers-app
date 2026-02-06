@@ -266,6 +266,7 @@ function switchDataTab(tab) {
     document.getElementById('dmImportTab').classList.add('hidden');
     document.getElementById('dmVendorsTab').classList.add('hidden');
     document.getElementById('dmBulletinsTab').classList.add('hidden');
+    document.getElementById('dmImagesTab').classList.add('hidden');
 
     // Reset all tab buttons
     document.getElementById('dmTabEmployees').style.borderBottomColor = 'transparent';
@@ -278,6 +279,8 @@ function switchDataTab(tab) {
     document.getElementById('dmTabVendors').style.color = '#6c757d';
     document.getElementById('dmTabBulletins').style.borderBottomColor = 'transparent';
     document.getElementById('dmTabBulletins').style.color = '#6c757d';
+    document.getElementById('dmTabImages').style.borderBottomColor = 'transparent';
+    document.getElementById('dmTabImages').style.color = '#6c757d';
 
     if (tab === 'employees') {
         document.getElementById('dmEmployeesTab').classList.remove('hidden');
@@ -303,6 +306,10 @@ function switchDataTab(tab) {
         document.getElementById('dmTabBulletins').style.borderBottomColor = '#4f46e5';
         document.getElementById('dmTabBulletins').style.color = '#4f46e5';
         loadBulletinsManage();
+    } else if (tab === 'images') {
+        document.getElementById('dmImagesTab').classList.remove('hidden');
+        document.getElementById('dmTabImages').style.borderBottomColor = '#4f46e5';
+        document.getElementById('dmTabImages').style.color = '#4f46e5';
     }
 }
 
@@ -312,37 +319,48 @@ function switchDataTab(tab) {
 // ==========================================
 
 // Parts Catalog
-function loadAdminParts() {
-    // Populate category filter
-    var cats = {};
-    ADMIN_PARTS.forEach(function(p) { if (p.category) cats[p.category] = true; });
-    var catSelect = document.getElementById('dmPartsCategoryFilter');
-    var currentVal = catSelect.value;
-    catSelect.innerHTML = '<option value="">All Categories</option>';
-    Object.keys(cats).sort().forEach(function(c) {
-        catSelect.innerHTML += '<option value="' + c + '">' + c + '</option>';
-    });
-    catSelect.value = currentVal;
-    filterAdminParts();
+var partImageData = null;
+
+async function loadAdminParts() {
+    try {
+        var data = await PartsAPI.search('', null, null, 100);
+        ADMIN_PARTS = data.parts;
+
+        // Populate category filter
+        var cats = {};
+        ADMIN_PARTS.forEach(function(p) { if (p.category) cats[p.category] = true; });
+        var catSelect = document.getElementById('dmPartsCategoryFilter');
+        var currentVal = catSelect.value;
+        catSelect.innerHTML = '<option value="">All Categories</option>';
+        Object.keys(cats).sort().forEach(function(c) {
+            catSelect.innerHTML += '<option value="' + c + '">' + c + '</option>';
+        });
+        catSelect.value = currentVal;
+        filterAdminParts();
+    } catch (err) {
+        console.error('Failed to load parts:', err);
+        document.getElementById('dmPartsTableBody').innerHTML = '<tr><td colspan="6" style="padding: 24px; text-align: center; color: #dc3545;">Failed to load parts: ' + err.message + '</td></tr>';
+    }
 }
 
 function filterAdminParts() {
     var search = (document.getElementById('dmPartsSearch').value || '').toLowerCase();
     var cat = document.getElementById('dmPartsCategoryFilter').value;
     var filtered = ADMIN_PARTS.filter(function(p) {
-        var matchSearch = !search || (p.partNum || '').toLowerCase().indexOf(search) !== -1 || (p.name || '').toLowerCase().indexOf(search) !== -1 || (p.category || '').toLowerCase().indexOf(search) !== -1 || (p.vendor || '').toLowerCase().indexOf(search) !== -1;
+        var matchSearch = !search || (p.partNumber || '').toLowerCase().indexOf(search) !== -1 || (p.productName || '').toLowerCase().indexOf(search) !== -1 || (p.category || '').toLowerCase().indexOf(search) !== -1 || (p.vendor || '').toLowerCase().indexOf(search) !== -1;
         var matchCat = !cat || p.category === cat;
         return matchSearch && matchCat;
     });
     var tbody = document.getElementById('dmPartsTableBody');
     var html = '';
     filtered.slice(0, 100).forEach(function(p) {
+        var imgHtml = p.imageUrl ? '<img src="' + p.imageUrl + '" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px; margin-right: 8px; vertical-align: middle;">' : '';
         html += '<tr style="border-bottom: 1px solid #f0f2f5;">' +
-            '<td style="padding: 10px 12px; font-family: monospace; font-size: 12px;">' + (p.partNum || '—') + '</td>' +
-            '<td style="padding: 10px 12px; font-weight: 500;">' + p.name + '</td>' +
+            '<td style="padding: 10px 12px; font-family: monospace; font-size: 12px;">' + (p.partNumber || '—') + '</td>' +
+            '<td style="padding: 10px 12px; font-weight: 500;">' + imgHtml + (p.productName || '') + '</td>' +
             '<td style="padding: 10px 12px; color: #6c757d;">' + (p.category || '—') + '</td>' +
-            '<td style="padding: 10px 12px; color: #6c757d;">' + p.vendor + '</td>' +
-            '<td style="padding: 10px 12px; text-align: right; font-weight: 600;">$' + (p.price || 0).toFixed(2) + '</td>' +
+            '<td style="padding: 10px 12px; color: #6c757d;">' + (p.vendor || '') + '</td>' +
+            '<td style="padding: 10px 12px; text-align: right; font-weight: 600;">$' + (parseFloat(p.price) || 0).toFixed(2) + '</td>' +
             '<td style="padding: 10px 12px; text-align: center;">' +
                 '<button class="btn btn-sm" onclick="editPart(\'' + p.id + '\')" style="padding: 4px 10px; font-size: 12px; margin-right: 4px;">Edit</button>' +
                 '<button class="btn btn-sm" onclick="deletePart(\'' + p.id + '\')" style="padding: 4px 10px; font-size: 12px; color: #dc3545;">Delete</button>' +
@@ -354,59 +372,102 @@ function filterAdminParts() {
 
 function showAddPartModal() {
     editingPartId = null;
+    partImageData = null;
     document.getElementById('partModalTitle').textContent = 'Add Part';
     document.getElementById('partNumInput').value = '';
     document.getElementById('partNameInput').value = '';
     document.getElementById('partCategoryInput').value = '';
     document.getElementById('partVendorInput').value = 'Hussey';
     document.getElementById('partPriceInput').value = '';
+    var preview = document.getElementById('partImagePreview');
+    if (preview) preview.innerHTML = '';
+    var imgInput = document.getElementById('partImageInput');
+    if (imgInput) imgInput.value = '';
     var modal = document.getElementById('partModal');
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
 }
 
 function editPart(id) {
-    var part = ADMIN_PARTS.find(function(p) { return p.id === id; });
+    var part = ADMIN_PARTS.find(function(p) { return p.id == id; });
     if (!part) return;
     editingPartId = id;
+    partImageData = null;
     document.getElementById('partModalTitle').textContent = 'Edit Part';
-    document.getElementById('partNumInput').value = part.partNum || '';
-    document.getElementById('partNameInput').value = part.name || '';
+    document.getElementById('partNumInput').value = part.partNumber || '';
+    document.getElementById('partNameInput').value = part.productName || '';
     document.getElementById('partCategoryInput').value = part.category || '';
     document.getElementById('partVendorInput').value = part.vendor || 'Hussey';
     document.getElementById('partPriceInput').value = part.price || '';
+    var preview = document.getElementById('partImagePreview');
+    if (preview) {
+        preview.innerHTML = part.imageUrl ? '<img src="' + part.imageUrl + '" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">' : '';
+    }
+    var imgInput = document.getElementById('partImageInput');
+    if (imgInput) imgInput.value = '';
     var modal = document.getElementById('partModal');
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
 }
 
-function savePart() {
-    var name = document.getElementById('partNameInput').value.trim();
-    if (!name) { alert('Part name is required.'); return; }
-    var data = {
-        partNum: document.getElementById('partNumInput').value.trim(),
-        name: name,
-        category: document.getElementById('partCategoryInput').value,
-        vendor: document.getElementById('partVendorInput').value,
-        price: parseFloat(document.getElementById('partPriceInput').value) || 0
-    };
-    if (editingPartId) {
-        var idx = ADMIN_PARTS.findIndex(function(p) { return p.id === editingPartId; });
-        if (idx !== -1) { data.id = editingPartId; ADMIN_PARTS[idx] = data; }
-    } else {
-        data.id = 'p' + Date.now();
-        ADMIN_PARTS.push(data);
+function handlePartImageUpload(input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            partImageData = e.target.result;
+            var preview = document.getElementById('partImagePreview');
+            if (preview) {
+                preview.innerHTML = '<img src="' + e.target.result + '" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">';
+            }
+        };
+        reader.readAsDataURL(input.files[0]);
     }
-    saveAdminParts();
-    closePartModal();
-    loadAdminParts();
 }
 
-function deletePart(id) {
+async function savePart() {
+    var name = document.getElementById('partNameInput').value.trim();
+    if (!name) { alert('Part name is required.'); return; }
+
+    var partData = {
+        partNumber: document.getElementById('partNumInput').value.trim(),
+        productName: name,
+        category: document.getElementById('partCategoryInput').value,
+        vendor: document.getElementById('partVendorInput').value,
+        price: parseFloat(document.getElementById('partPriceInput').value) || null
+    };
+
+    try {
+        var result;
+        if (editingPartId) {
+            result = await PartsAPI.updatePart(editingPartId, partData);
+        } else {
+            result = await PartsAPI.addPart(partData);
+        }
+
+        // Upload image if provided
+        if (partImageData) {
+            var partId = editingPartId || result.part?.id;
+            if (partId) {
+                await PartsAPI.uploadImage(partId, partData.partNumber, partImageData);
+            }
+        }
+
+        partImageData = null;
+        closePartModal();
+        loadAdminParts();
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+async function deletePart(id) {
     if (!confirm('Delete this part?')) return;
-    ADMIN_PARTS = ADMIN_PARTS.filter(function(p) { return p.id !== id; });
-    saveAdminParts();
-    filterAdminParts();
+    try {
+        await PartsAPI.deletePart(id);
+        loadAdminParts();
+    } catch (err) {
+        alert('Error deleting part: ' + err.message);
+    }
 }
 
 function closePartModal() {
@@ -489,50 +550,122 @@ function handleCsvFile(file) {
     reader.readAsText(file);
 }
 
-function applyCsvImport() {
+async function applyCsvImport() {
     var vendor = document.getElementById('importVendor').value;
-    var updated = 0;
-    var added = 0;
-    csvImportData.forEach(function(row) {
-        var idx = ADMIN_PARTS.findIndex(function(p) { return p.partNum === row.partNum; });
-        if (idx !== -1) {
-            ADMIN_PARTS[idx].price = row.newPrice;
-            updated++;
-        } else {
-            ADMIN_PARTS.push({
-                id: 'p' + Date.now() + Math.random().toString(36).substr(2, 4),
-                partNum: row.partNum,
-                name: row.name,
-                category: '',
-                vendor: vendor,
+
+    try {
+        // Transform data for API
+        var parts = csvImportData.map(function(row) {
+            return {
+                partNumber: row.partNum,
+                productName: row.name || 'Unknown Part',
                 price: row.newPrice
-            });
-            added++;
-        }
-    });
-    saveAdminParts();
+            };
+        });
 
-    // Add to import history
-    var historyBody = document.getElementById('importHistoryBody');
-    var today = new Date();
-    var dateStr = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    var fileName = document.getElementById('csvFileInput').files[0] ? document.getElementById('csvFileInput').files[0].name : 'manual-import.csv';
-    historyBody.innerHTML = '<tr style="border-bottom: 1px solid #f0f2f5;">' +
-        '<td style="padding: 10px 12px;">' + dateStr + '</td>' +
-        '<td style="padding: 10px 12px;">' + vendor + '</td>' +
-        '<td style="padding: 10px 12px;">' + fileName + '</td>' +
-        '<td style="padding: 10px 12px; text-align: right;">' + (updated + added).toLocaleString() + '</td>' +
-        '<td style="padding: 10px 12px;">Admin</td>' +
-    '</tr>' + historyBody.innerHTML;
+        var result = await PartsAPI.importParts(parts, vendor);
 
-    alert('Import complete: ' + updated + ' parts updated, ' + added + ' new parts added.');
-    cancelCsvImport();
+        // Add to import history
+        var historyBody = document.getElementById('importHistoryBody');
+        var today = new Date();
+        var dateStr = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        var fileName = document.getElementById('csvFileInput').files[0] ? document.getElementById('csvFileInput').files[0].name : 'manual-import.csv';
+        historyBody.innerHTML = '<tr style="border-bottom: 1px solid #f0f2f5;">' +
+            '<td style="padding: 10px 12px;">' + dateStr + '</td>' +
+            '<td style="padding: 10px 12px;">' + vendor + '</td>' +
+            '<td style="padding: 10px 12px;">' + fileName + '</td>' +
+            '<td style="padding: 10px 12px; text-align: right;">' + (result.inserted + result.updated).toLocaleString() + '</td>' +
+            '<td style="padding: 10px 12px;">Admin</td>' +
+        '</tr>' + historyBody.innerHTML;
+
+        alert('Import complete: ' + result.inserted + ' parts added, ' + result.updated + ' parts updated.');
+        cancelCsvImport();
+        loadAdminParts();
+
+    } catch (err) {
+        alert('Import failed: ' + err.message);
+    }
 }
 
 function cancelCsvImport() {
     document.getElementById('csvPreview').classList.add('hidden');
     document.getElementById('csvFileInput').value = '';
     csvImportData = [];
+}
+
+// Bulk Image Upload
+var bulkImages = [];
+
+function handleBulkImageSelect(input) {
+    bulkImages = [];
+    var files = Array.from(input.files);
+
+    document.getElementById('bulkImageCount').textContent = files.length + ' images selected';
+    document.getElementById('bulkImagePreview').classList.remove('hidden');
+    document.getElementById('bulkImageResults').classList.add('hidden');
+
+    var processed = 0;
+    files.forEach(function(file) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var partNumber = file.name.replace(/\.[^.]+$/, '');
+            bulkImages.push({
+                filename: file.name,
+                imageData: e.target.result
+            });
+            processed++;
+            if (processed === files.length) {
+                renderBulkImageList();
+            }
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function renderBulkImageList() {
+    var list = document.getElementById('bulkImageList');
+    list.innerHTML = bulkImages.map(function(img) {
+        var partNumber = img.filename.replace(/\.[^.]+$/, '');
+        return '<div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-bottom: 1px solid #eee;">' +
+            '<img src="' + img.imageData + '" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">' +
+            '<span style="font-family: monospace;">' + partNumber + '</span>' +
+            '<span style="color: #6c757d; font-size: 12px;">' + img.filename + '</span>' +
+        '</div>';
+    }).join('');
+}
+
+async function uploadBulkImages() {
+    var resultsDiv = document.getElementById('bulkImageResults');
+    resultsDiv.innerHTML = '<div style="padding: 20px; text-align: center;">Uploading images...</div>';
+    resultsDiv.classList.remove('hidden');
+
+    try {
+        var result = await PartsAPI.uploadImagesBulk(bulkImages);
+
+        var html = '<div class="card" style="background: #e8f5e9; border-color: #4caf50;">' +
+            '<div class="card-body">' +
+                '<p style="font-weight: 600; color: #2e7d32;">Upload Complete</p>' +
+                '<p>Matched: ' + result.matched + ' | Uploaded: ' + result.uploaded + '</p>';
+
+        if (result.notFound && result.notFound.length > 0) {
+            html += '<p style="color: #f57c00; margin-top: 8px;">Not found in catalog: ' + result.notFound.slice(0, 10).join(', ') + (result.notFound.length > 10 ? ' and ' + (result.notFound.length - 10) + ' more...' : '') + '</p>';
+        }
+
+        html += '</div></div>';
+        resultsDiv.innerHTML = html;
+
+        bulkImages = [];
+        document.getElementById('bulkImagePreview').classList.add('hidden');
+        document.getElementById('bulkImageInput').value = '';
+
+        // Reload parts to show new images
+        loadAdminParts();
+
+    } catch (err) {
+        resultsDiv.innerHTML = '<div class="card" style="background: #ffebee;">' +
+            '<div class="card-body"><p style="color: #c62828;">Upload failed: ' + err.message + '</p></div>' +
+        '</div>';
+    }
 }
 
 // Vendors

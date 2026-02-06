@@ -3,10 +3,8 @@
 // All sample data, constants, and shared state
 // ==========================================
 
-// Airtable API Configuration - 2,142 real Hussey parts
-// API key loaded from js/config.js (gitignored)
-const AIRTABLE_BASE_ID = 'appAT4ZwbRAgIyzUW';
-const AIRTABLE_TABLE_ID = 'tbl4mDv20NaJnaaN7';
+// Parts catalog now uses Vercel Postgres via PartsAPI
+// See js/utils/parts-api.js for API client
 
 // Contact roles - used for badges and filtering
 const CONTACT_ROLES = {

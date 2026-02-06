@@ -1456,6 +1456,7 @@
                                         <button class="btn" id="dmTabImport" onclick="switchDataTab('import')" style="border: none; border-bottom: 3px solid transparent; border-radius: 0; padding: 12px 24px; font-weight: 600; color: #6c757d;">Import Pricing</button>
                                         <button class="btn" id="dmTabVendors" onclick="switchDataTab('vendors')" style="border: none; border-bottom: 3px solid transparent; border-radius: 0; padding: 12px 24px; font-weight: 600; color: #6c757d;">Vendors</button>
                                         <button class="btn" id="dmTabBulletins" onclick="switchDataTab('bulletins')" style="border: none; border-bottom: 3px solid transparent; border-radius: 0; padding: 12px 24px; font-weight: 600; color: #6c757d;">Bulletins</button>
+                                        <button class="btn" id="dmTabImages" onclick="switchDataTab('images')" style="border: none; border-bottom: 3px solid transparent; border-radius: 0; padding: 12px 24px; font-weight: 600; color: #6c757d;">Bulk Images</button>
                                     </div>
 
                                     <!-- Employees Tab -->
@@ -1598,6 +1599,40 @@
                                         </div>
                                         <div id="bulletinsList"></div>
                                     </div>
+
+                                    <!-- Bulk Images Tab -->
+                                    <div id="dmImagesTab" class="hidden">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h2 class="card-title" style="font-size: 18px; font-weight: 700;">Bulk Image Upload</h2>
+                                                <p style="color: #6c757d; font-size: 13px; margin-top: 4px;">
+                                                    Upload a folder of images. Filenames should match part numbers (e.g., 302-1000.jpg)
+                                                </p>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="bulkImageDropZone" style="border: 2px dashed #dee2e6; border-radius: 12px; padding: 48px; text-align: center; cursor: pointer;"
+                                                     onclick="document.getElementById('bulkImageInput').click();"
+                                                     ondragover="event.preventDefault(); this.style.borderColor='#4f46e5';"
+                                                     ondragleave="this.style.borderColor='#dee2e6';">
+                                                    <div style="font-size: 48px; margin-bottom: 12px;">📁</div>
+                                                    <p style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Drop images here or click to browse</p>
+                                                    <p style="font-size: 13px; color: #6c757d;">Supports .jpg, .png, .webp</p>
+                                                    <input type="file" id="bulkImageInput" multiple accept="image/*"
+                                                           style="display: none;" onchange="handleBulkImageSelect(this)">
+                                                </div>
+
+                                                <div id="bulkImagePreview" class="hidden" style="margin-top: 24px;">
+                                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                                        <span id="bulkImageCount" style="font-weight: 600;"></span>
+                                                        <button class="btn btn-primary" onclick="uploadBulkImages()">Upload All</button>
+                                                    </div>
+                                                    <div id="bulkImageList" style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px;"></div>
+                                                </div>
+
+                                                <div id="bulkImageResults" class="hidden" style="margin-top: 24px;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1654,6 +1689,11 @@
                             <div class="form-group">
                                 <label class="form-label">Price ($)</label>
                                 <input type="number" id="partPriceInput" class="form-input" placeholder="0.00" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Part Image</label>
+                                <div id="partImagePreview" style="margin-bottom: 8px;"></div>
+                                <input type="file" id="partImageInput" accept="image/*" onchange="handlePartImageUpload(this)" class="form-input" style="padding: 8px;">
                             </div>
                             <div style="display: flex; gap: 12px; margin-top: 24px;">
                                 <button class="btn btn-primary" onclick="savePart()" style="flex: 1;">Save</button>
@@ -3996,6 +4036,7 @@
 
     <!-- Utilities -->
     <script src="js/utils/search.js"></script>
+    <script src="js/utils/parts-api.js"></script>
     <script src="js/utils/parts-catalog.js"></script>
 
     <!-- App core (load last - kicks off init) -->
