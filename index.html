@@ -97,6 +97,10 @@
                         <span>🚚</span>
                         <span>Shipping</span>
                     </div>
+                    <div class="nav-item" data-view="jobs" onclick="showView('jobs')">
+                        <span>🛠️</span>
+                        <span>Jobs</span>
+                    </div>
                     <div class="nav-item" data-view="scheduling" onclick="showView('scheduling')">
                         <span>📅</span>
                         <span>Scheduling</span>
@@ -420,6 +424,33 @@
                                 <p style="color: #6c757d;">Shipping coordination coming soon...</p>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Jobs View (Operational view for Office/Admin) -->
+                    <div id="jobsView" class="hidden">
+                        <div style="display: flex; justify-content: flex-start; margin-bottom: 16px;">
+                            <button class="btn btn-primary" onclick="showView('officeCreate')">+ Create Job</button>
+                        </div>
+                        <div class="page-header">
+                            <div>
+                                <h1 class="page-title">Jobs</h1>
+                                <p class="page-subtitle">All active jobs this week — operational view</p>
+                                <div style="display: flex; gap: 12px; align-items: center; margin-top: 12px;">
+                                    <button class="btn btn-outline" onclick="prevOfficeJobsWeek()" style="padding: 8px 12px;">← Prev</button>
+                                    <span id="officeJobsWeekLabel" style="font-weight: 600; min-width: 180px; text-align: center;">Week of Jan 6, 2025</span>
+                                    <button class="btn btn-outline" onclick="nextOfficeJobsWeek()" style="padding: 8px 12px;">Next →</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Territory Tabs -->
+                        <div style="display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #dee2e6;">
+                            <button class="schedule-tab active" onclick="switchOfficeJobsTerritory('original')" id="officeJobsOriginalTab" style="font-weight: 700; font-size: 15px;">Original Territory (KY/TN)</button>
+                            <button class="schedule-tab" onclick="switchOfficeJobsTerritory('southern')" id="officeJobsSouthernTab" style="font-weight: 700; font-size: 15px;">Southern Territory (AL/FL)</button>
+                        </div>
+
+                        <!-- Jobs Grid -->
+                        <div id="officeJobsGrid"></div>
                     </div>
 
                     <!-- Accounts View -->
@@ -2199,18 +2230,18 @@
 
                     <!-- My Jobs View (Personal Weekly Schedule) -->
                     <div id="techMyJobsView" class="hidden">
-                        <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
-                            <div style="display: flex; flex-direction: column; gap: 12px;">
-                                <div>
-                                    <h1 class="page-title">My Jobs</h1>
-                                    <p class="page-subtitle">Your schedule for this week</p>
+                        <div style="display: flex; justify-content: flex-start; margin-bottom: 16px;">
+                            <button class="btn btn-primary" onclick="showTechView('fieldCreate')" style="padding: 10px 20px;">+ Create Job</button>
+                        </div>
+                        <div class="page-header">
+                            <div>
+                                <h1 class="page-title">My Jobs</h1>
+                                <p class="page-subtitle">Your schedule for this week</p>
+                                <div style="display: flex; gap: 12px; align-items: center; margin-top: 12px;">
+                                    <button class="btn btn-outline" onclick="prevMyJobsWeek()" style="padding: 8px 12px;">← Prev</button>
+                                    <span id="myJobsWeekLabel" style="font-weight: 600; min-width: 180px; text-align: center;"></span>
+                                    <button class="btn btn-outline" onclick="nextMyJobsWeek()" style="padding: 8px 12px;">Next →</button>
                                 </div>
-                                <button class="btn btn-primary" onclick="showTechView('fieldCreate')" style="padding: 10px 20px; width: fit-content;">+ Create Job</button>
-                            </div>
-                            <div style="display: flex; gap: 12px; align-items: center;">
-                                <button class="btn btn-outline" onclick="prevMyJobsWeek()" style="padding: 8px 12px;">← Prev</button>
-                                <span id="myJobsWeekLabel" style="font-weight: 600; min-width: 180px; text-align: center;"></span>
-                                <button class="btn btn-outline" onclick="nextMyJobsWeek()" style="padding: 8px 12px;">Next →</button>
                             </div>
                         </div>
 
@@ -3763,6 +3794,47 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unable to Complete Job Modal -->
+    <div id="unableToCompleteModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Unable to Complete Job</h2>
+                <button class="modal-close" onclick="closeUnableToCompleteModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: #6c757d; margin-bottom: 20px;">Please provide a reason why this job couldn't be completed.</p>
+
+                <div class="form-group">
+                    <label class="form-label">Reason *</label>
+                    <select id="unableReason" class="form-input">
+                        <option value="">Select a reason...</option>
+                        <option value="Wrong Part">Wrong Part / Missing Part</option>
+                        <option value="Can't Access">Can't Access Site</option>
+                        <option value="Additional Work">Additional Work Needed</option>
+                        <option value="Equipment Issue">Equipment Issue</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea id="unableNotes" class="form-input" rows="4" placeholder="Provide additional details..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Photo (optional)</label>
+                    <input type="file" id="unablePhoto" class="form-input" accept="image/*" onchange="handleUnablePhoto(this)">
+                    <div id="unablePhotoPreview" style="margin-top: 12px;"></div>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button class="btn btn-outline" onclick="closeUnableToCompleteModal()" style="flex: 1;">Cancel</button>
+                    <button class="btn" onclick="submitUnableToComplete()" style="flex: 1; background: #c62828; color: white;">Submit</button>
                 </div>
             </div>
         </div>

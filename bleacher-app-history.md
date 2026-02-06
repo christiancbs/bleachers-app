@@ -30,17 +30,27 @@
 - QuickBooks Integration section (Office + Admin): connection status, reconnect button
 - Manage section (Admin only): Employees, Parts Catalog, Import Pricing, Vendors tabs
 
+**Bug Fixes:**
+- Fixed admin default view showing obsolete dashboard (now defaults to Pipeline)
+- Fixed blank pipeline view on initial load (timing/race condition issues)
+- Fixed incomplete `addIssue()` function causing syntax error
+- Fixed missing `populateJobCustomers()` function reference
+- Fixed null reference for missing `adminNavSection` element
+- Removed debug console logs from production code
+
 **Version Management:**
 - v1.0 tagged as archived baseline (original navigation structure)
 - v2.0 tagged as current release
 - nav-refactor branch merged to main
 
 ### Files Modified
-- `index.html` - Added fieldCreateView, updated My Jobs header layout
-- `js/app.js` - Added fieldCreate view handling to showTechView
+- `index.html` - Added fieldCreateView, updated My Jobs header layout, hidden obsolete dashboardView
+- `js/app.js` - Added fieldCreate view handling, null checks for missing elements, fixed login flow
 - `js/views/create.js` - Added field create functions (initFieldCreateForm, onFieldCreateTypeChange, submitFieldCreate, etc.)
+- `js/views/dashboard.js` - Fixed pipeline loading, added null checks, stub functions for obsolete dashboard
+- `js/views/inspection.js` - Completed addIssue function stub
 - `css/app.css` - Navigation styling updates
-- `js/views/admin.js`, `js/views/dashboard.js` - Settings and CRM enhancements
+- `js/views/admin.js` - Settings enhancements
 - `js/utils/parts-catalog.js` - Search improvements
 
 ---

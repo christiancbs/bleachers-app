@@ -223,6 +223,10 @@ function showView(view) {
     } else if (view === 'opsReviewDetail') {
         document.getElementById('opsReviewDetailView').classList.remove('hidden');
         setActiveNav('opsReview');
+    } else if (view === 'jobs') {
+        document.getElementById('jobsView').classList.remove('hidden');
+        setActiveNav('jobs');
+        loadOfficeJobs();
     } else if (view === 'scheduling') {
         document.getElementById('schedulingView').classList.remove('hidden');
         setActiveNav('scheduling');
