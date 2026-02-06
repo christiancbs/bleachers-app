@@ -181,14 +181,15 @@ function showView(view) {
         setActiveNav('estimates');
         loadEstimates();
     } else if (view === 'projects') {
-        document.getElementById('projectsView').classList.remove('hidden');
+        console.log('showView: projects');
+        var projectsView = document.getElementById('projectsView');
+        console.log('projectsView element:', projectsView);
+        projectsView.classList.remove('hidden');
         setActiveNav('projects');
-        // Use requestAnimationFrame to ensure view is painted before loading content
-        requestAnimationFrame(function() {
-            requestAnimationFrame(function() {
-                loadPipeline();
-            });
-        });
+        // Call loadPipeline directly
+        console.log('About to call loadPipeline');
+        loadPipeline();
+        console.log('loadPipeline called');
     } else if (view === 'accounts') {
         document.getElementById('accountsView').classList.remove('hidden');
         setActiveNav('accounts');
