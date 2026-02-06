@@ -12,6 +12,9 @@ Thumbs.db
 
 # Large vendor files (keep local, don't push)
 vendor-data/*.pdf
+tools/*.pdf
+tools/*.csv
+tools/2025_Parts_Guide_extracted/
 
 # Config with API keys (never commit)
 js/config.js

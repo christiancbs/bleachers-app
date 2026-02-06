@@ -205,15 +205,10 @@ function showView(view) {
         setActiveNav('salesPipeline');
         loadSalesPipeline();
     } else if (view === 'projects') {
-        console.log('showView: Project Tracker');
         var projectsView = document.getElementById('projectsView');
-        console.log('projectsView element:', projectsView);
         projectsView.classList.remove('hidden');
         setActiveNav('projects');
-        // Call loadPipeline directly (renamed in v3 but keeping function name for now)
-        console.log('About to call loadPipeline (Project Tracker)');
         loadPipeline();
-        console.log('loadPipeline called');
     } else if (view === 'accounts') {
         document.getElementById('accountsView').classList.remove('hidden');
         setActiveNav('accounts');
@@ -309,10 +304,8 @@ function showTechView(view) {
         loadMyJobs();
     } else if (view === 'fieldCreate') {
         var fieldView = document.getElementById('fieldCreateView');
-        console.log('fieldCreate view element:', fieldView);
         if (fieldView) {
             fieldView.classList.remove('hidden');
-            console.log('Removed hidden class from fieldCreateView');
         }
         setActiveNav('myjobs');
         initFieldCreateForm();

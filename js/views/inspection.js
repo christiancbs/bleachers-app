@@ -941,15 +941,15 @@ function onInspectionTypeChange() {
         document.getElementById('manufacturerSection').classList.remove('hidden');
         renderChecklist('blUnderstructureChecklist', CHECKLISTS.bleacherUnderstructure);
         renderChecklist('blTopSideChecklist', CHECKLISTS.bleacherTopSide);
-        issuesList = [];
-        document.getElementById('bleacherIssuesContainer').innerHTML = '<p style="color: #6c757d; text-align: center;">Click "Add Issue" to document problems found</p>';
+        bleacherIssues = [];
+        renderBleacherIssues();
     } else if (type === 'outdoor') {
         document.getElementById('outdoorFields').classList.remove('hidden');
         document.getElementById('manufacturerSection').classList.remove('hidden');
         renderChecklist('outUnderstructureChecklist', CHECKLISTS.outdoorUnderstructure);
         renderChecklist('outTopSideChecklist', CHECKLISTS.outdoorTopSide);
-        issuesList = [];
-        document.getElementById('outdoorIssuesContainer').innerHTML = '<p style="color: #6c757d; text-align: center;">Click "Add Issue" to document problems found</p>';
+        outdoorIssues = [];
+        renderOutdoorIssues();
     }
 
     // Reset form
@@ -1040,8 +1040,82 @@ function addGoalInspection() {
     `;
 }
 
-// Add issue for bleacher/outdoor inspections
+// Legacy issue arrays for bleacher/outdoor single-form templates
+let bleacherIssues = [];
+let outdoorIssues = [];
+
+// Add issue for bleacher/outdoor inspections (legacy templates)
 function addIssue(type) {
-    // TODO: Implement add issue functionality
-    console.log('addIssue called with type:', type);
+    const description = prompt('Describe the issue:');
+    if (!description || !description.trim()) return;
+
+    const location = prompt('Location (e.g., Row 3, Section A):') || '';
+
+    const issue = {
+        id: Date.now(),
+        description: description.trim(),
+        location: location.trim(),
+        timestamp: new Date().toISOString()
+    };
+
+    if (type === 'bleacher') {
+        bleacherIssues.push(issue);
+        renderBleacherIssues();
+    } else if (type === 'outdoor') {
+        outdoorIssues.push(issue);
+        renderOutdoorIssues();
+    }
+}
+
+// Render bleacher issues
+function renderBleacherIssues() {
+    const container = document.getElementById('bleacherIssuesContainer');
+    if (!container) return;
+
+    if (bleacherIssues.length === 0) {
+        container.innerHTML = '<p style="color: #6c757d; text-align: center;">Click "Add Issue" to document problems found</p>';
+        return;
+    }
+
+    container.innerHTML = bleacherIssues.map((issue, i) => `
+        <div style="background: #fff; border: 1px solid #e9ecef; border-radius: 8px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: start;">
+            <div>
+                ${issue.location ? `<div style="font-size: 12px; color: #1565c0; margin-bottom: 4px;">${issue.location}</div>` : ''}
+                <div style="font-size: 14px;">${issue.description}</div>
+            </div>
+            <button onclick="deleteBleacherIssue(${i})" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 16px;">×</button>
+        </div>
+    `).join('');
+}
+
+// Render outdoor issues
+function renderOutdoorIssues() {
+    const container = document.getElementById('outdoorIssuesContainer');
+    if (!container) return;
+
+    if (outdoorIssues.length === 0) {
+        container.innerHTML = '<p style="color: #6c757d; text-align: center;">Click "Add Issue" to document problems found</p>';
+        return;
+    }
+
+    container.innerHTML = outdoorIssues.map((issue, i) => `
+        <div style="background: #fff; border: 1px solid #e9ecef; border-radius: 8px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: start;">
+            <div>
+                ${issue.location ? `<div style="font-size: 12px; color: #1565c0; margin-bottom: 4px;">${issue.location}</div>` : ''}
+                <div style="font-size: 14px;">${issue.description}</div>
+            </div>
+            <button onclick="deleteOutdoorIssue(${i})" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 16px;">×</button>
+        </div>
+    `).join('');
+}
+
+// Delete issues
+function deleteBleacherIssue(index) {
+    bleacherIssues.splice(index, 1);
+    renderBleacherIssues();
+}
+
+function deleteOutdoorIssue(index) {
+    outdoorIssues.splice(index, 1);
+    renderOutdoorIssues();
 }

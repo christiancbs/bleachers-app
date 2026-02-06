@@ -7,12 +7,8 @@
 var fieldCreatePhoto = null;
 
 function initFieldCreateForm() {
-    console.log('initFieldCreateForm called');
     var select = document.getElementById('fieldCreateCustomerSelect');
-    if (!select) {
-        console.error('fieldCreateCustomerSelect not found');
-        return;
-    }
+    if (!select) return;
     var html = '<option value="">Select a customer...</option>';
     CUSTOMERS.forEach(function(cust) {
         cust.locations.forEach(function(loc) {

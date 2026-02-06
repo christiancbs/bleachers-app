@@ -821,7 +821,6 @@ function loadSalesPipeline() {
 
 function filterSalesPipeline(status) {
     // Placeholder for future filtering
-    console.log('Filter sales pipeline by:', status);
 }
 
 // ==========================================
@@ -832,18 +831,11 @@ function filterSalesPipeline(status) {
 // PIPELINE_JOBS and pipelineFilter are defined in js/data.js
 
 function loadPipeline() {
-    console.log('loadPipeline called');
     const container = document.getElementById('pipelineContent');
-    console.log('container:', container);
-    if (!container) {
-        console.error('pipelineContent container not found');
-        return;
-    }
+    if (!container) return;
 
     // Merge sample pipeline data with any dynamically created jobs
-    console.log('PIPELINE_JOBS:', PIPELINE_JOBS);
     var allJobs = PIPELINE_JOBS.slice();
-    console.log('allJobs length:', allJobs.length);
     jobs.forEach(function(j) {
         allJobs.push({
             id: j.id,

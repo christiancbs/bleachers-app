@@ -195,9 +195,6 @@ function saveSection(section) {
 
     // Hide edit mode, show display
     toggleEditSection(section);
-
-    // Show save confirmation
-    console.log(`Saved ${section} section`);
 }
 
 function cancelEditSection(section) {

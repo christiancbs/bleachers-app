@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hussey Parts Search</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #2d5a27;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        #searchInput {
+            flex: 1;
+            min-width: 200px;
+            padding: 15px;
+            font-size: 18px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        #searchInput:focus {
+            outline: none;
+            border-color: #2d5a27;
+        }
+        #searchBtn {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #2d5a27;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        #searchBtn:hover {
+            background: #1e3d1a;
+        }
+        #categoryFilter {
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            min-width: 150px;
+        }
+        .results-info {
+            color: #666;
+            margin-bottom: 15px;
+        }
+        .part-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .part-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .part-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+        }
+        .detail {
+            font-size: 14px;
+        }
+        .detail-label {
+            color: #666;
+        }
+        .detail-value {
+            font-weight: 500;
+            color: #333;
+        }
+        .price {
+            color: #2d5a27;
+            font-weight: 700;
+            font-size: 18px;
+        }
+        .part-number {
+            font-family: monospace;
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .category-badge {
+            display: inline-block;
+            background: #e8f5e9;
+            color: #2d5a27;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .add-btn {
+            background: #1565c0;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .add-btn:hover {
+            background: #0d47a1;
+        }
+        .cart {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2d5a27;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-weight: 600;
+        }
+        .cart:hover {
+            background: #1e3d1a;
+        }
+        .cart-panel {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 400px;
+            max-width: 100%;
+            height: 100%;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .cart-panel.open {
+            display: block;
+        }
+        .cart-header {
+            background: #2d5a27;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .cart-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .cart-items {
+            padding: 15px;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .cart-item-info {
+            flex: 1;
+        }
+        .cart-item-name {
+            font-weight: 500;
+        }
+        .cart-item-price {
+            color: #2d5a27;
+        }
+        .qty-input {
+            width: 60px;
+            padding: 5px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 0 10px;
+        }
+        .remove-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .cart-total {
+            padding: 20px;
+            background: #f5f5f5;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .export-btn {
+            display: block;
+            width: calc(100% - 30px);
+            margin: 15px;
+            padding: 15px;
+            background: #1565c0;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .export-btn:hover {
+            background: #0d47a1;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hussey Parts Search</h1>
+    <p class="subtitle">Search 2,142 parts by name, part number, or category</p>
+
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search parts (e.g., 'wheel', 'seat board', '1001087')">
+        <select id="categoryFilter">
+            <option value="">All Categories</option>
+        </select>
+        <button id="searchBtn">Search</button>
+    </div>
+
+    <div id="results"></div>
+
+    <div class="cart" id="cartBtn">
+        🛒 PSF List (<span id="cartCount">0</span>)
+    </div>
+
+    <div class="cart-panel" id="cartPanel">
+        <div class="cart-header">
+            <h2>Parts Specification Form</h2>
+            <button class="cart-close" id="cartClose">×</button>
+        </div>
+        <div class="cart-items" id="cartItems"></div>
+        <div class="cart-total" id="cartTotal">Total: $0.00</div>
+        <button class="export-btn" id="exportBtn">Export to CSV</button>
+    </div>
+
+    <script>
+        // Airtable config
+        const AIRTABLE_BASE_ID = 'appAT4ZwbRAgIyzUW';
+        const AIRTABLE_TABLE_ID = 'tbl4mDv20NaJnaaN7';
+        const AIRTABLE_API_KEY = 'YOUR_AIRTABLE_API_KEY'; // Set your API key here
+
+        // Cart state
+        let cart = [];
+
+        // DOM elements
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const resultsDiv = document.getElementById('results');
+        const cartBtn = document.getElementById('cartBtn');
+        const cartPanel = document.getElementById('cartPanel');
+        const cartClose = document.getElementById('cartClose');
+        const cartItems = document.getElementById('cartItems');
+        const cartCount = document.getElementById('cartCount');
+        const cartTotal = document.getElementById('cartTotal');
+        const exportBtn = document.getElementById('exportBtn');
+
+        // Load categories on page load
+        async function loadCategories() {
+            try {
+                const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}?fields%5B%5D=Category&pageSize=100`;
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` }
+                });
+                const data = await response.json();
+
+                const categories = new Set();
+                data.records.forEach(r => {
+                    if (r.fields.Category) categories.add(r.fields.Category);
+                });
+
+                // This only gets first 100, but gives a good starting set
+                [...categories].sort().forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    categoryFilter.appendChild(option);
+                });
+            } catch (err) {
+                console.error('Failed to load categories:', err);
+            }
+        }
+
+        // Search parts
+        async function searchParts() {
+            const query = searchInput.value.trim();
+            const category = categoryFilter.value;
+
+            if (!query && !category) {
+                resultsDiv.innerHTML = '<p>Enter a search term or select a category</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '<div class="loading">Searching...</div>';
+
+            try {
+                // Build filter formula
+                let filters = [];
+                if (query) {
+                    // Search in multiple fields
+                    filters.push(`OR(
+                        FIND(LOWER("${query}"), LOWER({Product Name})),
+                        FIND(LOWER("${query}"), LOWER({Part Number})),
+                        FIND(LOWER("${query}"), LOWER({Description})),
+                        FIND(LOWER("${query}"), LOWER({Category})),
+                        FIND(LOWER("${query}"), LOWER({Subcategory})),
+                        FIND(LOWER("${query}"), LOWER({Product Line})),
+                        FIND(LOWER("${query}"), LOWER({Model Info}))
+                    )`);
+                }
+                if (category) {
+                    filters.push(`{Category} = "${category}"`);
+                }
+
+                const formula = filters.length > 1 ? `AND(${filters.join(',')})` : filters[0];
+                const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}?filterByFormula=${encodeURIComponent(formula)}&pageSize=50`;
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Airtable error:', errorData);
+                    throw new Error(`API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+                }
+
+                const data = await response.json();
+                console.log(`Found ${data.records.length} results`);
+                displayResults(data.records);
+
+            } catch (err) {
+                resultsDiv.innerHTML = `<div class="error">Search failed: ${err.message}</div>`;
+            }
+        }
+
+        // Display results
+        function displayResults(records) {
+            if (records.length === 0) {
+                resultsDiv.innerHTML = '<p>No parts found. Try a different search term.</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = `<p class="results-info">Found ${records.length} parts</p>`;
+
+            records.forEach(record => {
+                const part = record.fields;
+                const price = part['Price 2025'] || 'N/A';
+                const priceDisplay = price === 'Call for Price' ? price : (price !== 'N/A' ? `$${price}` : 'N/A');
+
+                const card = document.createElement('div');
+                card.className = 'part-card';
+                card.innerHTML = `
+                    <div class="part-name">${part['Product Name'] || 'Unknown Part'}</div>
+                    <div class="part-details">
+                        <div class="detail">
+                            <span class="detail-label">Part #:</span>
+                            <span class="detail-value part-number">${part['Part Number'] || '—'}</span>
+                        </div>
+                        <div class="detail">
+                            <span class="detail-label">Price:</span>
+                            <span class="detail-value price">${priceDisplay}</span>
+                        </div>
+                        <div class="detail">
+                            <span class="detail-label">Product Line:</span>
+                            <span class="detail-value">${part['Product Line'] || '—'}</span>
+                        </div>
+                    </div>
+                    ${part['Category'] ? `<span class="category-badge">${part['Category']}</span>` : ''}
+                    ${part['Model Info'] ? `<div style="font-size:12px;color:#666;margin-top:5px;">${part['Model Info']}</div>` : ''}
+                    <button class="add-btn" data-id="${record.id}">+ Add to PSF</button>
+                `;
+
+                // Add click handler
+                card.querySelector('.add-btn').addEventListener('click', () => {
+                    addToCart(record.id, part);
+                });
+
+                resultsDiv.appendChild(card);
+            });
+        }
+
+        // Add to cart
+        function addToCart(id, part) {
+            const existing = cart.find(item => item.id === id);
+            if (existing) {
+                existing.qty++;
+            } else {
+                cart.push({
+                    id,
+                    partNumber: part['Part Number'] || '',
+                    name: part['Product Name'] || 'Unknown',
+                    price: parseFloat(part['Price 2025']) || 0,
+                    qty: 1
+                });
+            }
+            updateCartUI();
+        }
+
+        // Update cart UI
+        function updateCartUI() {
+            cartCount.textContent = cart.reduce((sum, item) => sum + item.qty, 0);
+
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<p style="padding:20px;color:#666;">No parts added yet</p>';
+                cartTotal.textContent = 'Total: $0.00';
+                return;
+            }
+
+            cartItems.innerHTML = cart.map((item, index) => `
+                <div class="cart-item">
+                    <div class="cart-item-info">
+                        <div class="cart-item-name">${item.name}</div>
+                        <div class="cart-item-price">${item.partNumber} - $${item.price.toFixed(2)}</div>
+                    </div>
+                    <input type="number" class="qty-input" value="${item.qty}" min="1" data-index="${index}">
+                    <button class="remove-btn" data-index="${index}">×</button>
+                </div>
+            `).join('');
+
+            // Add event listeners
+            cartItems.querySelectorAll('.qty-input').forEach(input => {
+                input.addEventListener('change', (e) => {
+                    const idx = parseInt(e.target.dataset.index);
+                    cart[idx].qty = parseInt(e.target.value) || 1;
+                    updateCartUI();
+                });
+            });
+
+            cartItems.querySelectorAll('.remove-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(e.target.dataset.index);
+                    cart.splice(idx, 1);
+                    updateCartUI();
+                });
+            });
+
+            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            cartTotal.textContent = `Total: $${total.toFixed(2)}`;
+        }
+
+        // Export to CSV
+        function exportToCSV() {
+            if (cart.length === 0) {
+                alert('No parts in PSF list');
+                return;
+            }
+
+            const headers = ['Part Number', 'Product Name', 'Quantity', 'Unit Price', 'Line Total'];
+            const rows = cart.map(item => [
+                item.partNumber,
+                `"${item.name}"`,
+                item.qty,
+                item.price.toFixed(2),
+                (item.price * item.qty).toFixed(2)
+            ]);
+
+            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            rows.push(['', '', '', 'TOTAL:', total.toFixed(2)]);
+
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `PSF_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        }
+
+        // Event listeners
+        searchBtn.addEventListener('click', searchParts);
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchParts();
+        });
+        categoryFilter.addEventListener('change', searchParts);
+        cartBtn.addEventListener('click', () => cartPanel.classList.add('open'));
+        cartClose.addEventListener('click', () => cartPanel.classList.remove('open'));
+        exportBtn.addEventListener('click', exportToCSV);
+
+        // Initialize
+        loadCategories();
+        updateCartUI();
+    </script>
+</body>
+</html>
