@@ -163,7 +163,10 @@ function logout() {
     document.getElementById('loginScreen').classList.remove('hidden');
     document.getElementById('officeDashboard').classList.add('hidden');
     document.getElementById('techDashboard').classList.add('hidden');
-    document.getElementById('adminNavSection').classList.add('hidden');
+    const adminNav = document.getElementById('adminNavSection');
+    if (adminNav) {
+        adminNav.classList.add('hidden');
+    }
 }
 
 function showView(view) {
