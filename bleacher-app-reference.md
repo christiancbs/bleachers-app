@@ -1,7 +1,7 @@
 # Bleachers & Seats - App Development Reference
 
 **Last Updated:** February 6, 2026
-**Version:** v3.0.0
+**Version:** v3.1.0
 **Branch:** `main`
 
 ---
@@ -20,13 +20,13 @@ python3 -m http.server 8080
 - **Office:** Click "office@bleachers.com" - View "Jobs" for operational status board
 - **Admin:** Click "admin@bleachers.com" - Full access to all features
 
-**Test v3.0 Features:**
-1. Login as **Office/Admin** - Default view is **Sales Pipeline**
-2. See Sales Pipeline with 6 stages, A/B/C deal grading, deal values
-3. Go to **Project Tracker** (Logistics section) - Post-sale jobs with dates, sorting, labor amounts
-4. Go to **Scheduling** - See "Confirmed" column (checkmarks), Equipment badges
-5. Go to **Jobs** - Find Fairview ES - See green Internal Notes section
-6. Login as **Field** - Go to **My Jobs** - See Special Instructions (amber box) and Equipment badges
+**Test v3.1 Features:**
+1. Login as **Office/Admin** - Default view is **Home** with bulletins + notifications
+2. See **Company Announcements** (bulletins) and **Needs Attention** panel
+3. Click notification to mark as read (blue dot disappears)
+4. Go to **Settings** → **Manage** → **Bulletins** tab to add/edit announcements
+5. Login as **Field** - See **Home** with bulletins + **Today's Jobs** panel
+6. All roles see same company bulletins, role-specific notifications
 
 ---
 
@@ -43,13 +43,15 @@ python3 -m http.server 8080
 - `v1.0` - Original navigation (archived)
 - `v2.0` - Navigation refactor + field create
 - `v2.1.3` - Live status tracking + Jobs view (final v2)
-- `v3.0.0` - **Current:** Sales/Operations separation, feedback features
+- `v3.0.0` - Sales/Operations separation, feedback features
+- `v3.1.0` - **Current:** Home page with bulletins & notifications
 
 ---
 
-## What's Built (v3.0)
+## What's Built (v3.1)
 
 **Core Features:**
+- **Home Page** - Role-specific landing with bulletins, notifications, and action items
 - Multi-bank inspection flow (Basketball, Indoor/Outdoor Bleacher templates)
 - Digital parts catalog (2,142 Hussey parts via Airtable)
 - **Sales Pipeline** - Pre-sale tracking with A/B/C deal grading, 6 Salesmate stages
@@ -62,8 +64,15 @@ python3 -m http.server 8080
 - Unified job numbering (Job # = Estimate # = Work Order # = QB #)
 
 **Navigation:**
-- **Office/Admin:** Search | Sales (Sales Pipeline, Accounts) | Procurement (Ops Review, Estimates, Parts Orders) | Logistics (Shipping, Jobs, Scheduling, Project Tracker) | Resources (Parts Catalog) | Settings
-- **Field:** Search | Inspections & Service (My Jobs, Team Schedule) | Resources (Parts Catalog) | Settings
+- **Office/Admin:** Home | Search | Sales (Sales Pipeline, Accounts) | Procurement (Ops Review, Estimates, Parts Orders) | Logistics (Shipping, Jobs, Scheduling, Project Tracker) | Resources (Parts Catalog) | Settings
+- **Field:** Home | Search | Inspections & Service (My Jobs, Team Schedule) | Resources (Parts Catalog) | Settings
+
+**v3.1 Features (Home Page):**
+- **Company Bulletins** - Admin-managed announcements (info, alert, holiday, safety, HR types)
+- **Notifications Panel** - Role-specific updates with mark-as-read functionality
+- **Needs Attention Panel** - Pink jobs, pending reviews, scheduled jobs, parts on order
+- **Today's Jobs Panel** - Field view of daily schedule
+- **Bulletin Management** - Admin Settings → Manage → Bulletins tab
 
 **v3.0 Features:**
 - **Sales Pipeline:** Pre-sale view with A/B/C deal grading, 6 stages, deal values
@@ -101,8 +110,8 @@ python3 -m http.server 8080
 | `js/views/scheduling.js` | Scheduling, Jobs view, status tracking data |
 | `js/views/my-jobs.js` | Field My Jobs view, status update functions |
 | `js/views/inspection.js` | Multi-bank inspection flow |
-| `js/views/dashboard.js` | Sales Pipeline, Project Tracker, estimates, accounts/CRM |
-| `js/views/admin.js` | Employee, settings, parts management |
+| `js/views/dashboard.js` | Home page, Sales Pipeline, Project Tracker, estimates, accounts/CRM |
+| `js/views/admin.js` | Employee, settings, parts, bulletin management |
 
 **API (`~/bleachers-api/`):**
 - `api/auth/` - OAuth flow (connect, callback, status)
@@ -155,6 +164,11 @@ python3 -m http.server 8080
 1. Check localStorage in DevTools → Application → Local Storage
 2. Look for keys: `scheduleDataOriginal`, `scheduleDataSouthern`
 3. Clear if corrupted: `localStorage.clear()` in console
+
+**Bulletins/Notifications Not Showing:**
+1. Check localStorage keys: `companyBulletins`, `userNotifications`
+2. Hard refresh (Cmd+Shift+R) to reload data.js
+3. To reset to defaults: delete keys in localStorage and refresh
 
 ---
 
