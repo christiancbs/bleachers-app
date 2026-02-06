@@ -6,7 +6,9 @@
 // Initialize
 function init() {
     populateCustomers();
-    populateJobCustomers();
+    if (typeof populateJobCustomers === 'function') {
+        populateJobCustomers();
+    }
     populateCategories();
     updateDashboardStats();
 
@@ -94,14 +96,25 @@ function login(role) {
         document.getElementById('officeDashboard').classList.remove('hidden');
         // Show/hide admin nav section
         var adminNav = document.getElementById('adminNavSection');
-        if (role === 'admin') {
-            adminNav.classList.remove('hidden');
-            document.getElementById('officeUserAvatar').textContent = 'AD';
-            document.getElementById('officeUserName').textContent = 'Admin';
+        if (adminNav) {
+            if (role === 'admin') {
+                adminNav.classList.remove('hidden');
+                document.getElementById('officeUserAvatar').textContent = 'AD';
+                document.getElementById('officeUserName').textContent = 'Admin';
+            } else {
+                adminNav.classList.add('hidden');
+                document.getElementById('officeUserAvatar').textContent = 'OM';
+                document.getElementById('officeUserName').textContent = 'Office Manager';
+            }
         } else {
-            adminNav.classList.add('hidden');
-            document.getElementById('officeUserAvatar').textContent = 'OM';
-            document.getElementById('officeUserName').textContent = 'Office Manager';
+            // No admin nav section, just update user info
+            if (role === 'admin') {
+                document.getElementById('officeUserAvatar').textContent = 'AD';
+                document.getElementById('officeUserName').textContent = 'Admin';
+            } else {
+                document.getElementById('officeUserAvatar').textContent = 'OM';
+                document.getElementById('officeUserName').textContent = 'Office Manager';
+            }
         }
         loadOfficeDashboard();
         // Defer showing pipeline to next frame to ensure DOM is painted

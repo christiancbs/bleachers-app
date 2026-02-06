@@ -1002,3 +1002,6 @@ function addGoalInspection() {
 
 // Add issue for bleacher/outdoor inspections
 function addIssue(type) {
+    // TODO: Implement add issue functionality
+    console.log('addIssue called with type:', type);
+}
