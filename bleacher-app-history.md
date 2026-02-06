@@ -4,6 +4,79 @@
 
 ---
 
+## Version 3.0.0 (February 6, 2026)
+
+**MAJOR RELEASE: Sales/Operations Separation & Feedback Implementation**
+
+### Key Changes
+
+**Pipeline Split:**
+- Renamed "Pipeline" → "Project Tracker" (moved to Logistics section)
+- Created new "Sales Pipeline" in Sales section
+- Sales Pipeline: Pre-sale tracking with A/B/C deal grading, 6 Salesmate stages, deal values
+- Project Tracker: Post-sale operations with date fields (received, started, target, completed), oldest→newest sorting, labor amounts
+
+**New Features:**
+- **Special Instructions:** Amber warning box at top of work orders for critical job info
+- **Confirmed Status:** Visual confirmation tracking in schedule (✓✓ green = confirmed, ✓ orange = attempted, — gray = not confirmed)
+- **Equipment Rental Tags:** 🚜 badges identify jobs requiring lifts/equipment
+- **Estimate Line Items:** Shipping and Labor as separate, visible line items
+- **Internal Notes:** Office-only notes section with 🔒 icon, not visible to customers/field
+
+**Development:**
+- Branch: `v3-feedback-implementation` merged to `main`
+- 16 features implemented in 1 day (Feb 6, 2026)
+- Addressed feedback from Story (Director of Operations) and Atiba prototype comparison
+
+**Commits:**
+- `71e5a8a` - Special Instructions field
+- `f07d376` - Confirmed/Unconfirmed status column
+- `a33eb4b` - Equipment rental tag
+- `73c343e` - Shipping and Labor line items
+- `89106f6` - Internal Notes field
+
+---
+
+## Version 2.1.3 (February 6, 2026)
+
+**Final v2 Release (Tagged before v3 merge)**
+
+**Bug Fix:**
+- Fixed `logout()` function crashing due to null reference
+- Issue: Attempted to access `adminNavSection` element that doesn't exist in HTML
+- Fix: Added null check before accessing element classList
+- Location: js/app.js:166
+
+---
+
+## Version 2.1 - 2.1.2 (February 5-6, 2026)
+
+**Live Status Tracking System**
+
+**Features:**
+- Live status tracking (scheduled → en route → checked in → complete/unable to complete)
+- Jobs view for Office/Admin (operational real-time status board)
+- Status Flow: Scheduled → En Route → Checked In → Complete/Unable to Complete
+- Auto-timestamps for check-in and completion
+- Unable to Complete modal with reason selection, notes, photo upload
+- Week progress tracking (X/Y jobs completed with percentage)
+- Status badges and action buttons on My Jobs and Jobs views
+- Status column added to Scheduling spreadsheet view
+
+**v2.1.1 Bug Fix:**
+- Fixed syntax error in js/views/inspection.js line 976
+- Unescaped double quote in placeholder attribute broke JavaScript loading
+
+**v2.1.2 Code Organization:**
+- Added section comments to all large JS view files
+- scheduling.js (55KB): 8 sections
+- inspection.js (43KB): 7 sections
+- dashboard.js (47KB): 6 sections
+- my-jobs.js (18KB): 3 sections
+- admin.js (29KB): 3 sections
+
+---
+
 ## Version 2.0 (February 5, 2026)
 
 **MAJOR RELEASE: Navigation Refactor & Field Create**
