@@ -151,6 +151,7 @@ function loadMyJobs() {
                             ${isContinued ? '<em>Continued from previous day</em>' : job.details}
                         </div>
                         ${job.partsLocation ? `<div style="color: #e65100; font-size: 13px; margin-bottom: 4px;"><strong>Parts:</strong> ${job.partsLocation}</div>` : ''}
+                        ${job.equipmentRental ? `<div style="margin-bottom: 4px;"><span class="badge" style="background: #fff3e0; color: #ef6c00; font-size: 11px; padding: 4px 8px;">🚜 Equipment Rental Required</span></div>` : ''}
                         ${job.notes ? `<div style="color: #6c757d; font-size: 12px; margin-bottom: 4px;">${job.notes}</div>` : ''}
                         ${timestampHtml}
                         ${job.confirmation === 'XX' ? '<span class="badge badge-success" style="margin-top: 8px;">Confirmed</span>' : job.confirmation === 'X' ? '<span class="badge badge-warning" style="margin-top: 8px;">Confirmation Pending</span>' : ''}
@@ -269,7 +270,7 @@ function renderTeamScheduleGrid() {
                     }
 
                     html += '<tr class="' + rowClass + '">';
-                    html += '<td style="font-weight: 600;">' + job.school + '</td>';
+                    html += '<td style="font-weight: 600;">' + job.school + (job.equipmentRental ? ' <span class="badge" style="background: #fff3e0; color: #ef6c00; font-size: 10px; padding: 2px 6px; margin-left: 6px;">🚜 EQUIPMENT</span>' : '') + '</td>';
                     html += '<td>' + (isContinued ? '<em style="color: #1565c0;">Continued</em>' : formattedDetails) + '</td>';
                     html += '<td>' + (job.tech || '') + '</td>';
                     html += '<td style="text-align: center;">' + confirmIcon + '</td>';

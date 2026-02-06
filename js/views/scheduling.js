@@ -85,6 +85,7 @@ function initializeSampleScheduleData() {
                 partsLocation: 'TN Shop',
                 specialInstructions: 'Customer will have gym cleared by 8am. Enter through back door - front office doesn\'t open until 9.',
                 confirmation: 'XX',
+                equipmentRental: true,
                 isPink: false,
                 status: 'complete',
                 completedAt: '2025-02-03T11:15:00'
@@ -203,6 +204,7 @@ function initializeSampleScheduleData() {
                 tech: 'Field Tech',
                 partsLocation: 'TN Shop',
                 specialInstructions: 'School in session. Work during gym class break 1:30-3:00 PM only. Check in with front office first.',
+                equipmentRental: true,
                 isPink: false,
                 status: 'en_route'
             },
@@ -845,7 +847,7 @@ function renderWeeklySchedule() {
                     }
 
                     html += '<tr class="' + rowClass + '" style="' + (status === 'complete' ? 'opacity: 0.6;' : '') + '">';
-                    html += '<td style="font-weight: 600;">' + job.school + '</td>';
+                    html += '<td style="font-weight: 600;">' + job.school + (job.equipmentRental ? ' <span class="badge" style="background: #fff3e0; color: #ef6c00; font-size: 10px; padding: 2px 6px; margin-left: 6px;">🚜 EQUIPMENT</span>' : '') + '</td>';
                     html += '<td>' + (isContinued ? '<em style="color: #1565c0;">Continued</em>' : formattedDetails) + '</td>';
                     html += '<td>' + (job.tech || '') + '</td>';
                     html += '<td><span class="badge" style="background: ' + statusStyle.bg + '; color: ' + statusStyle.color + '; font-size: 11px; padding: 3px 8px;">' + statusStyle.label + '</span></td>';
@@ -1015,6 +1017,7 @@ function saveScheduleEntry() {
     const tech = document.getElementById('entryTech').value;
     const partsLocation = document.getElementById('entryPartsLocation').value;
     const confirmation = document.getElementById('entryConfirmation').value;
+    const equipmentRental = document.getElementById('entryEquipmentRental').checked;
     const notes = document.getElementById('entryNotes').value;
 
     // Get the date key for the selected day
@@ -1029,6 +1032,7 @@ function saveScheduleEntry() {
         tech: tech,
         partsLocation: partsLocation,
         confirmation: confirmation,
+        equipmentRental: equipmentRental,
         notes: notes
     };
 
