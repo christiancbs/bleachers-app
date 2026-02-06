@@ -138,7 +138,17 @@ function closeEmployeeModal() {
 }
 
 function loadDataManagement() {
-    switchDataTab('employees');
+    // Hide Employees tab for office users (admin only)
+    var empTab = document.getElementById('dmTabEmployees');
+    if (empTab) {
+        if (currentRole === 'admin') {
+            empTab.style.display = '';
+            switchDataTab('employees');
+        } else {
+            empTab.style.display = 'none';
+            switchDataTab('parts');
+        }
+    }
 }
 
 // ==========================================
@@ -158,8 +168,8 @@ function loadSettings() {
         document.getElementById('settingsQBSection').classList.add('hidden');
     }
 
-    // Show Data Management section for Admin only
-    if (currentRole === 'admin') {
+    // Show Data Management section for Admin and Office
+    if (currentRole === 'admin' || currentRole === 'office') {
         document.getElementById('settingsDataSection').classList.remove('hidden');
         loadDataManagement();
     } else {
