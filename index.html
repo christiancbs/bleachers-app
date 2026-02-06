@@ -53,22 +53,17 @@
                     <div class="sidebar-close-btn">✕</div>
                 </div>
                 <div class="sidebar-nav">
+                    <!-- Search -->
                     <div class="nav-item" data-view="officeSearch" onclick="showView('officeSearch')">
                         <span>🔍</span>
                         <span>Search</span>
                     </div>
+
+                    <!-- Sales -->
                     <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
-                        <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Office & Sales</span>
+                        <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Sales</span>
                     </div>
-                    <div class="nav-item active" data-view="dashboard" onclick="showView('dashboard')">
-                        <span>📊</span>
-                        <span>Dashboard</span>
-                    </div>
-                    <div class="nav-item" data-view="estimates" onclick="showView('estimates')">
-                        <span>📄</span>
-                        <span>Estimates</span>
-                    </div>
-                    <div class="nav-item" data-view="projects" onclick="showView('projects')">
+                    <div class="nav-item active" data-view="projects" onclick="showView('projects')">
                         <span>🔄</span>
                         <span>Pipeline</span>
                     </div>
@@ -76,37 +71,53 @@
                         <span>🏫</span>
                         <span>Accounts</span>
                     </div>
+
+                    <!-- Procurement -->
                     <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
-                        <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Inspections & Service</span>
+                        <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Procurement</span>
                     </div>
                     <div class="nav-item" data-view="opsReview" onclick="showView('opsReview')">
                         <span>📋</span>
                         <span>Ops Review <span id="opsReviewBadge" class="badge" style="background: #fff3e0; color: #e65100; margin-left: 4px; font-size: 10px; padding: 2px 6px;">0</span></span>
                     </div>
+                    <div class="nav-item" data-view="estimates" onclick="showView('estimates')">
+                        <span>💰</span>
+                        <span>Estimates</span>
+                    </div>
+                    <div class="nav-item" data-view="partsOrders" onclick="showView('partsOrders')">
+                        <span>📦</span>
+                        <span>Parts Orders</span>
+                    </div>
+
+                    <!-- Logistics -->
+                    <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
+                        <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Logistics</span>
+                    </div>
+                    <div class="nav-item" data-view="shipping" onclick="showView('shipping')">
+                        <span>🚚</span>
+                        <span>Shipping</span>
+                    </div>
                     <div class="nav-item" data-view="scheduling" onclick="showView('scheduling')">
                         <span>📅</span>
                         <span>Scheduling</span>
                     </div>
+
+                    <!-- Resources -->
+                    <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
+                        <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Resources</span>
+                    </div>
                     <div class="nav-item" data-view="parts" onclick="showView('parts')">
-                        <span>📦</span>
-                        <span>Parts & Orders</span>
+                        <span>🔧</span>
+                        <span>Parts Catalog</span>
                     </div>
-                    <div class="nav-item" data-view="officeCreate" onclick="showView('officeCreate')">
-                        <span>+</span>
-                        <span>Create</span>
-                    </div>
-                    <div id="adminNavSection" class="hidden">
-                        <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
-                            <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Admin</span>
-                        </div>
-                        <div class="nav-item" data-view="employees" onclick="showView('employees')">
-                            <span>👥</span>
-                            <span>Employees</span>
-                        </div>
-                        <div class="nav-item" data-view="dataManagement" onclick="showView('dataManagement')">
-                            <span>🗄️</span>
-                            <span>Data Management</span>
-                        </div>
+
+                    <!-- Bottom-aligned items -->
+                    <div class="sidebar-spacer"></div>
+
+                    <!-- Settings (Office + Admin) -->
+                    <div class="nav-item" data-view="settings" onclick="showView('settings')">
+                        <span>⚙️</span>
+                        <span>Settings</span>
                     </div>
                 </div>
                 <div class="sidebar-footer">
@@ -172,7 +183,7 @@
                                 <div class="pipeline-status">
                                     <div class="status-box review">
                                         <div class="status-count">5</div>
-                                        <div class="status-label">Review Queue</div>
+                                        <div class="status-label">Ops Review</div>
                                     </div>
                                     <div class="status-box ordering">
                                         <div class="status-count">12</div>
@@ -235,8 +246,8 @@
                         <div class="page-header">
                             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
                                 <div>
-                                    <h1 class="page-title">Estimate Review Dashboard</h1>
-                                    <p class="page-subtitle">Review parts specifications and create customer estimates</p>
+                                    <h1 class="page-title">Estimates</h1>
+                                    <p class="page-subtitle">Manage customer estimates and create new ones</p>
                                 </div>
                                 <a href="https://app.qbo.intuit.com" target="_blank" rel="noopener" class="btn btn-outline" style="font-size: 13px; display: flex; align-items: center; gap: 6px; white-space: nowrap;">
                                     Open QuickBooks ↗
@@ -244,16 +255,56 @@
                             </div>
                         </div>
 
-                        <div style="margin-bottom: 20px;">
-                            <input type="text" id="estimateSearch" class="form-input" placeholder="Search estimates by customer, location, or job number..." oninput="loadEstimates()" style="max-width: 450px;">
+                        <!-- Filter Tabs -->
+                        <div style="display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e9ecef;">
+                            <button class="schedule-tab active" onclick="filterEstimates('all')" id="estFilterAll">All</button>
+                            <button class="schedule-tab" onclick="filterEstimates('pending')" id="estFilterPending">Pending Estimates <span id="estPendingCount" class="badge" style="background: #fff3e0; color: #e65100; margin-left: 6px;">0</span></button>
+                            <button class="schedule-tab" onclick="filterEstimates('accepted')" id="estFilterAccepted">Accepted Estimates <span id="estAcceptedCount" class="badge" style="background: #c8e6c9; color: #2e7d32; margin-left: 6px;">0</span></button>
+                            <button class="schedule-tab" onclick="filterEstimates('create')" id="estFilterCreate">+ Create Estimate</button>
                         </div>
 
-                        <div class="card">
-                            <div class="card-header">
-                                <h2 class="card-title">Pending Review (<span id="pendingCount">0</span>)</h2>
+                        <!-- All Tab Content -->
+                        <div id="estimatesAllTab">
+                            <div style="margin-bottom: 20px;">
+                                <input type="text" id="allEstimateSearch" class="form-input" placeholder="Search all estimates..." oninput="loadEstimatesList()" style="max-width: 450px;">
                             </div>
-                            <div class="card-body" id="estimatesList">
-                                <!-- Populated by JavaScript -->
+                            <div class="card">
+                                <div class="card-body" id="allEstimatesList" style="padding: 0;">
+                                    <!-- Populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pending Tab Content -->
+                        <div id="estimatesPendingTab" class="hidden">
+                            <div style="margin-bottom: 20px;">
+                                <input type="text" id="estimateSearch" class="form-input" placeholder="Search estimates by customer, location, or job number..." oninput="loadEstimatesList()" style="max-width: 450px;">
+                            </div>
+                            <div class="card">
+                                <div class="card-body" id="estimatesList" style="padding: 0;">
+                                    <!-- Populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Accepted Tab Content -->
+                        <div id="estimatesAcceptedTab" class="hidden">
+                            <div style="margin-bottom: 20px;">
+                                <input type="text" id="acceptedEstimateSearch" class="form-input" placeholder="Search accepted estimates..." oninput="loadEstimatesList()" style="max-width: 450px;">
+                            </div>
+                            <div class="card">
+                                <div class="card-body" id="acceptedEstimatesList" style="padding: 0;">
+                                    <!-- Populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Create Tab Content -->
+                        <div id="estimatesCreateTab" class="hidden">
+                            <div class="card">
+                                <div class="card-body" id="createEstimateForm">
+                                    <!-- Populated by JavaScript -->
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -282,11 +333,35 @@
                         </div>
                     </div>
 
-                    <!-- Parts View -->
+                    <!-- Parts Catalog View -->
                     <div id="partsView" class="hidden">
                         <div class="page-header">
-                            <h1 class="page-title">Parts & Inventory Management</h1>
-                            <p class="page-subtitle">Track parts ordering, receiving, and warehouse locations</p>
+                            <h1 class="page-title">Parts Catalog</h1>
+                            <p class="page-subtitle">Search parts across all vendors for pricing and info</p>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-body">
+                                <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                                    <input type="text" id="officePartSearchInput" class="form-input" placeholder="Search by part name, number, or description..." style="font-size: 16px; padding: 14px 16px; flex: 1;" oninput="searchOfficeParts()">
+                                    <select id="officePartVendorFilter" class="form-input" style="width: 200px;" onchange="searchOfficeParts()">
+                                        <option value="">All Vendors</option>
+                                        <option value="Hussey">Hussey Seating Co</option>
+                                        <option value="Draper">Draper (coming soon)</option>
+                                    </select>
+                                </div>
+                                <div id="officePartSearchResults" style="margin-top: 16px;">
+                                    <div style="text-align: center; padding: 40px; color: #6c757d;">Enter a part name, number, or description to search the catalog</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Parts Orders View -->
+                    <div id="partsOrdersView" class="hidden">
+                        <div class="page-header">
+                            <h1 class="page-title">Parts Orders</h1>
+                            <p class="page-subtitle">Track orders, receiving, and inventory status</p>
                         </div>
 
                         <div class="stats-grid">
@@ -296,34 +371,75 @@
                                 <div class="stat-subtitle">Awaiting delivery</div>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-label">Received Items</div>
-                                <div class="stat-value">3</div>
+                                <div class="stat-label">In Transit</div>
+                                <div class="stat-value">5</div>
+                                <div class="stat-subtitle">On the way</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Received</div>
+                                <div class="stat-value">8</div>
                                 <div class="stat-subtitle">Ready for jobs</div>
                             </div>
                         </div>
 
                         <div class="card">
                             <div class="card-header">
-                                <h2 class="card-title">Purchase Orders</h2>
+                                <h2 class="card-title">Order Tracking</h2>
                             </div>
                             <div class="card-body">
-                                <p style="color: #6c757d;">Purchase order tracking will appear here...</p>
+                                <p style="color: #6c757d;">Parts order tracking coming soon...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shipping View -->
+                    <div id="shippingView" class="hidden">
+                        <div class="page-header">
+                            <h1 class="page-title">Shipping</h1>
+                            <p class="page-subtitle">Coordinate parts delivery to job sites and warehouse</p>
+                        </div>
+
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">Shipments This Week</div>
+                                <div class="stat-value">12</div>
+                                <div class="stat-subtitle">To job sites</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Awaiting Pickup</div>
+                                <div class="stat-value">4</div>
+                                <div class="stat-subtitle">At warehouse</div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">Shipping Coordination</h2>
+                            </div>
+                            <div class="card-body">
+                                <p style="color: #6c757d;">Shipping coordination coming soon...</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Accounts View -->
                     <div id="accountsView" class="hidden">
-                        <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
-                            <div>
-                                <h1 class="page-title">Accounts</h1>
-                                <p class="page-subtitle">Manage customer accounts and their locations</p>
-                            </div>
-                            <button class="btn btn-primary" onclick="showAddCustomerModal()">+ New Customer</button>
+                        <div class="page-header">
+                            <h1 class="page-title">Accounts</h1>
+                            <p class="page-subtitle">Manage customer accounts and their locations</p>
                         </div>
 
                         <div style="margin-bottom: 24px;">
-                            <input type="text" id="accountSearch" class="form-input" placeholder="Search customers or locations..." oninput="filterAccounts()" style="max-width: 400px;">
+                            <button class="btn btn-primary" onclick="showAddCustomerModal()" style="margin-bottom: 16px;">+ New Customer</button>
+                            <div style="display: flex; gap: 12px; align-items: center;">
+                                <input type="text" id="accountSearch" class="form-input" placeholder="Search customers or locations..." oninput="filterAccounts()" style="max-width: 400px;">
+                                <select id="accountTerritoryFilter" class="form-input" onchange="filterAccounts()" style="width: 180px;">
+                                    <option value="">All Territories</option>
+                                    <option value="Original">Original</option>
+                                    <option value="Southern">Southern</option>
+                                    <option value="House">House Account</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="card">
@@ -355,7 +471,7 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="form-group">
-                                        <label class="form-label">Billing Address</label>
+                                        <label class="form-label">Address</label>
                                         <p id="custDetailAddress" style="font-size: 14px;">100 S Jefferson St, Ripley, TN 38063</p>
                                     </div>
                                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
@@ -480,27 +596,12 @@
                             <p class="page-subtitle">Review submitted inspections and generate estimates</p>
                         </div>
 
-                        <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 24px;">
-                            <div class="stat-card" style="background: #fff3e0; cursor: pointer;" onclick="filterOpsReview('submitted')">
-                                <div class="stat-value" style="color: #e65100;" id="opsNeedsReviewCount">0</div>
-                                <div class="stat-label">Needs Review</div>
-                            </div>
-                            <div class="stat-card" style="background: #e3f2fd; cursor: pointer;" onclick="filterOpsReview('under_review')">
-                                <div class="stat-value" style="color: #1565c0;" id="opsUnderReviewCount">0</div>
-                                <div class="stat-label">Under Review</div>
-                            </div>
-                            <div class="stat-card" style="background: #e8f5e9; cursor: pointer;" onclick="filterOpsReview('approved')">
-                                <div class="stat-value" style="color: #2e7d32;" id="opsApprovedCount">0</div>
-                                <div class="stat-label">Approved</div>
-                            </div>
-                        </div>
-
-                        <!-- Filter Tabs -->
+                        <!-- Filter Tabs with Badges -->
                         <div style="display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e9ecef;">
                             <button class="schedule-tab active" onclick="filterOpsReview('all')" id="opsFilterAll">All</button>
-                            <button class="schedule-tab" onclick="filterOpsReview('submitted')" id="opsFilterSubmitted">Needs Review</button>
-                            <button class="schedule-tab" onclick="filterOpsReview('under_review')" id="opsFilterUnderReview">Under Review</button>
-                            <button class="schedule-tab" onclick="filterOpsReview('approved')" id="opsFilterApproved">Approved</button>
+                            <button class="schedule-tab" onclick="filterOpsReview('submitted')" id="opsFilterSubmitted">Needs Review <span id="opsNeedsReviewCount" class="badge" style="background: #ffcdd2; color: #c62828; margin-left: 6px;">0</span></button>
+                            <button class="schedule-tab" onclick="filterOpsReview('under_review')" id="opsFilterUnderReview">Under Review <span id="opsUnderReviewCount" class="badge" style="background: #fff3e0; color: #e65100; margin-left: 6px;">0</span></button>
+                            <button class="schedule-tab" onclick="filterOpsReview('approved')" id="opsFilterApproved">Approved <span id="opsApprovedCount" class="badge" style="background: #c8e6c9; color: #2e7d32; margin-left: 6px;">0</span></button>
                         </div>
 
                         <div class="card">
@@ -1098,7 +1199,7 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Billing Address *</label>
+                                <label class="form-label">Address *</label>
                                 <input type="text" id="custAddress" class="form-input" placeholder="123 Main St, City, TN 12345">
                             </div>
                             <div class="form-group">
@@ -1110,6 +1211,7 @@
                                 <select id="custTerritory" class="form-select">
                                     <option value="Original">Original (KY/TN)</option>
                                     <option value="Southern">Southern (AL/FL)</option>
+                                    <option value="House">House Account</option>
                                 </select>
                             </div>
                             <div style="display: flex; gap: 12px; margin-top: 24px;">
@@ -1195,22 +1297,81 @@
                         </div>
                     </div>
 
-                    <!-- Data Management View (Admin Only) -->
-                    <div id="dataManagementView" class="hidden">
+                    <!-- Settings View (Admin Only) -->
+                    <div id="settingsView" class="hidden">
                         <div class="page-header">
-                            <h1 class="page-title">Data Management</h1>
-                            <p class="page-subtitle">Parts catalog, pricing updates, and vendor management</p>
+                            <h1 class="page-title">Settings</h1>
+                            <p class="page-subtitle">Profile, integrations, and data management</p>
                         </div>
 
-                        <!-- Tabs -->
-                        <div style="display: flex; gap: 0; margin-bottom: 24px; border-bottom: 2px solid #dee2e6;">
-                            <button class="btn" id="dmTabParts" onclick="switchDataTab('parts')" style="border: none; border-bottom: 3px solid #4f46e5; border-radius: 0; padding: 12px 24px; font-weight: 600; color: #4f46e5;">Parts Catalog</button>
-                            <button class="btn" id="dmTabImport" onclick="switchDataTab('import')" style="border: none; border-bottom: 3px solid transparent; border-radius: 0; padding: 12px 24px; font-weight: 600; color: #6c757d;">Import Pricing</button>
-                            <button class="btn" id="dmTabVendors" onclick="switchDataTab('vendors')" style="border: none; border-bottom: 3px solid transparent; border-radius: 0; padding: 12px 24px; font-weight: 600; color: #6c757d;">Vendors</button>
+                        <!-- Profile Section (Everyone) -->
+                        <div class="card" style="margin-bottom: 24px;">
+                            <div class="card-header">
+                                <h2 class="card-title">Profile</h2>
+                            </div>
+                            <div class="card-body">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label class="form-label">Name</label>
+                                        <input type="text" id="settingsUserName" class="form-input" placeholder="Your name">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label class="form-label">Phone</label>
+                                        <input type="tel" id="settingsUserPhone" class="form-input" placeholder="(555) 123-4567">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label class="form-label">Email</label>
+                                        <input type="email" id="settingsUserEmail" class="form-input" placeholder="you@example.com">
+                                    </div>
+                                </div>
+                                <div style="margin-top: 16px;">
+                                    <button class="btn btn-primary" onclick="saveUserProfile()">Save Profile</button>
+                                </div>
+                            </div>
                         </div>
+
+                        <!-- QuickBooks Section (Office + Admin) -->
+                        <div id="settingsQBSection" class="card hidden" style="margin-bottom: 24px;">
+                            <div class="card-header">
+                                <h2 class="card-title">QuickBooks Integration</h2>
+                            </div>
+                            <div class="card-body">
+                                <div style="display: flex; align-items: center; gap: 16px;">
+                                    <div id="qbStatusIndicator" style="width: 12px; height: 12px; border-radius: 50%; background: #9e9e9e;"></div>
+                                    <div style="flex: 1;">
+                                        <p style="font-weight: 600; margin-bottom: 2px;" id="qbStatusText">Checking connection...</p>
+                                        <p style="font-size: 13px; color: #6c757d;" id="qbStatusDetail">Verifying QuickBooks Online connection status</p>
+                                    </div>
+                                    <button class="btn btn-outline" id="qbReconnectBtn" onclick="reconnectQuickBooks()" style="display: none;">Reconnect</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Manage Section (Admin Only) -->
+                        <div id="settingsDataSection" class="hidden">
+                            <div class="card">
+                                <div class="card-header" style="border-bottom: none; padding-bottom: 0;">
+                                    <h2 class="card-title">Manage</h2>
+                                </div>
+                                <div class="card-body" style="padding-top: 12px;">
+                                    <!-- Tabs -->
+                                    <div style="display: flex; gap: 0; margin-bottom: 24px; border-bottom: 2px solid #dee2e6;">
+                                        <button class="btn" id="dmTabEmployees" onclick="switchDataTab('employees')" style="border: none; border-bottom: 3px solid #4f46e5; border-radius: 0; padding: 12px 24px; font-weight: 600; color: #4f46e5;">Employees</button>
+                                        <button class="btn" id="dmTabParts" onclick="switchDataTab('parts')" style="border: none; border-bottom: 3px solid transparent; border-radius: 0; padding: 12px 24px; font-weight: 600; color: #6c757d;">Parts Catalog</button>
+                                        <button class="btn" id="dmTabImport" onclick="switchDataTab('import')" style="border: none; border-bottom: 3px solid transparent; border-radius: 0; padding: 12px 24px; font-weight: 600; color: #6c757d;">Import Pricing</button>
+                                        <button class="btn" id="dmTabVendors" onclick="switchDataTab('vendors')" style="border: none; border-bottom: 3px solid transparent; border-radius: 0; padding: 12px 24px; font-weight: 600; color: #6c757d;">Vendors</button>
+                                    </div>
+
+                                    <!-- Employees Tab -->
+                                    <div id="dmEmployeesTab">
+                                        <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+                                            <button class="btn btn-primary" onclick="showAddEmployeeModal()">+ Add Employee</button>
+                                        </div>
+                                        <div id="employeesListManage"></div>
+                                    </div>
 
                         <!-- Parts Catalog Tab -->
-                        <div id="dmPartsTab">
+                        <div id="dmPartsTab" class="hidden">
                             <div style="display: flex; gap: 12px; margin-bottom: 16px;">
                                 <input type="text" id="dmPartsSearch" class="form-input" placeholder="Search parts by name, number, or category..." oninput="filterAdminParts()" style="flex: 1;">
                                 <select id="dmPartsCategoryFilter" class="form-select" onchange="filterAdminParts()" style="width: 200px;">
@@ -1325,12 +1486,15 @@
                             </div>
                         </div>
 
-                        <!-- Vendors Tab -->
-                        <div id="dmVendorsTab" class="hidden">
-                            <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
-                                <button class="btn btn-primary" onclick="showAddVendorModal()">+ Add Vendor</button>
+                                    <!-- Vendors Tab -->
+                                    <div id="dmVendorsTab" class="hidden">
+                                        <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+                                            <button class="btn btn-primary" onclick="showAddVendorModal()">+ Add Vendor</button>
+                                        </div>
+                                        <div id="vendorsList"></div>
+                                    </div>
+                                </div>
                             </div>
-                            <div id="vendorsList"></div>
                         </div>
                     </div>
 
@@ -1964,10 +2128,13 @@
                     <div class="sidebar-close-btn">✕</div>
                 </div>
                 <div class="sidebar-nav">
+                    <!-- Search -->
                     <div class="nav-item" data-view="search" onclick="showTechView('search')">
                         <span>🔍</span>
                         <span>Search</span>
                     </div>
+
+                    <!-- Inspections & Service -->
                     <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
                         <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Inspections & Service</span>
                     </div>
@@ -1979,16 +2146,30 @@
                         <span>👥</span>
                         <span>Team Schedule</span>
                     </div>
-                    <div class="nav-item" data-view="create" onclick="showTechView('create')">
-                        <span>+</span>
-                        <span>Create</span>
+
+                    <!-- Resources -->
+                    <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
+                        <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Resources</span>
+                    </div>
+                    <div class="nav-item" data-view="parts" onclick="showTechView('parts')">
+                        <span>🔧</span>
+                        <span>Parts Catalog</span>
+                    </div>
+
+                    <!-- Bottom-aligned items -->
+                    <div class="sidebar-spacer"></div>
+
+                    <!-- Settings -->
+                    <div class="nav-item" data-view="settings" onclick="showTechView('settings')">
+                        <span>⚙️</span>
+                        <span>Settings</span>
                     </div>
                 </div>
                 <div class="sidebar-footer">
                     <div class="user-info" onclick="logout()">
-                        <div class="user-avatar">FS</div>
+                        <div class="user-avatar" id="techUserAvatar">FS</div>
                         <div>
-                            <div style="font-size: 14px; font-weight: 600;">Field Staff</div>
+                            <div style="font-size: 14px; font-weight: 600;" id="techUserName">Field Staff</div>
                             <div style="font-size: 12px; opacity: 0.7;">Logout</div>
                         </div>
                     </div>
@@ -2019,9 +2200,12 @@
                     <!-- My Jobs View (Personal Weekly Schedule) -->
                     <div id="techMyJobsView" class="hidden">
                         <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
-                            <div>
-                                <h1 class="page-title">My Jobs</h1>
-                                <p class="page-subtitle">Your schedule for this week</p>
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <div>
+                                    <h1 class="page-title">My Jobs</h1>
+                                    <p class="page-subtitle">Your schedule for this week</p>
+                                </div>
+                                <button class="btn btn-primary" onclick="showTechView('fieldCreate')" style="padding: 10px 20px; width: fit-content;">+ Create Job</button>
                             </div>
                             <div style="display: flex; gap: 12px; align-items: center;">
                                 <button class="btn btn-outline" onclick="prevMyJobsWeek()" style="padding: 8px 12px;">← Prev</button>
@@ -2054,6 +2238,160 @@
                         </div>
 
                         <div id="teamScheduleGrid"></div>
+                    </div>
+
+                    <!-- Field Create View -->
+                    <div id="fieldCreateView" class="hidden">
+                        <div class="page-header">
+                            <h1 class="page-title">Create Job</h1>
+                            <p class="page-subtitle">Start a new job</p>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">Job Info</h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="form-label">What are you creating? *</label>
+                                    <select id="fieldCreateTypeSelect" class="form-select" onchange="onFieldCreateTypeChange()" style="font-size: 16px; padding: 14px;">
+                                        <option value="">Select...</option>
+                                        <option value="parts_spec">Parts Spec Form</option>
+                                        <option value="work_order">Work Order</option>
+                                        <option value="inspection">Inspection</option>
+                                    </select>
+                                </div>
+
+                                <div id="fieldCreateFormFields" class="hidden">
+                                    <div class="form-group">
+                                        <label class="form-label">Customer / School *</label>
+                                        <select id="fieldCreateCustomerSelect" class="form-select" onchange="updateFieldCreateCustomerInfo()" style="font-size: 16px; padding: 14px;">
+                                            <option value="">Select a customer...</option>
+                                        </select>
+                                    </div>
+                                    <div id="fieldCreateCustomerInfo" class="hidden" style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-top: 8px; margin-bottom: 16px;">
+                                        <p id="fieldCreateAddress" style="font-size: 13px; color: #6c757d;"></p>
+                                        <p id="fieldCreateContact" style="font-size: 13px; color: #6c757d; margin-top: 4px;"></p>
+                                    </div>
+
+                                    <!-- Inspection-only fields -->
+                                    <div id="fieldCreateInspectionFields" class="hidden">
+                                        <div class="form-group">
+                                            <label class="form-label">Inspection Type *</label>
+                                            <select id="fieldCreateInspectionType" class="form-select" style="font-size: 16px; padding: 14px;">
+                                                <option value="bleacher">Indoor Bleacher Inspection</option>
+                                                <option value="outdoor">Outdoor Aluminum Bleacher Inspection</option>
+                                                <option value="basketball">Basketball Goal Inspection</option>
+                                            </select>
+                                        </div>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                            <div class="form-group">
+                                                <label class="form-label">Job Number</label>
+                                                <input type="text" id="fieldCreateJobNumber" class="form-input" readonly style="background: #e9ecef; font-weight: 700; font-size: 16px;">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Date</label>
+                                                <input type="date" id="fieldCreateJobDate" class="form-input" style="font-size: 16px; padding: 14px;">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Work Order-only fields -->
+                                    <div id="fieldCreateWorkOrderFields" class="hidden">
+                                        <div class="form-group">
+                                            <label class="form-label">Job Type *</label>
+                                            <select id="fieldCreateWoJobType" class="form-select" style="font-size: 16px; padding: 14px;">
+                                                <option value="Service Call">Service Call</option>
+                                                <option value="Repair">Repair</option>
+                                                <option value="Inspection">Inspection</option>
+                                                <option value="Go See">Go See</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Description (Work Order + Parts Spec) -->
+                                    <div id="fieldCreateDescriptionGroup" class="hidden">
+                                        <div class="form-group">
+                                            <label class="form-label">Description *</label>
+                                            <textarea id="fieldCreateDescription" class="form-input" rows="3" placeholder="What needs to be done..." style="font-size: 16px; padding: 14px;"></textarea>
+                                        </div>
+                                    </div>
+
+                                    <!-- Notes (all types) -->
+                                    <div class="form-group">
+                                        <label class="form-label">Notes</label>
+                                        <textarea id="fieldCreateNotes" class="form-input" rows="2" placeholder="Any additional details..." style="font-size: 16px; padding: 14px;"></textarea>
+                                    </div>
+
+                                    <!-- Photo (Work Order + Parts Spec) -->
+                                    <div id="fieldCreatePhotoGroup" class="hidden">
+                                        <div class="form-group">
+                                            <label class="form-label">Photo</label>
+                                            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                                                <label style="width: 80px; height: 80px; border: 2px dashed #dee2e6; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 24px; color: #adb5bd;">
+                                                    📷
+                                                    <input type="file" accept="image/*" style="display: none;" onchange="handleFieldCreatePhoto(this)">
+                                                </label>
+                                                <div id="fieldCreatePhotoPreview"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="fieldCreateSubmitBtn" class="btn btn-primary btn-lg hidden" onclick="submitFieldCreate()" style="width: 100%; margin-top: 16px; padding: 16px; font-size: 16px;">Create</button>
+                    </div>
+
+                    <!-- Tech Parts Catalog View -->
+                    <div id="techPartsView" class="hidden">
+                        <div class="page-header">
+                            <h1 class="page-title">Parts Catalog</h1>
+                            <p class="page-subtitle">Search parts across all vendors</p>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <input type="text" id="techPartSearchInput" class="form-input" placeholder="Search by part name, number, or description..." style="font-size: 16px; padding: 14px 16px;" oninput="searchTechParts()">
+                                </div>
+                                <div id="techPartSearchResults" style="margin-top: 16px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tech Settings View -->
+                    <div id="techSettingsView" class="hidden">
+                        <div class="page-header">
+                            <h1 class="page-title">Settings</h1>
+                            <p class="page-subtitle">Your profile information</p>
+                        </div>
+
+                        <!-- Profile Section -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">Profile</h2>
+                            </div>
+                            <div class="card-body">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label class="form-label">Name</label>
+                                        <input type="text" id="techSettingsUserName" class="form-input" placeholder="Your name">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label class="form-label">Phone</label>
+                                        <input type="tel" id="techSettingsUserPhone" class="form-input" placeholder="(555) 123-4567">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label class="form-label">Email</label>
+                                        <input type="email" id="techSettingsUserEmail" class="form-input" placeholder="you@example.com">
+                                    </div>
+                                </div>
+                                <div style="margin-top: 16px;">
+                                    <button class="btn btn-primary" onclick="saveTechUserProfile()">Save Profile</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Tech Inspections View (Job List) -->

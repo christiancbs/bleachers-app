@@ -104,7 +104,7 @@ function login(role) {
             document.getElementById('officeUserName').textContent = 'Office Manager';
         }
         loadOfficeDashboard();
-        showView('dashboard'); // Default to Dashboard view
+        showView('projects'); // Default to Pipeline
     } else {
         document.getElementById('techDashboard').classList.remove('hidden');
         loadTechDashboard();
@@ -188,6 +188,12 @@ function showView(view) {
     } else if (view === 'parts') {
         document.getElementById('partsView').classList.remove('hidden');
         setActiveNav('parts');
+    } else if (view === 'partsOrders') {
+        document.getElementById('partsOrdersView').classList.remove('hidden');
+        setActiveNav('partsOrders');
+    } else if (view === 'shipping') {
+        document.getElementById('shippingView').classList.remove('hidden');
+        setActiveNav('shipping');
     } else if (view === 'opsReview') {
         document.getElementById('opsReviewView').classList.remove('hidden');
         setActiveNav('opsReview');
@@ -223,10 +229,10 @@ function showView(view) {
         document.getElementById('employeesView').classList.remove('hidden');
         setActiveNav('employees');
         loadEmployees();
-    } else if (view === 'dataManagement') {
-        document.getElementById('dataManagementView').classList.remove('hidden');
-        setActiveNav('dataManagement');
-        loadDataManagement();
+    } else if (view === 'settings') {
+        document.getElementById('settingsView').classList.remove('hidden');
+        setActiveNav('settings');
+        loadSettings();
     }
 }
 
@@ -240,6 +246,7 @@ function showTechView(view) {
     document.getElementById('bankInspectionView')?.classList.add('hidden');
     document.getElementById('jobSummaryView')?.classList.add('hidden');
     document.getElementById('newInspectionView')?.classList.add('hidden');
+    document.getElementById('fieldCreateView')?.classList.add('hidden');
     document.querySelectorAll('#techDashboard .nav-item').forEach(el => el.classList.remove('active'));
 
     // Helper to set active nav by data-view attribute
@@ -259,6 +266,15 @@ function showTechView(view) {
         document.getElementById('techMyJobsView').classList.remove('hidden');
         setActiveNav('myjobs');
         loadMyJobs();
+    } else if (view === 'fieldCreate') {
+        var fieldView = document.getElementById('fieldCreateView');
+        console.log('fieldCreate view element:', fieldView);
+        if (fieldView) {
+            fieldView.classList.remove('hidden');
+            console.log('Removed hidden class from fieldCreateView');
+        }
+        setActiveNav('myjobs');
+        initFieldCreateForm();
     } else if (view === 'create') {
         document.getElementById('techCreateView').classList.remove('hidden');
         setActiveNav('create');
@@ -269,14 +285,18 @@ function showTechView(view) {
         loadInspectionJobs();
         loadTechInspections();
     } else if (view === 'parts') {
-        startNewJob();
-        setActiveNav('create');
+        document.getElementById('techPartsView').classList.remove('hidden');
+        setActiveNav('parts');
     } else if (view === 'workorders') {
         document.getElementById('techWorkOrdersView').classList.remove('hidden');
         setActiveNav('create');
     } else if (view === 'workorderdetail') {
         document.getElementById('techWorkOrderDetailView').classList.remove('hidden');
         setActiveNav('create');
+    } else if (view === 'settings') {
+        document.getElementById('techSettingsView').classList.remove('hidden');
+        setActiveNav('settings');
+        loadTechSettings();
     }
 }
 
