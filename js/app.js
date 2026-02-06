@@ -180,7 +180,8 @@ function showView(view) {
     } else if (view === 'projects') {
         document.getElementById('projectsView').classList.remove('hidden');
         setActiveNav('projects');
-        loadPipeline();
+        // Use setTimeout to ensure DOM is ready before loading content
+        setTimeout(function() { loadPipeline(); }, 0);
     } else if (view === 'accounts') {
         document.getElementById('accountsView').classList.remove('hidden');
         setActiveNav('accounts');

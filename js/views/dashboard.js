@@ -436,6 +436,10 @@ function initEstimateCreate() {
 
 function loadPipeline() {
     const container = document.getElementById('pipelineContent');
+    if (!container) {
+        console.error('pipelineContent container not found');
+        return;
+    }
 
     // Merge sample pipeline data with any dynamically created jobs
     var allJobs = PIPELINE_JOBS.slice();
