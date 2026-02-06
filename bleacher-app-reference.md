@@ -1,7 +1,7 @@
 # Bleachers & Seats - App Development Reference
 
 **Last Updated:** February 5, 2026
-**Version:** v2.1.1
+**Version:** v2.1.2
 **Active Branch:** `main`
 
 ---
@@ -45,7 +45,8 @@ python3 -m http.server 8080
 - `v1.0` - Original navigation (archived)
 - `v2.0` - Navigation refactor + field create
 - `v2.1` - Live status tracking + Jobs view
-- `v2.1.1` - Current: Bug fixes + test data for status tracking
+- `v2.1.1` - Bug fixes + test data for status tracking
+- `v2.1.2` - Current: Code organization improvements
 
 ---
 
@@ -82,6 +83,15 @@ python3 -m http.server 8080
 - Field staff can create jobs from My Jobs view
 - Admin/Office default to Pipeline (dashboard view obsolete)
 - Settings moved to bottom of sidebar for all roles
+
+**v2.1.2 Code Organization:**
+- Added section comments to all large JS view files for easier navigation
+- **scheduling.js** (55KB): 8 sections (data, sample data, backlog, shit list, utilities, schedule views, planning, office jobs)
+- **inspection.js** (43KB): 7 sections (init, job creation, bank management, bank data, issue management, job summary, view helpers)
+- **dashboard.js** (47KB): 6 sections (dashboard, estimates, pipeline, accounts/CRM, customer CRUD, location CRUD)
+- **my-jobs.js** (18KB): 3 sections (my jobs view, team schedule, job status management)
+- **admin.js** (29KB): 3 sections (employee management, settings, parts catalog management)
+- Improves code maintainability without changing functionality
 
 ---
 
@@ -225,10 +235,15 @@ python3 -m http.server 8080
 | `js/config.js` | API keys (gitignored) |
 | `js/data.js` | Constants, sample data |
 | `js/app.js` | Core: init, login, routing, nav |
-| `js/views/scheduling.js` | Scheduling, Jobs view, status tracking data |
-| `js/views/my-jobs.js` | Field My Jobs view, status update functions |
-| `js/views/` | Other view modules (inspection, dashboard, ops-review, create, admin, office, field) |
+| `js/views/scheduling.js` | Scheduling, Jobs view, status tracking data (55KB, 8 sections) |
+| `js/views/my-jobs.js` | Field My Jobs view, status update functions (18KB, 3 sections) |
+| `js/views/inspection.js` | Multi-bank inspection flow (43KB, 7 sections) |
+| `js/views/dashboard.js` | Pipeline, estimates, accounts/CRM (47KB, 6 sections) |
+| `js/views/admin.js` | Employee, settings, parts management (29KB, 3 sections) |
+| `js/views/` | Other view modules (ops-review, create, office, field) |
 | `js/utils/` | Utilities (parts-catalog, search) |
+
+**Note:** Large view files now include section comments (e.g., `// ==========================================`) for easier navigation. See v2.1.2 for details.
 
 ### API (`~/bleachers-api/`)
 
@@ -294,6 +309,7 @@ python3 -m http.server 8080
 - localStorage for persistence - works offline but limited to ~5-10MB
 - Sample data hardcoded in scheduling.js - good for demo, will need backend for production
 - Modular JS files - good separation but requires careful load order (see bug fix v2.1.1)
+- Section comments in large files - improves navigation as files grow (v2.1.2)
 
 **Future Considerations:**
 - Consider React/Vue if complexity continues to grow (state management, component reusability)
