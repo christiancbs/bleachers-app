@@ -3,6 +3,11 @@
 // Employees, data management, vendors
 // ==========================================
 
+// ==========================================
+// EMPLOYEE MANAGEMENT
+// Add, edit, delete, load employees
+// ==========================================
+
 function saveEmployeesData() {
     localStorage.setItem('employees', JSON.stringify(EMPLOYEES));
 }
@@ -135,6 +140,11 @@ function closeEmployeeModal() {
 function loadDataManagement() {
     switchDataTab('employees');
 }
+
+// ==========================================
+// SETTINGS
+// User profile, QuickBooks integration
+// ==========================================
 
 function loadSettings() {
     // Load user profile
@@ -287,6 +297,11 @@ function switchDataTab(tab) {
         loadVendors();
     }
 }
+
+// ==========================================
+// PARTS CATALOG MANAGEMENT
+// Add, edit, delete, import parts
+// ==========================================
 
 // Parts Catalog
 function loadAdminParts() {

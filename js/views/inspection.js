@@ -3,6 +3,11 @@
 // Multi-bank jobs, issues, bank tabs, summary
 // ==========================================
 
+// ==========================================
+// INITIALIZATION
+// App setup and data population
+// ==========================================
+
 // Initialize
 function init() {
     populateCustomers();
@@ -42,6 +47,11 @@ function populateJobCustomers() {
     });
     select.innerHTML = html;
 }
+
+// ==========================================
+// JOB CREATION & SETUP
+// New job initialization and customer selection
+// ==========================================
 
 // Start new job
 function startNewJob() {
@@ -149,6 +159,11 @@ function createNewBank(name) {
     };
 }
 
+// ==========================================
+// BANK MANAGEMENT
+// Bank tabs, switching, adding banks
+// ==========================================
+
 // Show bank inspection view
 function showBankInspection() {
     hideAllViews();
@@ -207,6 +222,11 @@ function addNewBank() {
     renderBankTabs();
     document.getElementById('bankCount').textContent = currentJob.banks.length;
 }
+
+// ==========================================
+// BANK DATA (Load/Save)
+// Form data persistence for current bank
+// ==========================================
 
 // Load bank data into form
 function loadBankData() {
@@ -296,6 +316,11 @@ function toggleSection(sectionId) {
     const toggleId = sectionId === 'topSideSection' ? 'topSideToggle' : 'understructureToggle';
     document.getElementById(toggleId).textContent = isHidden ? '▼' : '▶';
 }
+
+// ==========================================
+// ISSUE MANAGEMENT
+// Add, edit, delete, and render issues
+// ==========================================
 
 // Open add issue modal
 function openAddIssueModal() {
@@ -504,6 +529,11 @@ function saveBankAndFinishJob() {
     saveBankData();
     showJobSummary();
 }
+
+// ==========================================
+// JOB SUMMARY
+// Final review and submission
+// ==========================================
 
 // Show job summary
 function showJobSummary() {
@@ -775,6 +805,11 @@ function generateEstimateFromJob() {
     }
 }
 
+// ==========================================
+// JOB LIST & RESUME
+// Loading, viewing, resuming jobs
+// ==========================================
+
 // Go back to job list
 function goBackToJobList() {
     if (currentJob) {
@@ -862,6 +897,11 @@ function viewSubmittedJob(jobNumber) {
         showJobSummary();
     }
 }
+
+// ==========================================
+// VIEW HELPERS & UTILITIES
+// View management, checklist rendering, inspection type handling
+// ==========================================
 
 // Hide all views helper
 function hideAllViews() {
@@ -973,7 +1013,7 @@ function addGoalInspection() {
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label class="form-label" style="font-size: 12px;">Mast Type</label>
-                    <input type="text" id="goal${goalNum}_mast" class="form-input" placeholder='e.g., Center Mast 6 5/8"'>
+                    <input type="text" id="goal${goalNum}_mast" class="form-input" placeholder="e.g., Center Mast 6 5/8&quot;">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label class="form-label" style="font-size: 12px;">Safety Strap Present</label>

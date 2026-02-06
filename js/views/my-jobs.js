@@ -3,6 +3,11 @@
 // Field staff personal schedule and team view
 // ==========================================
 
+// ==========================================
+// MY JOBS VIEW
+// Personal schedule for logged-in field tech
+// ==========================================
+
 function loadMyJobs() {
     initializeSampleScheduleData();
     // Set offset to show sample data week
@@ -13,8 +18,8 @@ function loadMyJobs() {
     label.textContent = getWeekLabel(myJobsWeekOffset);
 
     // Use original territory schedule data and filter for logged-in tech
-    // For demo, show Danny's jobs from the sample data
-    const currentTech = 'Danny';
+    // For demo, show Field Tech jobs from the sample data
+    const currentTech = 'Field Tech';
     const weekStart = getWeekStart(myJobsWeekOffset);
     const container = document.getElementById('myJobsWeekGrid');
     const allData = scheduleDataOriginal;
@@ -22,7 +27,43 @@ function loadMyJobs() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Calculate week progress
+    let totalJobs = 0;
+    let completedJobs = 0;
+    for (let i = 0; i < 5; i++) {
+        const dayDate = new Date(weekStart);
+        dayDate.setDate(weekStart.getDate() + i);
+        const dateKey = formatDateKey(dayDate);
+        const allDayJobs = allData[dateKey] || [];
+        const myDayJobs = allDayJobs.filter(j =>
+            j.tech && j.tech.toLowerCase().includes(currentTech.toLowerCase()) && j.type === 'job'
+        );
+        totalJobs += myDayJobs.length;
+        completedJobs += myDayJobs.filter(j => j.status === 'complete').length;
+    }
+
     let html = '';
+
+    // Add progress indicator
+    if (totalJobs > 0) {
+        const progressPercent = Math.round((completedJobs / totalJobs) * 100);
+        html += `
+            <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body" style="padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; color: white;">
+                        <div>
+                            <div style="font-size: 24px; font-weight: 700;">${completedJobs} / ${totalJobs}</div>
+                            <div style="font-size: 13px; opacity: 0.9;">Jobs Completed This Week</div>
+                        </div>
+                        <div style="font-size: 32px; font-weight: 700;">${progressPercent}%</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.3); height: 8px; border-radius: 4px; margin-top: 12px; overflow: hidden;">
+                        <div style="background: white; height: 100%; width: ${progressPercent}%; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
 
     for (let i = 0; i < 5; i++) {
         const dayDate = new Date(weekStart);
@@ -59,15 +100,54 @@ function loadMyJobs() {
                     </div>
                 `;
             } else {
+                const status = job.status || 'scheduled';
+                const statusConfig = {
+                    'scheduled': { label: 'Scheduled', color: '#6c757d', bg: '#e9ecef' },
+                    'en_route': { label: 'En Route', color: '#0066cc', bg: '#e3f2fd' },
+                    'checked_in': { label: 'Checked In', color: '#1976d2', bg: '#bbdefb' },
+                    'complete': { label: 'Complete', color: '#2e7d32', bg: '#c8e6c9' },
+                    'unable_to_complete': { label: 'Unable to Complete', color: '#c62828', bg: '#ffcdd2' }
+                };
+                const statusStyle = statusConfig[status] || statusConfig['scheduled'];
+
+                // Format timestamps
+                let timestampHtml = '';
+                if (job.checkedInAt) {
+                    const time = new Date(job.checkedInAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    timestampHtml = `<div style="font-size: 12px; color: #1976d2; margin-top: 4px;">✓ Checked in at ${time}</div>`;
+                }
+                if (job.completedAt) {
+                    const time = new Date(job.completedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    timestampHtml = `<div style="font-size: 12px; color: #2e7d32; margin-top: 4px;">✓ Completed at ${time}</div>`;
+                }
+
+                // Action buttons based on status
+                let actionButtons = '';
+                if (status === 'scheduled' || status === 'en_route') {
+                    actionButtons = `<button class="btn btn-primary" style="padding: 6px 12px; font-size: 13px;" onclick="checkInJob('${job.id}')">Check In</button>`;
+                } else if (status === 'checked_in') {
+                    actionButtons = `
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-success" style="padding: 6px 12px; font-size: 13px;" onclick="completeJob('${job.id}')">Mark Complete</button>
+                            <button class="btn btn-outline" style="padding: 6px 12px; font-size: 13px; color: #c62828; border-color: #c62828;" onclick="unableToCompleteJob('${job.id}')">Unable to Complete</button>
+                        </div>
+                    `;
+                }
+
                 html += `
-                    <div style="padding: 16px; border-bottom: 1px solid #f0f0f0; ${isContinued ? 'background: #f0f7ff;' : ''}">
-                        <div style="font-weight: 600; font-size: 15px; margin-bottom: 6px;">${job.school}</div>
+                    <div style="padding: 16px; border-bottom: 1px solid #f0f0f0; ${isContinued ? 'background: #f0f7ff;' : ''} ${status === 'complete' ? 'opacity: 0.7;' : ''}">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                            <div style="font-weight: 600; font-size: 15px;">${job.school}</div>
+                            <span class="badge" style="background: ${statusStyle.bg}; color: ${statusStyle.color}; margin-left: 12px; white-space: nowrap;">${statusStyle.label}</span>
+                        </div>
                         <div style="color: #495057; font-size: 14px; line-height: 1.5; margin-bottom: 8px;">
                             ${isContinued ? '<em>Continued from previous day</em>' : job.details}
                         </div>
                         ${job.partsLocation ? `<div style="color: #e65100; font-size: 13px; margin-bottom: 4px;"><strong>Parts:</strong> ${job.partsLocation}</div>` : ''}
-                        ${job.notes ? `<div style="color: #6c757d; font-size: 12px;">${job.notes}</div>` : ''}
+                        ${job.notes ? `<div style="color: #6c757d; font-size: 12px; margin-bottom: 4px;">${job.notes}</div>` : ''}
+                        ${timestampHtml}
                         ${job.confirmation === 'XX' ? '<span class="badge badge-success" style="margin-top: 8px;">Confirmed</span>' : job.confirmation === 'X' ? '<span class="badge badge-warning" style="margin-top: 8px;">Confirmation Pending</span>' : ''}
+                        ${actionButtons ? `<div style="margin-top: 12px;">${actionButtons}</div>` : ''}
                     </div>
                 `;
             }
@@ -202,5 +282,164 @@ function prevTeamWeek() {
 function nextTeamWeek() {
     teamScheduleWeekOffset++;
     loadTeamSchedule();
+}
+
+// ==========================================
+// JOB STATUS MANAGEMENT
+// ==========================================
+
+let currentUnableJobId = null;
+let unableToCompletePhoto = null;
+
+// Check in to a job
+function checkInJob(jobId) {
+    const now = new Date().toISOString();
+    updateJobStatus(jobId, 'checked_in', { checkedInAt: now });
+    loadMyJobs();
+    if (typeof renderOfficeJobsGrid === 'function') renderOfficeJobsGrid();
+    if (typeof renderWeeklySchedule === 'function') renderWeeklySchedule();
+}
+
+// Mark job as complete
+function completeJob(jobId) {
+    const now = new Date().toISOString();
+    updateJobStatus(jobId, 'complete', { completedAt: now });
+    loadMyJobs();
+    if (typeof renderOfficeJobsGrid === 'function') renderOfficeJobsGrid();
+    if (typeof renderWeeklySchedule === 'function') renderWeeklySchedule();
+}
+
+// Open unable to complete modal
+function unableToCompleteJob(jobId) {
+    currentUnableJobId = jobId;
+    document.getElementById('unableToCompleteModal').classList.remove('hidden');
+    // Reset form
+    document.getElementById('unableReason').value = '';
+    document.getElementById('unableNotes').value = '';
+    document.getElementById('unablePhoto').value = '';
+    document.getElementById('unablePhotoPreview').innerHTML = '';
+    unableToCompletePhoto = null;
+}
+
+// Close unable to complete modal
+function closeUnableToCompleteModal() {
+    document.getElementById('unableToCompleteModal').classList.add('hidden');
+    currentUnableJobId = null;
+    unableToCompletePhoto = null;
+}
+
+// Handle photo upload
+function handleUnablePhoto(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            unableToCompletePhoto = e.target.result;
+            document.getElementById('unablePhotoPreview').innerHTML =
+                '<img src="' + e.target.result + '" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;">';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Submit unable to complete
+function submitUnableToComplete() {
+    const reason = document.getElementById('unableReason').value;
+    const notes = document.getElementById('unableNotes').value;
+
+    if (!reason) {
+        alert('Please select a reason');
+        return;
+    }
+
+    const now = new Date().toISOString();
+    updateJobStatus(currentUnableJobId, 'unable_to_complete', {
+        unableToCompleteAt: now,
+        unableToCompleteReason: reason,
+        unableToCompleteNotes: notes,
+        unableToCompletePhoto: unableToCompletePhoto
+    });
+
+    // Move job to shit list
+    moveJobToShitList(currentUnableJobId, reason, notes);
+
+    closeUnableToCompleteModal();
+    loadMyJobs();
+    if (typeof renderOfficeJobsGrid === 'function') renderOfficeJobsGrid();
+    if (typeof renderWeeklySchedule === 'function') renderWeeklySchedule();
+}
+
+// Update job status across all data structures
+function updateJobStatus(jobId, newStatus, additionalFields = {}) {
+    // Update in both territory schedules
+    [scheduleDataOriginal, scheduleDataSouthern].forEach(scheduleData => {
+        Object.keys(scheduleData).forEach(dateKey => {
+            const jobs = scheduleData[dateKey];
+            const job = jobs.find(j => j.id === jobId);
+            if (job) {
+                job.status = newStatus;
+                Object.assign(job, additionalFields);
+            }
+        });
+    });
+
+    // Persist to localStorage (in real app, would sync to server)
+    localStorage.setItem('scheduleDataOriginal', JSON.stringify(scheduleDataOriginal));
+    localStorage.setItem('scheduleDataSouthern', JSON.stringify(scheduleDataSouthern));
+}
+
+// Move job to shit list
+function moveJobToShitList(jobId, reason, notes) {
+    // Find the job
+    let job = null;
+    let territory = 'original';
+
+    Object.keys(scheduleDataOriginal).forEach(dateKey => {
+        const foundJob = scheduleDataOriginal[dateKey].find(j => j.id === jobId);
+        if (foundJob) job = foundJob;
+    });
+
+    if (!job) {
+        Object.keys(scheduleDataSouthern).forEach(dateKey => {
+            const foundJob = scheduleDataSouthern[dateKey].find(j => j.id === jobId);
+            if (foundJob) {
+                job = foundJob;
+                territory = 'southern';
+            }
+        });
+    }
+
+    if (job) {
+        // Create shit list entry
+        const shitListEntry = {
+            id: 'sl_' + Date.now(),
+            jobNumber: job.id,
+            type: job.type === 'job' ? 'Repair' : 'Service Call',
+            county: job.school.split(',')[1] || '',
+            school: job.school,
+            state: job.school.includes('TN') ? 'TN' : job.school.includes('KY') ? 'KY' : job.school.includes('AL') ? 'AL' : 'FL',
+            details: job.details,
+            reason: reason,
+            reasonDetails: notes,
+            tech: job.tech,
+            originalDate: new Date().toISOString().split('T')[0],
+            laborAmount: 0,
+            partsLocation: job.partsLocation || '',
+            measurements: ''
+        };
+
+        // Add to appropriate shit list
+        if (territory === 'original') {
+            if (typeof shitListJobs !== 'undefined') {
+                shitListJobs.push(shitListEntry);
+            }
+        } else {
+            if (typeof shitListSouthern !== 'undefined') {
+                shitListSouthern.push(shitListEntry);
+            }
+        }
+
+        // Mark as pink job in schedule
+        job.isPink = true;
+    }
 }
 

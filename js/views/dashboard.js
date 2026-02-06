@@ -2,6 +2,11 @@
 // DASHBOARD, ESTIMATES, PIPELINE, ACCOUNTS
 // ==========================================
 
+// ==========================================
+// DASHBOARD (Obsolete)
+// Kept for backwards compatibility
+// ==========================================
+
 function loadOfficeDashboard() {
     // Dashboard view is obsolete - office/admin default to Pipeline
 }
@@ -9,6 +14,11 @@ function loadOfficeDashboard() {
 function updateDashboardStats() {
     // Stub function - old dashboard view is obsolete
 }
+
+// ==========================================
+// ESTIMATES
+// View, filter, and manage estimates
+// ==========================================
 
 // Track current estimates filter
 var currentEstimatesFilter = 'all';
@@ -432,6 +442,11 @@ function initEstimateCreate() {
     `;
 }
 
+// ==========================================
+// PIPELINE
+// 8-stage pipeline view with filtering
+// ==========================================
+
 // PIPELINE_JOBS and pipelineFilter are defined in js/data.js
 
 function loadPipeline() {
@@ -583,6 +598,11 @@ function filterPipeline(status) {
 function filterPipelineTerritory(val) {
     loadPipeline();
 }
+
+// ==========================================
+// ACCOUNTS / CRM
+// Customer hierarchy, locations, contacts
+// ==========================================
 
 function loadAccounts(filter = '', territory = '') {
     const list = document.getElementById('accountsList');

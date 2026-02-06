@@ -3,6 +3,10 @@
 // Schedule grid, planning, backlog, shit list
 // ==========================================
 
+// ==========================================
+// DATA & CONSTANTS
+// ==========================================
+
 // Techs/Crews list
 const TECHS = [
     'Danny (overnight)',
@@ -53,6 +57,11 @@ let scheduleDataSouthern = {};
 // Active schedule data reference (points to current territory)
 let scheduleData = {};
 
+// ==========================================
+// SAMPLE DATA INITIALIZATION
+// Week of Feb 3, 2025 - Original & Southern territories
+// ==========================================
+
 // Initialize with sample data from the Excel trackers
 function initializeSampleScheduleData() {
     // Week of Feb 3, 2025 - ORIGINAL TERRITORY (KY/TN)
@@ -64,7 +73,28 @@ function initializeSampleScheduleData() {
                 details: 'FACING: Labor to install seat back hardware and a RH end cap FACING UPPER: Labor to install LH and RH end caps BEHIND: Labor to replace a LH tier catch BEHIND UPPER: Labor to install aisle step hardware and clean/prep/install safety tape END: Labor to install aisle step hardware and skirt board bracket hardware. FOOTBALL HOME: Labor to install curved bullnose. BASEBALL: Labor to install riser board hardware SOCCER: Labor to replace an end cap',
                 tech: 'Sam (overnight)',
                 partsLocation: 'Sams Truck',
-                isPink: false
+                isPink: false,
+                status: 'complete',
+                completedAt: '2025-02-03T14:30:00'
+            },
+            {
+                id: 's1a', type: 'job',
+                school: 'Ripley High School, Lauderdale Co, TN',
+                details: 'Install safety strap on Goal 5. Lift rental required - 40\' lift will be on site.',
+                tech: 'Field Tech',
+                partsLocation: 'TN Shop',
+                isPink: false,
+                status: 'complete',
+                completedAt: '2025-02-03T11:15:00'
+            },
+            {
+                id: 's1b', type: 'job',
+                school: 'Wilson Central High School, Wilson Co, TN',
+                details: 'Replace deck boards (6), install end caps, replace skirt board hardware',
+                tech: 'Field Tech',
+                partsLocation: 'TN Shop',
+                isPink: false,
+                status: 'scheduled'
             },
             {
                 id: 's2', type: 'job',
@@ -72,7 +102,8 @@ function initializeSampleScheduleData() {
                 details: 'Indoor Bleacher Inspections: Menifee Central K-8 and Menifee HS',
                 tech: 'Sam (overnight)',
                 partsLocation: '',
-                isPink: false
+                isPink: false,
+                status: 'scheduled'
             },
             {
                 id: 's3', type: 'job',
@@ -80,7 +111,9 @@ function initializeSampleScheduleData() {
                 details: 'Labor to raise wall buck to new height, march bleachers back and attach bleacher to wall. Reinstall seats if removed',
                 tech: 'Troy & Alex M (overnight)',
                 partsLocation: 'UPS: 1Z66W7040311645722 estimated delivery 2/2 end of day - shipping to school',
-                isPink: false
+                isPink: false,
+                status: 'checked_in',
+                checkedInAt: '2025-02-03T08:45:00'
             },
             {
                 id: 's4', type: 'job',
@@ -88,7 +121,8 @@ function initializeSampleScheduleData() {
                 details: 'FACING UPPER: Labor to install step end caps',
                 tech: 'Chris & Owen (overnight)',
                 partsLocation: 'TN Shop- pick up 1/30',
-                isPink: false
+                isPink: false,
+                status: 'en_route'
             },
             {
                 id: 's5', type: 'job',
@@ -96,7 +130,8 @@ function initializeSampleScheduleData() {
                 details: 'Labor to replace 4 damaged seats *Customer provided seats*',
                 tech: 'Chris & Owen (overnight)',
                 partsLocation: 'School',
-                isPink: false
+                isPink: false,
+                status: 'scheduled'
             },
             {
                 id: 's6', type: 'job',
@@ -149,12 +184,32 @@ function initializeSampleScheduleData() {
         ],
         '2025-02-04': [
             {
+                id: 's11a', type: 'job',
+                school: 'Franklin High School, Williamson Co, TN',
+                details: 'Annual bleacher inspection - Main Gym and Auxiliary Gym',
+                tech: 'Field Tech',
+                partsLocation: '',
+                isPink: false,
+                status: 'checked_in',
+                checkedInAt: '2025-02-04T08:30:00'
+            },
+            {
+                id: 's11b', type: 'job',
+                school: 'Brentwood High School, Williamson Co, TN',
+                details: 'Replace 2 gear motors, install safety tape on all aisles',
+                tech: 'Field Tech',
+                partsLocation: 'TN Shop',
+                isPink: false,
+                status: 'en_route'
+            },
+            {
                 id: 's12', type: 'job',
                 school: 'EKU, Richmond, KY',
                 details: 'Additional measurements needed for end rails, call Lisa for details + Pick up seats that Alex W left at the school and bring back to TN Shop',
                 tech: 'Sam (overnight)',
                 partsLocation: '',
-                isPink: false
+                isPink: false,
+                status: 'scheduled'
             },
             {
                 id: 's13', type: 'job',
@@ -213,7 +268,26 @@ function initializeSampleScheduleData() {
                 isPink: false
             }
         ],
-        '2025-02-05': [],
+        '2025-02-05': [
+            {
+                id: 's20a', type: 'job',
+                school: 'Ripley Middle School, Lauderdale Co, TN',
+                details: 'Service call - bleacher making grinding noise during retraction',
+                tech: 'Field Tech',
+                partsLocation: '',
+                isPink: false,
+                status: 'scheduled'
+            },
+            {
+                id: 's20b', type: 'job',
+                school: 'Independence High School, Williamson Co, TN',
+                details: 'Replace flex row rod assembly, install tier catch hardware',
+                tech: 'Field Tech',
+                partsLocation: 'TN Shop',
+                isPink: false,
+                status: 'scheduled'
+            }
+        ],
         '2025-02-06': [],
         '2025-02-07': []
     };
@@ -285,6 +359,11 @@ function initializeSampleScheduleData() {
     // Set active schedule based on current territory
     scheduleData = currentTerritory === 'original' ? scheduleDataOriginal : scheduleDataSouthern;
 }
+
+// ==========================================
+// BACKLOG DATA
+// Ready-to-schedule jobs per territory
+// ==========================================
 
 // Backlog jobs per territory
 let readyToScheduleJobs = [
@@ -411,6 +490,11 @@ let backlogSouthern = [
     }
 ];
 
+// ==========================================
+// SHIT LIST DATA
+// Pink jobs - incomplete/return visits per territory
+// ==========================================
+
 // Shit List - Pink Jobs (incomplete/return visits)
 let shitListJobs = [
     {
@@ -498,6 +582,11 @@ let shitListSouthern = [
     }
 ];
 
+// ==========================================
+// UTILITY FUNCTIONS
+// Date helpers and data access
+// ==========================================
+
 // Get active backlog based on territory
 function getActiveBacklog() {
     return currentTerritory === 'original' ? readyToScheduleJobs : backlogSouthern;
@@ -530,6 +619,11 @@ function getWeekLabel(offset = 0) {
     const options = { month: 'short', day: 'numeric', year: 'numeric' };
     return `Week of ${weekStart.toLocaleDateString('en-US', options)}`;
 }
+
+// ==========================================
+// SCHEDULE VIEW FUNCTIONS
+// Main schedule grid, territory switching, week navigation
+// ==========================================
 
 // Load schedule view
 function loadSchedule() {
@@ -685,7 +779,7 @@ function renderWeeklySchedule() {
     today.setHours(0, 0, 0, 0);
 
     let html = '<table class="schedule-table">';
-    html += '<thead><tr><th class="col-school">School / Location</th><th>Job Details</th><th class="col-tech">Tech(s)</th><th class="col-parts">Parts</th></tr></thead>';
+    html += '<thead><tr><th class="col-school">School / Location</th><th>Job Details</th><th class="col-tech">Tech(s)</th><th style="width: 120px;">Status</th><th class="col-parts">Parts</th></tr></thead>';
     html += '<tbody>';
 
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -699,14 +793,14 @@ function renderWeeklySchedule() {
         const dayLabel = days[i] + ' ' + (dayDate.getMonth() + 1) + '/' + dayDate.getDate();
 
         html += '<tr class="schedule-day-row ' + (isToday ? 'schedule-today-row' : '') + '">';
-        html += '<td colspan="4">' + dayLabel + '</td>';
+        html += '<td colspan="5">' + dayLabel + '</td>';
         html += '</tr>';
 
         if (dayJobs.length === 0) {
             if (i === 4) {
-                html += '<tr><td colspan="4" style="padding: 14px; text-align: center; color: #adb5bd; font-style: italic;">Floating day</td></tr>';
+                html += '<tr><td colspan="5" style="padding: 14px; text-align: center; color: #adb5bd; font-style: italic;">Floating day</td></tr>';
             } else {
-                html += '<tr><td colspan="4" style="padding: 14px; text-align: center; color: #adb5bd;">No jobs scheduled</td></tr>';
+                html += '<tr><td colspan="5" style="padding: 14px; text-align: center; color: #adb5bd;">No jobs scheduled</td></tr>';
             }
         } else {
             dayJobs.forEach(function(job) {
@@ -719,17 +813,29 @@ function renderWeeklySchedule() {
 
                 if (isNote) {
                     html += '<tr class="schedule-note-row">';
-                    html += '<td colspan="4">' + formattedDetails + (job.tech ? ' &mdash; ' + job.tech : '') + '</td>';
+                    html += '<td colspan="5">' + formattedDetails + (job.tech ? ' &mdash; ' + job.tech : '') + '</td>';
                     html += '</tr>';
                 } else {
+                    var status = job.status || 'scheduled';
+                    var statusConfig = {
+                        'scheduled': { label: 'Scheduled', color: '#6c757d', bg: '#e9ecef' },
+                        'en_route': { label: 'En Route', color: '#0066cc', bg: '#e3f2fd' },
+                        'checked_in': { label: 'Checked In', color: '#1976d2', bg: '#bbdefb' },
+                        'complete': { label: 'Complete', color: '#2e7d32', bg: '#c8e6c9' },
+                        'unable_to_complete': { label: 'Unable to Complete', color: '#c62828', bg: '#ffcdd2' }
+                    };
+                    var statusStyle = statusConfig[status] || statusConfig['scheduled'];
+
                     var rowClass = '';
                     if (isPink) rowClass = 'schedule-pink-row';
                     else if (isContinued) rowClass = 'schedule-continued-row';
+                    else if (status === 'complete') rowClass = 'schedule-complete-row';
 
-                    html += '<tr class="' + rowClass + '">';
+                    html += '<tr class="' + rowClass + '" style="' + (status === 'complete' ? 'opacity: 0.6;' : '') + '">';
                     html += '<td style="font-weight: 600;">' + job.school + '</td>';
                     html += '<td>' + (isContinued ? '<em style="color: #1565c0;">Continued</em>' : formattedDetails) + '</td>';
                     html += '<td>' + (job.tech || '') + '</td>';
+                    html += '<td><span class="badge" style="background: ' + statusStyle.bg + '; color: ' + statusStyle.color + '; font-size: 11px; padding: 3px 8px;">' + statusStyle.label + '</span></td>';
                     html += '<td style="color: #e65100; font-weight: 500;">' + (job.partsLocation || '') + '</td>';
                     html += '</tr>';
                 }
@@ -740,6 +846,11 @@ function renderWeeklySchedule() {
     html += '</tbody></table>';
     container.innerHTML = html;
 }
+
+// ==========================================
+// PLANNING VIEW FUNCTIONS
+// Next week planning grid with add functionality
+// ==========================================
 
 // Render planning schedule (table-based layout, editable)
 function renderPlanningSchedule() {
@@ -778,6 +889,11 @@ function renderPlanningSchedule() {
     html += '</tbody></table>';
     container.innerHTML = html;
 }
+
+// ==========================================
+// BACKLOG FUNCTIONS
+// Ready-to-schedule jobs view with filtering
+// ==========================================
 
 // Load backlog
 function loadBacklog() {
@@ -958,6 +1074,11 @@ function publishSchedule() {
     }
 }
 
+// ==========================================
+// SHIT LIST FUNCTIONS
+// Pink jobs view with reason tracking
+// ==========================================
+
 // Load Shit List
 function loadShitList() {
     const container = document.getElementById('shitListJobsList');
@@ -1033,5 +1154,192 @@ function truncateText(text, maxLength) {
     if (!text) return '';
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
+}
+
+// ==========================================
+// OFFICE JOBS VIEW (Operational view for Office/Admin)
+// Shows all active jobs in list format with ability to edit/create
+// ==========================================
+
+let officeJobsWeekOffset = 0;
+let currentOfficeJobsTerritory = 'original';
+
+function loadOfficeJobs() {
+    initializeSampleScheduleData();
+    // Set offset to show sample data week
+    const sampleDate = new Date('2025-02-03');
+    const currentMonday = getWeekStart(0);
+    officeJobsWeekOffset = Math.round((sampleDate - currentMonday) / (7 * 24 * 60 * 60 * 1000));
+    const label = document.getElementById('officeJobsWeekLabel');
+    label.textContent = getWeekLabel(officeJobsWeekOffset);
+    renderOfficeJobsGrid();
+}
+
+function renderOfficeJobsGrid() {
+    const container = document.getElementById('officeJobsGrid');
+    const weekStart = getWeekStart(officeJobsWeekOffset);
+    const activeData = currentOfficeJobsTerritory === 'original' ? scheduleDataOriginal : scheduleDataSouthern;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+    // Calculate week progress
+    let totalJobs = 0;
+    let completedJobs = 0;
+    let checkedInJobs = 0;
+    let enRouteJobs = 0;
+
+    for (let i = 0; i < 5; i++) {
+        const dayDate = new Date(weekStart);
+        dayDate.setDate(weekStart.getDate() + i);
+        const dateKey = formatDateKey(dayDate);
+        const dayJobs = activeData[dateKey] || [];
+        const actualJobs = dayJobs.filter(j => j.type === 'job');
+        totalJobs += actualJobs.length;
+        completedJobs += actualJobs.filter(j => j.status === 'complete').length;
+        checkedInJobs += actualJobs.filter(j => j.status === 'checked_in').length;
+        enRouteJobs += actualJobs.filter(j => j.status === 'en_route').length;
+    }
+
+    let html = '';
+
+    // Add progress indicator
+    if (totalJobs > 0) {
+        const progressPercent = Math.round((completedJobs / totalJobs) * 100);
+        html += `
+            <div class="stats-grid" style="margin-bottom: 20px;">
+                <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <div class="stat-value">${completedJobs} / ${totalJobs}</div>
+                    <div class="stat-label" style="color: rgba(255,255,255,0.9);">Jobs Completed (${progressPercent}%)</div>
+                </div>
+                <div class="stat-card blue">
+                    <div class="stat-value">${checkedInJobs}</div>
+                    <div class="stat-label">In Progress</div>
+                </div>
+                <div class="stat-card" style="background: #e3f2fd; color: #0066cc;">
+                    <div class="stat-value">${enRouteJobs}</div>
+                    <div class="stat-label">En Route</div>
+                </div>
+            </div>
+        `;
+    }
+
+    for (let i = 0; i < 5; i++) {
+        const dayDate = new Date(weekStart);
+        dayDate.setDate(weekStart.getDate() + i);
+        const dateKey = formatDateKey(dayDate);
+        const isToday = dayDate.getTime() === today.getTime();
+        const dayJobs = activeData[dateKey] || [];
+
+        if (dayJobs.length === 0) continue; // Skip empty days
+
+        html += `
+            <div class="schedule-day">
+                <div class="schedule-day-header ${isToday ? 'today' : ''}">
+                    <span>${days[i]} ${dayDate.getMonth() + 1}/${dayDate.getDate()}</span>
+                    <span style="font-size: 12px; opacity: 0.8;">${dayJobs.length} ${dayJobs.length === 1 ? 'job' : 'jobs'}</span>
+                </div>
+                <div class="schedule-day-jobs">
+        `;
+
+        dayJobs.forEach(job => {
+            const isNote = job.type === 'note';
+            const isContinued = job.type === 'continued';
+            const isPink = job.isPink === true;
+
+            if (isNote) {
+                html += `
+                    <div style="padding: 12px 16px; background: #fffde7; display: flex; align-items: center; gap: 8px;">
+                        <span style="color: #f9a825;">📌</span>
+                        <span style="color: #6c757d;">${job.details}</span>
+                        ${job.tech ? `<span style="margin-left: auto; font-size: 12px; color: #6c757d;">${job.tech}</span>` : ''}
+                    </div>
+                `;
+            } else {
+                const status = job.status || 'scheduled';
+                const statusConfig = {
+                    'scheduled': { label: 'Scheduled', color: '#6c757d', bg: '#e9ecef' },
+                    'en_route': { label: 'En Route', color: '#0066cc', bg: '#e3f2fd' },
+                    'checked_in': { label: 'Checked In', color: '#1976d2', bg: '#bbdefb' },
+                    'complete': { label: 'Complete', color: '#2e7d32', bg: '#c8e6c9' },
+                    'unable_to_complete': { label: 'Unable to Complete', color: '#c62828', bg: '#ffcdd2' }
+                };
+                const statusStyle = statusConfig[status] || statusConfig['scheduled'];
+
+                // Format timestamps
+                let timestampHtml = '';
+                if (job.checkedInAt) {
+                    const time = new Date(job.checkedInAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    timestampHtml = `<div style="font-size: 12px; color: #1976d2; margin-top: 4px;">✓ Checked in at ${time}</div>`;
+                }
+                if (job.completedAt) {
+                    const time = new Date(job.completedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    timestampHtml = `<div style="font-size: 12px; color: #2e7d32; margin-top: 4px;">✓ Completed at ${time}</div>`;
+                }
+
+                const cardStyle = isPink ? 'background: #fff0f0; border-left: 3px solid #c62828;' : isContinued ? 'background: #f0f7ff; border-left: 3px solid #1565c0;' : '';
+                html += `
+                    <div style="padding: 16px; border-bottom: 1px solid #f0f0f0; ${cardStyle} ${status === 'complete' ? 'opacity: 0.7;' : ''}">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                            <div style="font-weight: 600; font-size: 15px;">${job.school}</div>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <span class="badge" style="background: ${statusStyle.bg}; color: ${statusStyle.color};">${statusStyle.label}</span>
+                                ${job.tech ? `<span style="font-size: 12px; color: #495057; background: #e9ecef; padding: 4px 8px; border-radius: 4px; white-space: nowrap;">${job.tech}</span>` : ''}
+                            </div>
+                        </div>
+                        <div style="color: #495057; font-size: 14px; line-height: 1.5; margin-bottom: 8px;">
+                            ${isContinued ? '<em style="color: #1565c0;">Continued from previous day</em>' : job.details}
+                        </div>
+                        ${job.partsLocation ? `<div style="color: #e65100; font-size: 13px; margin-bottom: 4px;"><strong>Parts:</strong> ${job.partsLocation}</div>` : ''}
+                        ${job.notes ? `<div style="color: #6c757d; font-size: 12px; margin-bottom: 4px;">${job.notes}</div>` : ''}
+                        ${timestampHtml}
+                        ${isPink ? '<span class="badge" style="margin-top: 8px; background: #ffe0e6; color: #c62828;">Pink Job</span>' : ''}
+                        ${job.confirmation === 'XX' ? '<span class="badge badge-success" style="margin-top: 8px;">Confirmed</span>' : job.confirmation === 'X' ? '<span class="badge badge-warning" style="margin-top: 8px;">Confirmation Pending</span>' : ''}
+                    </div>
+                `;
+            }
+        });
+
+        html += `
+                </div>
+            </div>
+        `;
+    }
+
+    if (!html) {
+        html = `
+            <div class="card">
+                <div class="card-body" style="text-align: center; padding: 40px; color: #6c757d;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">📅</div>
+                    <p>No jobs scheduled for this week.</p>
+                    <button class="btn btn-primary" style="margin-top: 16px;" onclick="showView('officeCreate')">+ Create Job</button>
+                </div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+}
+
+function switchOfficeJobsTerritory(territory) {
+    currentOfficeJobsTerritory = territory;
+    document.getElementById('officeJobsOriginalTab').classList.toggle('active', territory === 'original');
+    document.getElementById('officeJobsSouthernTab').classList.toggle('active', territory === 'southern');
+    renderOfficeJobsGrid();
+}
+
+function prevOfficeJobsWeek() {
+    officeJobsWeekOffset--;
+    const label = document.getElementById('officeJobsWeekLabel');
+    label.textContent = getWeekLabel(officeJobsWeekOffset);
+    renderOfficeJobsGrid();
+}
+
+function nextOfficeJobsWeek() {
+    officeJobsWeekOffset++;
+    const label = document.getElementById('officeJobsWeekLabel');
+    label.textContent = getWeekLabel(officeJobsWeekOffset);
+    renderOfficeJobsGrid();
 }
 
