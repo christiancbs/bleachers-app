@@ -1,7 +1,7 @@
 # Bleachers & Seats - App Development Reference
 
 **Last Updated:** February 6, 2026
-**Version:** v3.1.0
+**Version:** v3.2.0
 **Branch:** `main`
 
 ---
@@ -20,13 +20,11 @@ python3 -m http.server 8080
 - **Office:** Click "office@bleachers.com" - View "Jobs" for operational status board
 - **Admin:** Click "admin@bleachers.com" - Full access to all features
 
-**Test v3.1 Features:**
-1. Login as **Office/Admin** - Default view is **Home** with bulletins + notifications
-2. See **Company Announcements** (bulletins) and **Needs Attention** panel
-3. Click notification to mark as read (blue dot disappears)
-4. Go to **Settings** → **Manage** → **Bulletins** tab to add/edit announcements
-5. Login as **Field** - See **Home** with bulletins + **Today's Jobs** panel
-6. All roles see same company bulletins, role-specific notifications
+**Test v3.2 Features:**
+1. Login as **Office/Admin** → **Resources** → **Parts Catalog** → Search for a part
+2. Go to **Settings** → **Manage** → **Parts Catalog** tab → Add/edit parts with images
+3. **Bulk Images** tab → Upload folder of images (filenames match part numbers)
+4. **Import Pricing** tab → Upload CSV to bulk update/add parts
 
 ---
 
@@ -44,16 +42,19 @@ python3 -m http.server 8080
 - `v2.0` - Navigation refactor + field create
 - `v2.1.3` - Live status tracking + Jobs view (final v2)
 - `v3.0.0` - Sales/Operations separation, feedback features
-- `v3.1.0` - **Current:** Home page with bulletins & notifications
+- `v3.1.0` - Home page with bulletins & notifications
+- `v3.1.1` - Code cleanup, folder restructure
+- `v3.2.0` - **Current:** Parts catalog migrated to Vercel Postgres + Blob
 
 ---
 
-## What's Built (v3.1)
+## What's Built (v3.2)
 
 **Core Features:**
 - **Home Page** - Role-specific landing with bulletins, notifications, and action items
 - Multi-bank inspection flow (Basketball, Indoor/Outdoor Bleacher templates)
-- Digital parts catalog (2,142 Hussey parts via Airtable)
+- **Digital Parts Catalog** - 2,100+ Hussey parts via Vercel Postgres with image support
+- **Parts Management** - Admin/Office can add/edit parts, upload images, bulk CSV import
 - **Sales Pipeline** - Pre-sale tracking with A/B/C deal grading, 6 Salesmate stages
 - **Project Tracker** - Post-sale operations with date tracking, labor amounts
 - **Live status tracking** (scheduled → en route → checked in → complete/unable)
@@ -67,22 +68,6 @@ python3 -m http.server 8080
 - **Office/Admin:** Home | Search | Sales (Sales Pipeline, Accounts) | Procurement (Ops Review, Estimates, Parts Orders) | Logistics (Shipping, Jobs, Scheduling, Project Tracker) | Resources (Parts Catalog) | Settings
 - **Field:** Home | Search | Inspections & Service (My Jobs, Team Schedule) | Resources (Parts Catalog) | Settings
 
-**v3.1 Features (Home Page):**
-- **Company Bulletins** - Admin-managed announcements (info, alert, holiday, safety, HR types)
-- **Notifications Panel** - Role-specific updates with mark-as-read functionality
-- **Needs Attention Panel** - Pink jobs, pending reviews, scheduled jobs, parts on order
-- **Today's Jobs Panel** - Field view of daily schedule
-- **Bulletin Management** - Admin Settings → Manage → Bulletins tab
-
-**v3.0 Features:**
-- **Sales Pipeline:** Pre-sale view with A/B/C deal grading, 6 stages, deal values
-- **Project Tracker:** Post-sale operations with date fields, oldest→newest sorting
-- **Special Instructions:** Amber warning box at top of work orders
-- **Confirmed Status:** Visual tracking in schedule (checkmarks)
-- **Equipment Rental Tags:** Badges identify jobs requiring lifts
-- **Estimate Line Items:** Shipping and Labor as separate lines
-- **Internal Notes:** Office-only notes (not visible to field/customers)
-
 ---
 
 ## Tech Stack
@@ -91,58 +76,103 @@ python3 -m http.server 8080
 |-------|------------|
 | Frontend | Plain HTML/CSS/JS |
 | Backend API | Vercel (Node.js ESM) |
-| Parts Data | Airtable |
+| Parts Database | Vercel Postgres (Neon) |
+| Parts Images | Vercel Blob |
 | Token Storage | Upstash Redis |
 | QB Integration | QuickBooks Online API (OAuth 2.0) |
 | Hosting | GitHub Pages + Vercel |
 
 ---
 
-## File Structure
+## Folder Structure
 
-| File | Purpose |
-|------|---------|
-| `index.html` | HTML skeleton, all view containers |
-| `css/app.css` | All styles |
-| `js/config.js` | API keys (gitignored) |
-| `js/data.js` | Constants, sample data |
-| `js/app.js` | Core: init, login, routing, nav |
-| `js/views/scheduling.js` | Scheduling, Jobs view, status tracking data |
-| `js/views/my-jobs.js` | Field My Jobs view, status update functions |
-| `js/views/inspection.js` | Multi-bank inspection flow |
-| `js/views/dashboard.js` | Home page, Sales Pipeline, Project Tracker, estimates, accounts/CRM |
-| `js/views/admin.js` | Employee, settings, parts, bulletin management |
+```
+~/bleachers-app/
+├── index.html                 # Main app (4,000+ lines)
+├── css/app.css                # All styles
+├── js/
+│   ├── app.js                 # Core: init, login, routing, nav
+│   ├── config.js              # API keys (gitignored, deprecated)
+│   ├── data.js                # Constants, sample data
+│   ├── views/
+│   │   ├── admin.js           # Employee, settings, parts management, bulletins
+│   │   ├── create.js          # Office/field unified create forms
+│   │   ├── dashboard.js       # Home, Sales Pipeline, Project Tracker, CRM
+│   │   ├── field.js           # Field staff utilities
+│   │   ├── inspection.js      # Multi-bank inspection flow
+│   │   ├── my-jobs.js         # Field My Jobs, status updates
+│   │   ├── office.js          # Office work order management
+│   │   ├── ops-review.js      # Ops review workflow
+│   │   └── scheduling.js      # Scheduling, Jobs view, status data
+│   └── utils/
+│       ├── parts-api.js       # Parts API client (Vercel Postgres)
+│       ├── parts-catalog.js   # Parts search UI
+│       └── search.js          # Global search utilities
+├── tools/                     # Scripts
+│   ├── clean_hussey_csv.py    # CSV normalization
+│   ├── extract_catalog.py     # PDF extraction (Claude vision)
+│   └── migrate.html           # Airtable migration tool (one-time)
+├── vendor-data/               # Source files (gitignored)
+├── archive/                   # Old prototypes & docs (gitignored)
+└── *.png                      # Logo files
 
-**API (`~/bleachers-api/`):**
-- `api/auth/` - OAuth flow (connect, callback, status)
-- `api/qb/` - QB endpoints (customers, estimates)
-- `api/_lib/qb.js` - Token management
+~/bleachers-api/               # Separate repo (Vercel backend)
+├── api/
+│   ├── _lib/
+│   │   ├── qb.js              # QuickBooks token management
+│   │   ├── db.js              # Postgres connection helper
+│   │   └── auth.js            # Role validation helper
+│   ├── auth/                  # OAuth flow
+│   ├── qb/                    # QuickBooks endpoints
+│   └── parts/                 # Parts catalog API
+│       ├── search.js          # GET /api/parts/search
+│       ├── index.js           # POST /api/parts (add)
+│       ├── [id].js            # PUT/DELETE /api/parts/:id
+│       ├── import.js          # POST /api/parts/import (bulk CSV)
+│       └── images/
+│           ├── index.js       # POST single image upload
+│           └── bulk.js        # POST bulk image upload
+├── package.json
+└── vercel.json                # CORS config
+```
 
 ---
 
-## Airtable Config
+## Parts Catalog Config
 
-| Setting | Value |
-|---------|-------|
-| Base ID | `appAT4ZwbRAgIyzUW` |
-| Table ID | `tbl4mDv20NaJnaaN7` |
-| API Token | In `js/config.js` |
+| Resource | Details |
+|----------|---------|
+| Database | Neon Postgres via Vercel Storage |
+| Images | Vercel Blob (`bleacher-images`) |
+| API Base | `https://bleachers-api.vercel.app/api/parts` |
+
+**API Endpoints:**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/search?q=&category=&vendor=` | Search parts |
+| POST | `/` | Add single part |
+| PUT | `/:id` | Update part |
+| DELETE | `/:id` | Delete part |
+| POST | `/import` | Bulk CSV import |
+| POST | `/images` | Upload single image |
+| POST | `/images/bulk` | Upload folder (match by part #) |
+
+**Auth:** Write operations require `X-User-Role: admin` or `office` header.
 
 ---
 
 ## Next Steps
 
 **Immediate:**
-1. Field beta testing with 2-3 techs on real jobs
-2. QB integration testing
-3. Bug fixes and refinements
+1. Get Draper CSV and import via Parts Catalog
+2. Upload Hussey part images (Bulk Images tab)
+3. QB integration testing (sandbox ready)
 
-**Post-v3:**
-1. Get Draper CSV and add to Airtable
-2. Receive Hussey part images (PNG)
-3. Signature capture for work orders
-4. Archived jobs tab (for 1000+ completed jobs)
-5. PO view pulling from estimates
+**Short-term:**
+1. Signature capture for work orders
+2. Archived jobs tab (for 1000+ completed jobs)
+3. PO view pulling from estimates
+4. Offline mode for parts catalog
 
 **QuickBooks Integration (Built, needs testing):**
 1. Set `QB_CLIENT_ID` and `QB_CLIENT_SECRET` in Vercel
@@ -159,6 +189,12 @@ python3 -m http.server 8080
 2. Look for red errors - syntax errors will prevent subsequent JS files from loading
 3. Check script load order in index.html (config → data → views → utils → app)
 4. Hard refresh (Cmd+Shift+R or Ctrl+Shift+F5) to clear cache
+
+**Parts Catalog Not Loading:**
+1. Check browser console for errors
+2. Verify bleachers-api is deployed and running
+3. Test API directly: `https://bleachers-api.vercel.app/api/parts/search?q=motor`
+4. Check Vercel dashboard for Postgres/Blob connection status
 
 **Status Updates Not Persisting:**
 1. Check localStorage in DevTools → Application → Local Storage
