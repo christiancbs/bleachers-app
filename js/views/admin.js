@@ -385,11 +385,24 @@ async function filterAdminParts() {
     }, 300);
 }
 
+function showPartImage(imageUrl, partNumber) {
+    var overlay = document.createElement('div');
+    overlay.id = 'imageOverlay';
+    overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 9999; cursor: pointer;';
+    overlay.onclick = function() { overlay.remove(); };
+    overlay.innerHTML = '<div style="text-align: center;">' +
+        '<img src="' + imageUrl + '" style="max-width: 90vw; max-height: 80vh; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">' +
+        '<p style="color: white; margin-top: 16px; font-size: 14px;">' + (partNumber || '') + '</p>' +
+        '<p style="color: #999; margin-top: 8px; font-size: 12px;">Click anywhere to close</p>' +
+    '</div>';
+    document.body.appendChild(overlay);
+}
+
 function renderAdminPartsTable(parts) {
     var tbody = document.getElementById('dmPartsTableBody');
     var html = '';
     parts.slice(0, 100).forEach(function(p) {
-        var imgHtml = p.imageUrl ? '<img src="' + p.imageUrl + '" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px; margin-right: 8px; vertical-align: middle;">' : '';
+        var imgHtml = p.imageUrl ? '<img src="' + p.imageUrl + '" onclick="event.stopPropagation(); showPartImage(\'' + p.imageUrl + '\', \'' + (p.partNumber || '').replace(/'/g, "\\'") + '\')" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px; margin-right: 8px; vertical-align: middle; cursor: pointer;" title="Click to enlarge">' : '';
         html += '<tr style="border-bottom: 1px solid #f0f2f5;">' +
             '<td style="padding: 10px 12px; font-family: monospace; font-size: 12px;">' + (p.partNumber || '—') + '</td>' +
             '<td style="padding: 10px 12px; font-weight: 500;">' + imgHtml + (p.productName || '') + '</td>' +
