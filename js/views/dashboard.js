@@ -213,8 +213,9 @@ function viewEstimate(id) {
 
     const customer = SAMPLE_CUSTOMERS.find(c => c.id === inspection.customerId);
     const totalParts = (inspection.selectedParts || []).reduce((sum, p) => sum + (p.price * p.quantity), 0);
+    const totalShipping = inspection.shippingCost || 0;
     const totalLabor = (inspection.laborHours || 0) * 65;
-    const grandTotal = totalParts + totalLabor;
+    const grandTotal = totalParts + totalShipping + totalLabor;
 
     document.getElementById('estimateDetailContent').innerHTML = `
         <div class="card">
@@ -285,6 +286,10 @@ function viewEstimate(id) {
                     <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
                         <span>Parts Subtotal:</span>
                         <span style="font-weight: 600;">$${totalParts.toFixed(2)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                        <span>Shipping:</span>
+                        <span style="font-weight: 600;">$${totalShipping.toFixed(2)}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
                         <span>Labor (${inspection.laborHours || 0} hrs × $65/hr):</span>
@@ -368,6 +373,7 @@ function generateEstimate(inspectionId, total) {
             // Financials
             amount: total,
             partsTotal: inspection.selectedParts?.reduce((sum, p) => sum + (p.price * p.quantity), 0) || 0,
+            shippingTotal: inspection.shippingCost || 0,
             laborTotal: (inspection.laborHours || 0) * 85, // $85/hr default
             // Dates
             createdAt: new Date().toISOString(),
