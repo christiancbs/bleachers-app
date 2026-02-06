@@ -3,12 +3,272 @@
 // ==========================================
 
 // ==========================================
+// HOME PAGE
+// Role-specific landing with company bulletins
+// ==========================================
+
+function loadHome() {
+    renderBulletinBoard('bulletinBoard');
+    renderNotificationsPanel('notificationsPanel', currentRole);
+    renderAttentionPanel('attentionPanel');
+
+    // Update welcome message
+    var userName = currentRole === 'admin' ? 'Admin' : 'Office Manager';
+    var subtitle = document.querySelector('#homeView .page-subtitle');
+    if (subtitle) subtitle.textContent = 'Welcome back, ' + userName;
+}
+
+function loadTechHome() {
+    renderBulletinBoard('techBulletinBoard');
+    renderNotificationsPanel('techNotificationsPanel', 'field');
+    renderTodayPanel('techTodayPanel');
+
+    // Update welcome message
+    var subtitle = document.querySelector('#techHomeView .page-subtitle');
+    if (subtitle) subtitle.textContent = 'Welcome back';
+}
+
+function renderBulletinBoard(containerId) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+
+    var activeBulletins = COMPANY_BULLETINS.filter(b => b.active);
+
+    if (activeBulletins.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    var html = '<div class="bulletin-header"><span>📢</span><span>Company Announcements</span></div>';
+    html += '<div class="bulletin-items">';
+
+    activeBulletins.forEach(function(bulletin) {
+        var typeInfo = BULLETIN_TYPES[bulletin.type] || BULLETIN_TYPES.info;
+        html += '<div class="bulletin-item" style="background: ' + typeInfo.bg + '; border-left: 4px solid ' + typeInfo.color + ';">';
+        html += '<div class="bulletin-icon">' + typeInfo.icon + '</div>';
+        html += '<div class="bulletin-content">';
+        html += '<div class="bulletin-title">' + bulletin.title + '</div>';
+        html += '<div class="bulletin-message">' + bulletin.message + '</div>';
+        html += '</div>';
+        html += '</div>';
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// ==========================================
+// NOTIFICATIONS PANEL
+// ==========================================
+
+function renderNotificationsPanel(containerId, role) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+
+    var notifications = USER_NOTIFICATIONS[role] || [];
+    var unreadCount = notifications.filter(n => !n.read).length;
+
+    var html = '<div class="panel-header">';
+    html += '<div class="panel-title"><span>🔔</span> Your Updates</div>';
+    if (unreadCount > 0) {
+        html += '<span class="panel-badge">' + unreadCount + ' new</span>';
+    }
+    html += '</div>';
+
+    html += '<div class="panel-content">';
+
+    if (notifications.length === 0) {
+        html += '<div class="panel-empty">No notifications</div>';
+    } else {
+        notifications.slice(0, 5).forEach(function(notif) {
+            var typeInfo = NOTIFICATION_TYPES[notif.type] || { icon: '📌', color: '#6b7280' };
+            var readClass = notif.read ? 'read' : 'unread';
+            var timeAgo = getTimeAgo(notif.createdAt);
+
+            html += '<div class="notification-item ' + readClass + '" onclick="markNotificationRead(\'' + role + '\', \'' + notif.id + '\')">';
+            html += '<div class="notification-icon" style="color: ' + typeInfo.color + '">' + typeInfo.icon + '</div>';
+            html += '<div class="notification-content">';
+            html += '<div class="notification-title">' + notif.title + '</div>';
+            html += '<div class="notification-message">' + notif.message + '</div>';
+            html += '<div class="notification-time">' + timeAgo + '</div>';
+            html += '</div>';
+            if (!notif.read) {
+                html += '<div class="notification-dot"></div>';
+            }
+            html += '</div>';
+        });
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function markNotificationRead(role, notifId) {
+    var notifications = USER_NOTIFICATIONS[role] || [];
+    var notif = notifications.find(n => n.id === notifId);
+    if (notif && !notif.read) {
+        notif.read = true;
+        saveNotifications();
+        // Re-render the panel
+        if (role === 'field') {
+            renderNotificationsPanel('techNotificationsPanel', 'field');
+        } else {
+            renderNotificationsPanel('notificationsPanel', currentRole);
+        }
+    }
+}
+
+function getTimeAgo(dateString) {
+    var date = new Date(dateString);
+    var now = new Date();
+    var diffMs = now - date;
+    var diffMins = Math.floor(diffMs / 60000);
+    var diffHours = Math.floor(diffMs / 3600000);
+    var diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) return diffMins + 'm ago';
+    if (diffHours < 24) return diffHours + 'h ago';
+    if (diffDays < 7) return diffDays + 'd ago';
+    return date.toLocaleDateString();
+}
+
+// ==========================================
+// NEEDS ATTENTION PANEL (Office/Admin)
+// ==========================================
+
+function renderAttentionPanel(containerId) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Gather attention items from existing data
+    var attentionItems = [];
+
+    // Pink jobs
+    var pinkJobs = PIPELINE_JOBS.filter(j => j.status === 'Pink');
+    if (pinkJobs.length > 0) {
+        attentionItems.push({
+            icon: '🩷',
+            label: pinkJobs.length + ' Pink Job' + (pinkJobs.length > 1 ? 's' : ''),
+            detail: pinkJobs.map(j => j.location).join(', '),
+            action: "showView('jobs')",
+            color: '#e91e63'
+        });
+    }
+
+    // Pending ops reviews
+    var pendingReviews = inspectionJobs.filter(j => j.status === 'submitted');
+    if (pendingReviews.length > 0) {
+        attentionItems.push({
+            icon: '📋',
+            label: pendingReviews.length + ' Pending Review' + (pendingReviews.length > 1 ? 's' : ''),
+            detail: 'Inspections awaiting ops review',
+            action: "showView('opsReview')",
+            color: '#ff9800'
+        });
+    }
+
+    // Unconfirmed scheduled jobs (from schedule data if available)
+    var scheduledJobs = PIPELINE_JOBS.filter(j => j.status === 'Scheduled');
+    if (scheduledJobs.length > 0) {
+        attentionItems.push({
+            icon: '📅',
+            label: scheduledJobs.length + ' Scheduled Job' + (scheduledJobs.length > 1 ? 's' : ''),
+            detail: 'Ready for field assignment',
+            action: "showView('scheduling')",
+            color: '#2196F3'
+        });
+    }
+
+    // Parts ordered (waiting)
+    var partsOrdered = PIPELINE_JOBS.filter(j => j.status === 'Parts Ordered');
+    if (partsOrdered.length > 0) {
+        attentionItems.push({
+            icon: '📦',
+            label: partsOrdered.length + ' Awaiting Parts',
+            detail: 'Parts on order',
+            action: "showView('projects')",
+            color: '#9c27b0'
+        });
+    }
+
+    var html = '<div class="panel-header">';
+    html += '<div class="panel-title"><span>⚡</span> Needs Attention</div>';
+    html += '</div>';
+
+    html += '<div class="panel-content">';
+
+    if (attentionItems.length === 0) {
+        html += '<div class="panel-empty" style="color: #4caf50;">✓ All caught up!</div>';
+    } else {
+        attentionItems.forEach(function(item) {
+            html += '<div class="attention-item" onclick="' + item.action + '">';
+            html += '<div class="attention-icon" style="color: ' + item.color + '">' + item.icon + '</div>';
+            html += '<div class="attention-content">';
+            html += '<div class="attention-label">' + item.label + '</div>';
+            html += '<div class="attention-detail">' + item.detail + '</div>';
+            html += '</div>';
+            html += '<div class="attention-arrow">→</div>';
+            html += '</div>';
+        });
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// ==========================================
+// TODAY'S JOBS PANEL (Field)
+// ==========================================
+
+function renderTodayPanel(containerId) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Get today's jobs from schedule data
+    var today = new Date().toISOString().split('T')[0];
+    var todayJobs = [];
+
+    // Pull from OFFICE_WORK_ORDERS for demo
+    Object.values(OFFICE_WORK_ORDERS).forEach(function(wo) {
+        if (wo.scheduledDate === today || wo.scheduledDate === '2026-01-22') { // Include sample date
+            todayJobs.push(wo);
+        }
+    });
+
+    var html = '<div class="panel-header">';
+    html += '<div class="panel-title"><span>📅</span> Today\'s Jobs</div>';
+    if (todayJobs.length > 0) {
+        html += '<span class="panel-badge">' + todayJobs.length + '</span>';
+    }
+    html += '</div>';
+
+    html += '<div class="panel-content">';
+
+    if (todayJobs.length === 0) {
+        html += '<div class="panel-empty">No jobs scheduled today</div>';
+    } else {
+        todayJobs.forEach(function(job) {
+            html += '<div class="today-job-item" onclick="showTechView(\'myjobs\')">';
+            html += '<div class="today-job-time">' + job.scheduledTime + '</div>';
+            html += '<div class="today-job-content">';
+            html += '<div class="today-job-location">' + job.locationName + '</div>';
+            html += '<div class="today-job-type">' + job.jobType + ' - #' + job.jobNumber + '</div>';
+            html += '</div>';
+            html += '</div>';
+        });
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// ==========================================
 // DASHBOARD (Obsolete)
 // Kept for backwards compatibility
 // ==========================================
 
 function loadOfficeDashboard() {
-    // Dashboard view is obsolete - office/admin default to Pipeline
+    // Dashboard view is obsolete - office/admin default to Home
 }
 
 function updateDashboardStats() {

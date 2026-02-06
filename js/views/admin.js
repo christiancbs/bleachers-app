@@ -265,6 +265,7 @@ function switchDataTab(tab) {
     document.getElementById('dmPartsTab').classList.add('hidden');
     document.getElementById('dmImportTab').classList.add('hidden');
     document.getElementById('dmVendorsTab').classList.add('hidden');
+    document.getElementById('dmBulletinsTab').classList.add('hidden');
 
     // Reset all tab buttons
     document.getElementById('dmTabEmployees').style.borderBottomColor = 'transparent';
@@ -275,6 +276,8 @@ function switchDataTab(tab) {
     document.getElementById('dmTabImport').style.color = '#6c757d';
     document.getElementById('dmTabVendors').style.borderBottomColor = 'transparent';
     document.getElementById('dmTabVendors').style.color = '#6c757d';
+    document.getElementById('dmTabBulletins').style.borderBottomColor = 'transparent';
+    document.getElementById('dmTabBulletins').style.color = '#6c757d';
 
     if (tab === 'employees') {
         document.getElementById('dmEmployeesTab').classList.remove('hidden');
@@ -295,6 +298,11 @@ function switchDataTab(tab) {
         document.getElementById('dmTabVendors').style.borderBottomColor = '#4f46e5';
         document.getElementById('dmTabVendors').style.color = '#4f46e5';
         loadVendors();
+    } else if (tab === 'bulletins') {
+        document.getElementById('dmBulletinsTab').classList.remove('hidden');
+        document.getElementById('dmTabBulletins').style.borderBottomColor = '#4f46e5';
+        document.getElementById('dmTabBulletins').style.color = '#4f46e5';
+        loadBulletinsManage();
     }
 }
 
@@ -623,6 +631,130 @@ function deleteVendor(id) {
 
 function closeVendorModal() {
     var modal = document.getElementById('vendorModal');
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+}
+
+// ==========================================
+// BULLETIN MANAGEMENT
+// Add, edit, delete company bulletins
+// ==========================================
+
+var editingBulletinId = null;
+
+function loadBulletinsManage() {
+    var container = document.getElementById('bulletinsList');
+    if (!container) return;
+
+    if (COMPANY_BULLETINS.length === 0) {
+        container.innerHTML = '<div class="card"><div class="card-body" style="padding: 40px; text-align: center;"><div style="font-size: 48px; margin-bottom: 12px;">📢</div><p style="color: #6c757d;">No bulletins yet. Add one to display on the Home page.</p></div></div>';
+        return;
+    }
+
+    var html = '<div class="card"><div class="card-body" style="padding: 0;">';
+
+    COMPANY_BULLETINS.forEach(function(bulletin) {
+        var typeInfo = BULLETIN_TYPES[bulletin.type] || BULLETIN_TYPES.info;
+        var statusBadge = bulletin.active
+            ? '<span style="background: #d4edda; color: #155724; padding: 3px 8px; border-radius: 8px; font-size: 11px; font-weight: 600;">Active</span>'
+            : '<span style="background: #f8f9fa; color: #6c757d; padding: 3px 8px; border-radius: 8px; font-size: 11px; font-weight: 600;">Inactive</span>';
+
+        html += '<div style="display: flex; align-items: flex-start; gap: 16px; padding: 16px 20px; border-bottom: 1px solid #f0f2f5;">';
+        html += '<div style="font-size: 24px; flex-shrink: 0;">' + typeInfo.icon + '</div>';
+        html += '<div style="flex: 1; min-width: 0;">';
+        html += '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">';
+        html += '<span style="font-weight: 600; font-size: 15px;">' + bulletin.title + '</span>';
+        html += statusBadge;
+        html += '<span style="background: ' + typeInfo.bg + '; color: ' + typeInfo.color + '; padding: 2px 8px; border-radius: 8px; font-size: 11px; font-weight: 500; text-transform: capitalize;">' + bulletin.type + '</span>';
+        html += '</div>';
+        html += '<div style="color: #4a5568; font-size: 13px; line-height: 1.4;">' + bulletin.message + '</div>';
+        html += '</div>';
+        html += '<div style="display: flex; gap: 8px; flex-shrink: 0;">';
+        html += '<button class="btn btn-sm" onclick="toggleBulletinActive(\'' + bulletin.id + '\')" style="padding: 6px 12px; font-size: 12px;">' + (bulletin.active ? 'Deactivate' : 'Activate') + '</button>';
+        html += '<button class="btn btn-sm" onclick="editBulletin(\'' + bulletin.id + '\')" style="padding: 6px 12px; font-size: 12px;">Edit</button>';
+        html += '<button class="btn btn-sm" onclick="deleteBulletin(\'' + bulletin.id + '\')" style="padding: 6px 12px; font-size: 12px; color: #dc3545;">Delete</button>';
+        html += '</div>';
+        html += '</div>';
+    });
+
+    html += '</div></div>';
+    container.innerHTML = html;
+}
+
+function showAddBulletinModal() {
+    editingBulletinId = null;
+    document.getElementById('bulletinModalTitle').textContent = 'Add Bulletin';
+    document.getElementById('bulletinTypeInput').value = 'info';
+    document.getElementById('bulletinTitleInput').value = '';
+    document.getElementById('bulletinMessageInput').value = '';
+    document.getElementById('bulletinActiveInput').checked = true;
+    var modal = document.getElementById('bulletinModal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+}
+
+function editBulletin(id) {
+    var bulletin = COMPANY_BULLETINS.find(function(b) { return b.id === id; });
+    if (!bulletin) return;
+    editingBulletinId = id;
+    document.getElementById('bulletinModalTitle').textContent = 'Edit Bulletin';
+    document.getElementById('bulletinTypeInput').value = bulletin.type;
+    document.getElementById('bulletinTitleInput').value = bulletin.title;
+    document.getElementById('bulletinMessageInput').value = bulletin.message;
+    document.getElementById('bulletinActiveInput').checked = bulletin.active;
+    var modal = document.getElementById('bulletinModal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+}
+
+function saveBulletin() {
+    var title = document.getElementById('bulletinTitleInput').value.trim();
+    var message = document.getElementById('bulletinMessageInput').value.trim();
+    if (!title || !message) { alert('Title and message are required.'); return; }
+
+    var data = {
+        type: document.getElementById('bulletinTypeInput').value,
+        title: title,
+        message: message,
+        active: document.getElementById('bulletinActiveInput').checked,
+        createdAt: new Date().toISOString().split('T')[0]
+    };
+
+    if (editingBulletinId) {
+        var idx = COMPANY_BULLETINS.findIndex(function(b) { return b.id === editingBulletinId; });
+        if (idx !== -1) {
+            data.id = editingBulletinId;
+            data.createdAt = COMPANY_BULLETINS[idx].createdAt; // Keep original date
+            COMPANY_BULLETINS[idx] = data;
+        }
+    } else {
+        data.id = 'b' + Date.now();
+        COMPANY_BULLETINS.unshift(data); // Add to beginning
+    }
+
+    saveBulletins();
+    closeBulletinModal();
+    loadBulletinsManage();
+}
+
+function toggleBulletinActive(id) {
+    var bulletin = COMPANY_BULLETINS.find(function(b) { return b.id === id; });
+    if (bulletin) {
+        bulletin.active = !bulletin.active;
+        saveBulletins();
+        loadBulletinsManage();
+    }
+}
+
+function deleteBulletin(id) {
+    if (!confirm('Delete this bulletin?')) return;
+    COMPANY_BULLETINS = COMPANY_BULLETINS.filter(function(b) { return b.id !== id; });
+    saveBulletins();
+    loadBulletinsManage();
+}
+
+function closeBulletinModal() {
+    var modal = document.getElementById('bulletinModal');
     modal.classList.add('hidden');
     modal.style.display = 'none';
 }

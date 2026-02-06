@@ -53,6 +53,12 @@
                     <div class="sidebar-close-btn">✕</div>
                 </div>
                 <div class="sidebar-nav">
+                    <!-- Home -->
+                    <div class="nav-item active" data-view="home" onclick="showView('home')">
+                        <span>🏠</span>
+                        <span>Home</span>
+                    </div>
+
                     <!-- Search -->
                     <div class="nav-item" data-view="officeSearch" onclick="showView('officeSearch')">
                         <span>🔍</span>
@@ -63,7 +69,7 @@
                     <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
                         <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Sales</span>
                     </div>
-                    <div class="nav-item active" data-view="salesPipeline" onclick="showView('salesPipeline')">
+                    <div class="nav-item" data-view="salesPipeline" onclick="showView('salesPipeline')">
                         <span>💼</span>
                         <span>Pipeline</span>
                     </div>
@@ -141,6 +147,29 @@
 
             <div class="main-content">
                 <div class="content-area">
+                    <!-- Home View -->
+                    <div id="homeView" class="hidden">
+                        <div class="page-header">
+                            <h1 class="page-title">Home</h1>
+                            <p class="page-subtitle">Welcome back</p>
+                        </div>
+
+                        <!-- Company Bulletin Board -->
+                        <div id="bulletinBoard" class="bulletin-board">
+                            <!-- Populated by JS -->
+                        </div>
+
+                        <!-- Two Column: Notifications + Needs Attention -->
+                        <div class="home-panels">
+                            <div class="home-panel" id="notificationsPanel">
+                                <!-- Populated by JS -->
+                            </div>
+                            <div class="home-panel" id="attentionPanel">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Dashboard View (OBSOLETE - kept for reference, hidden by default) -->
                     <div id="dashboardView" class="hidden">
                         <div class="page-header">
@@ -1426,6 +1455,7 @@
                                         <button class="btn" id="dmTabParts" onclick="switchDataTab('parts')" style="border: none; border-bottom: 3px solid transparent; border-radius: 0; padding: 12px 24px; font-weight: 600; color: #6c757d;">Parts Catalog</button>
                                         <button class="btn" id="dmTabImport" onclick="switchDataTab('import')" style="border: none; border-bottom: 3px solid transparent; border-radius: 0; padding: 12px 24px; font-weight: 600; color: #6c757d;">Import Pricing</button>
                                         <button class="btn" id="dmTabVendors" onclick="switchDataTab('vendors')" style="border: none; border-bottom: 3px solid transparent; border-radius: 0; padding: 12px 24px; font-weight: 600; color: #6c757d;">Vendors</button>
+                                        <button class="btn" id="dmTabBulletins" onclick="switchDataTab('bulletins')" style="border: none; border-bottom: 3px solid transparent; border-radius: 0; padding: 12px 24px; font-weight: 600; color: #6c757d;">Bulletins</button>
                                     </div>
 
                                     <!-- Employees Tab -->
@@ -1559,6 +1589,15 @@
                                         </div>
                                         <div id="vendorsList"></div>
                                     </div>
+
+                                    <!-- Bulletins Tab -->
+                                    <div id="dmBulletinsTab" class="hidden">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                            <p style="color: #6c757d; margin: 0;">Company-wide announcements shown on the Home page for all users.</p>
+                                            <button class="btn btn-primary" onclick="showAddBulletinModal()">+ Add Bulletin</button>
+                                        </div>
+                                        <div id="bulletinsList"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1658,6 +1697,41 @@
                             <div style="display: flex; gap: 12px; margin-top: 24px;">
                                 <button class="btn btn-primary" onclick="saveVendor()" style="flex: 1;">Save</button>
                                 <button class="btn btn-secondary" onclick="closeVendorModal()" style="flex: 1;">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add/Edit Bulletin Modal -->
+                    <div id="bulletinModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+                        <div style="background: white; border-radius: 12px; padding: 32px; width: 100%; max-width: 500px;">
+                            <h2 style="margin-bottom: 24px; font-size: 20px;" id="bulletinModalTitle">Add Bulletin</h2>
+                            <div class="form-group">
+                                <label class="form-label">Type *</label>
+                                <select id="bulletinTypeInput" class="form-select">
+                                    <option value="info">Info - General information</option>
+                                    <option value="alert">Alert - Important notice</option>
+                                    <option value="holiday">Holiday - Office closures</option>
+                                    <option value="safety">Safety - Safety reminders</option>
+                                    <option value="hr">HR - HR announcements</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Title *</label>
+                                <input type="text" id="bulletinTitleInput" class="form-input" placeholder="e.g. Office Closed Monday">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Message *</label>
+                                <textarea id="bulletinMessageInput" class="form-input" rows="3" placeholder="The full announcement message..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="bulletinActiveInput" checked style="width: 18px; height: 18px;">
+                                    <span>Active (visible on Home page)</span>
+                                </label>
+                            </div>
+                            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                                <button class="btn btn-primary" onclick="saveBulletin()" style="flex: 1;">Save</button>
+                                <button class="btn btn-secondary" onclick="closeBulletinModal()" style="flex: 1;">Cancel</button>
                             </div>
                         </div>
                     </div>
@@ -2194,6 +2268,12 @@
                     <div class="sidebar-close-btn">✕</div>
                 </div>
                 <div class="sidebar-nav">
+                    <!-- Home -->
+                    <div class="nav-item active" data-view="home" onclick="showTechView('home')">
+                        <span>🏠</span>
+                        <span>Home</span>
+                    </div>
+
                     <!-- Search -->
                     <div class="nav-item" data-view="search" onclick="showTechView('search')">
                         <span>🔍</span>
@@ -2204,7 +2284,7 @@
                     <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
                         <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Inspections & Service</span>
                     </div>
-                    <div class="nav-item active" data-view="myjobs" onclick="showTechView('myjobs')">
+                    <div class="nav-item" data-view="myjobs" onclick="showTechView('myjobs')">
                         <span>📅</span>
                         <span>My Jobs</span>
                     </div>
@@ -2244,8 +2324,31 @@
 
             <div class="main-content">
                 <div class="content-area" style="padding-top: 24px;">
+                    <!-- Home View -->
+                    <div id="techHomeView" class="hidden">
+                        <div class="page-header">
+                            <h1 class="page-title">Home</h1>
+                            <p class="page-subtitle">Welcome back</p>
+                        </div>
+
+                        <!-- Company Bulletin Board -->
+                        <div id="techBulletinBoard" class="bulletin-board">
+                            <!-- Populated by JS -->
+                        </div>
+
+                        <!-- Two Column: Notifications + Today's Jobs -->
+                        <div class="home-panels">
+                            <div class="home-panel" id="techNotificationsPanel">
+                                <!-- Populated by JS -->
+                            </div>
+                            <div class="home-panel" id="techTodayPanel">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Search View -->
-                    <div id="techSearchView">
+                    <div id="techSearchView" class="hidden">
                         <div class="page-header">
                             <h1 class="page-title">Search</h1>
                             <p class="page-subtitle">Find any work order or inspection by school name or job number</p>

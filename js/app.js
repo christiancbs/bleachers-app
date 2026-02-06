@@ -117,14 +117,14 @@ function login(role) {
             }
         }
         loadOfficeDashboard();
-        // Defer showing pipeline to next frame to ensure DOM is painted
+        // Defer showing home to next frame to ensure DOM is painted
         requestAnimationFrame(function() {
-            showView('salesPipeline'); // Default to Sales Pipeline
+            showView('home'); // Default to Home
         });
     } else {
         document.getElementById('techDashboard').classList.remove('hidden');
         loadTechDashboard();
-        showTechView('myjobs'); // Default to My Jobs view
+        showTechView('home'); // Default to Home view
     }
 }
 
@@ -186,7 +186,11 @@ function showView(view) {
     }
 
     // Show selected view and update nav
-    if (view === 'officeSearch') {
+    if (view === 'home') {
+        document.getElementById('homeView').classList.remove('hidden');
+        setActiveNav('home');
+        loadHome();
+    } else if (view === 'officeSearch') {
         document.getElementById('officeSearchView').classList.remove('hidden');
         setActiveNav('officeSearch');
     } else if (view === 'dashboard') {
@@ -288,7 +292,11 @@ function showTechView(view) {
         if (navItem) navItem.classList.add('active');
     }
 
-    if (view === 'search') {
+    if (view === 'home') {
+        document.getElementById('techHomeView').classList.remove('hidden');
+        setActiveNav('home');
+        loadTechHome();
+    } else if (view === 'search') {
         document.getElementById('techSearchView').classList.remove('hidden');
         setActiveNav('search');
     } else if (view === 'teamschedule') {

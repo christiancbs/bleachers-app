@@ -725,3 +725,56 @@ var csvImportData = [];
 
 function saveAdminParts() { localStorage.setItem('adminParts', JSON.stringify(ADMIN_PARTS)); }
 function saveVendors() { localStorage.setItem('vendors', JSON.stringify(VENDORS)); }
+
+// ========== COMPANY BULLETIN BOARD ==========
+// Announcements visible on home page - managed by admin
+var COMPANY_BULLETINS = JSON.parse(localStorage.getItem('companyBulletins') || 'null') || [
+    { id: 'b1', type: 'info', title: 'Safety Training Reminder', message: 'Annual safety training due by February 28th. See Lisa for scheduling.', active: true, createdAt: '2026-02-01' },
+    { id: 'b2', type: 'holiday', title: 'Office Closed', message: 'Office closed Monday, Feb 17th for Presidents Day. Emergency calls to Charles.', active: true, createdAt: '2026-02-05' },
+    { id: 'b3', type: 'alert', title: 'New Inspection Forms', message: 'Updated inspection checklists are now live. Contact Kat with questions.', active: true, createdAt: '2026-02-03' }
+];
+
+function saveBulletins() { localStorage.setItem('companyBulletins', JSON.stringify(COMPANY_BULLETINS)); }
+
+// Bulletin types with styling
+const BULLETIN_TYPES = {
+    info: { icon: 'ℹ️', color: '#2196F3', bg: '#e3f2fd' },
+    alert: { icon: '⚠️', color: '#ff9800', bg: '#fff3e0' },
+    holiday: { icon: '🎉', color: '#9c27b0', bg: '#f3e5f5' },
+    safety: { icon: '🦺', color: '#f44336', bg: '#ffebee' },
+    hr: { icon: '👥', color: '#4caf50', bg: '#e8f5e9' }
+};
+
+// ========== USER NOTIFICATIONS ==========
+// Role-based notifications (office, admin, field)
+var USER_NOTIFICATIONS = JSON.parse(localStorage.getItem('userNotifications') || 'null') || {
+    office: [
+        { id: 'n1', type: 'estimate_approved', title: 'Estimate Approved', message: 'Fayette-Ware HS accepted estimate #17220 ($8,450)', jobNumber: '17220', read: false, createdAt: '2026-02-06T09:30:00' },
+        { id: 'n2', type: 'status_update', title: 'Job Completed', message: 'Gallatin HS repair marked complete by Danny', jobNumber: '17180', read: false, createdAt: '2026-02-05T16:45:00' },
+        { id: 'n3', type: 'pink_created', title: 'Pink Job Created', message: 'Brentwood Academy #17195 - wrong bracket sent', jobNumber: '17195', read: true, createdAt: '2026-02-04T11:20:00' }
+    ],
+    admin: [
+        { id: 'n1', type: 'estimate_approved', title: 'Estimate Approved', message: 'Fayette-Ware HS accepted estimate #17220 ($8,450)', jobNumber: '17220', read: false, createdAt: '2026-02-06T09:30:00' },
+        { id: 'n2', type: 'status_update', title: 'Job Completed', message: 'Gallatin HS repair marked complete by Danny', jobNumber: '17180', read: false, createdAt: '2026-02-05T16:45:00' },
+        { id: 'n3', type: 'pink_created', title: 'Pink Job Created', message: 'Brentwood Academy #17195 - wrong bracket sent', jobNumber: '17195', read: true, createdAt: '2026-02-04T11:20:00' },
+        { id: 'n4', type: 'ops_submitted', title: 'Inspection Submitted', message: 'Jackson Career & Tech inspection ready for review', jobNumber: '16942', read: false, createdAt: '2026-02-03T14:00:00' }
+    ],
+    field: [
+        { id: 'fn1', type: 'job_assigned', title: 'New Job Assigned', message: 'Ripley HS repair scheduled for tomorrow 8:00 AM', jobNumber: '17208', read: false, createdAt: '2026-02-06T08:00:00' },
+        { id: 'fn2', type: 'schedule_changed', title: 'Schedule Updated', message: 'Ripley MS inspection moved to 11:00 AM', jobNumber: '17209', read: false, createdAt: '2026-02-05T17:30:00' },
+        { id: 'fn3', type: 'parts_ready', title: 'Parts Ready', message: 'Parts for Brentwood Academy ready at TN Shop', jobNumber: '17210', read: true, createdAt: '2026-02-04T10:15:00' }
+    ]
+};
+
+function saveNotifications() { localStorage.setItem('userNotifications', JSON.stringify(USER_NOTIFICATIONS)); }
+
+// Notification types with styling
+const NOTIFICATION_TYPES = {
+    job_assigned: { icon: '📋', color: '#2196F3' },
+    schedule_changed: { icon: '📅', color: '#ff9800' },
+    parts_ready: { icon: '📦', color: '#4caf50' },
+    estimate_approved: { icon: '✅', color: '#4caf50' },
+    status_update: { icon: '🔄', color: '#9c27b0' },
+    pink_created: { icon: '🩷', color: '#e91e63' },
+    ops_submitted: { icon: '📝', color: '#2196F3' }
+};
