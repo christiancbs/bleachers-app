@@ -220,7 +220,7 @@ function renderTeamScheduleGrid() {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
     let html = '<table class="schedule-table">';
-    html += '<thead><tr><th class="col-school">School / Location</th><th>Job Details</th><th class="col-tech">Tech(s)</th><th class="col-parts">Parts</th></tr></thead>';
+    html += '<thead><tr><th class="col-school">School / Location</th><th>Job Details</th><th class="col-tech">Tech(s)</th><th style="width: 80px; text-align: center;">Confirmed</th><th class="col-parts">Parts</th></tr></thead>';
     html += '<tbody>';
 
     for (let i = 0; i < 5; i++) {
@@ -232,14 +232,14 @@ function renderTeamScheduleGrid() {
         const dayLabel = days[i] + ' ' + (dayDate.getMonth() + 1) + '/' + dayDate.getDate();
 
         html += '<tr class="schedule-day-row ' + (isToday ? 'schedule-today-row' : '') + '">';
-        html += '<td colspan="4">' + dayLabel + '</td>';
+        html += '<td colspan="5">' + dayLabel + '</td>';
         html += '</tr>';
 
         if (dayJobs.length === 0) {
             if (i === 4) {
-                html += '<tr><td colspan="4" style="padding: 14px; text-align: center; color: #adb5bd; font-style: italic;">Floating day</td></tr>';
+                html += '<tr><td colspan="5" style="padding: 14px; text-align: center; color: #adb5bd; font-style: italic;">Floating day</td></tr>';
             } else {
-                html += '<tr><td colspan="4" style="padding: 14px; text-align: center; color: #adb5bd;">No jobs scheduled</td></tr>';
+                html += '<tr><td colspan="5" style="padding: 14px; text-align: center; color: #adb5bd;">No jobs scheduled</td></tr>';
             }
         } else {
             dayJobs.forEach(function(job) {
@@ -252,17 +252,27 @@ function renderTeamScheduleGrid() {
 
                 if (isNote) {
                     html += '<tr class="schedule-note-row">';
-                    html += '<td colspan="4">' + formattedDetails + (job.tech ? ' &mdash; ' + job.tech : '') + '</td>';
+                    html += '<td colspan="5">' + formattedDetails + (job.tech ? ' &mdash; ' + job.tech : '') + '</td>';
                     html += '</tr>';
                 } else {
                     var rowClass = '';
                     if (isPink) rowClass = 'schedule-pink-row';
                     else if (isContinued) rowClass = 'schedule-continued-row';
 
+                    var confirmIcon = '';
+                    if (job.confirmation === 'XX') {
+                        confirmIcon = '<span style="color: #2e7d32; font-size: 18px;" title="Confirmed">✓✓</span>';
+                    } else if (job.confirmation === 'X') {
+                        confirmIcon = '<span style="color: #f57c00; font-size: 16px;" title="Attempted">✓</span>';
+                    } else {
+                        confirmIcon = '<span style="color: #bdbdbd; font-size: 16px;" title="Not confirmed">—</span>';
+                    }
+
                     html += '<tr class="' + rowClass + '">';
                     html += '<td style="font-weight: 600;">' + job.school + '</td>';
                     html += '<td>' + (isContinued ? '<em style="color: #1565c0;">Continued</em>' : formattedDetails) + '</td>';
                     html += '<td>' + (job.tech || '') + '</td>';
+                    html += '<td style="text-align: center;">' + confirmIcon + '</td>';
                     html += '<td style="color: #e65100; font-weight: 500;">' + (job.partsLocation || '') + '</td>';
                     html += '</tr>';
                 }

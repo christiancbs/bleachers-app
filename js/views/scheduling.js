@@ -84,6 +84,7 @@ function initializeSampleScheduleData() {
                 tech: 'Field Tech',
                 partsLocation: 'TN Shop',
                 specialInstructions: 'Customer will have gym cleared by 8am. Enter through back door - front office doesn\'t open until 9.',
+                confirmation: 'XX',
                 isPink: false,
                 status: 'complete',
                 completedAt: '2025-02-03T11:15:00'
@@ -112,6 +113,7 @@ function initializeSampleScheduleData() {
                 details: 'Labor to raise wall buck to new height, march bleachers back and attach bleacher to wall. Reinstall seats if removed',
                 tech: 'Troy & Alex M (overnight)',
                 partsLocation: 'UPS: 1Z66W7040311645722 estimated delivery 2/2 end of day - shipping to school',
+                confirmation: 'X',
                 isPink: false,
                 status: 'checked_in',
                 checkedInAt: '2025-02-03T08:45:00'
@@ -781,7 +783,7 @@ function renderWeeklySchedule() {
     today.setHours(0, 0, 0, 0);
 
     let html = '<table class="schedule-table">';
-    html += '<thead><tr><th class="col-school">School / Location</th><th>Job Details</th><th class="col-tech">Tech(s)</th><th style="width: 120px;">Status</th><th class="col-parts">Parts</th></tr></thead>';
+    html += '<thead><tr><th class="col-school">School / Location</th><th>Job Details</th><th class="col-tech">Tech(s)</th><th style="width: 120px;">Status</th><th style="width: 80px; text-align: center;">Confirmed</th><th class="col-parts">Parts</th></tr></thead>';
     html += '<tbody>';
 
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -795,14 +797,14 @@ function renderWeeklySchedule() {
         const dayLabel = days[i] + ' ' + (dayDate.getMonth() + 1) + '/' + dayDate.getDate();
 
         html += '<tr class="schedule-day-row ' + (isToday ? 'schedule-today-row' : '') + '">';
-        html += '<td colspan="5">' + dayLabel + '</td>';
+        html += '<td colspan="6">' + dayLabel + '</td>';
         html += '</tr>';
 
         if (dayJobs.length === 0) {
             if (i === 4) {
-                html += '<tr><td colspan="5" style="padding: 14px; text-align: center; color: #adb5bd; font-style: italic;">Floating day</td></tr>';
+                html += '<tr><td colspan="6" style="padding: 14px; text-align: center; color: #adb5bd; font-style: italic;">Floating day</td></tr>';
             } else {
-                html += '<tr><td colspan="5" style="padding: 14px; text-align: center; color: #adb5bd;">No jobs scheduled</td></tr>';
+                html += '<tr><td colspan="6" style="padding: 14px; text-align: center; color: #adb5bd;">No jobs scheduled</td></tr>';
             }
         } else {
             dayJobs.forEach(function(job) {
@@ -815,7 +817,7 @@ function renderWeeklySchedule() {
 
                 if (isNote) {
                     html += '<tr class="schedule-note-row">';
-                    html += '<td colspan="5">' + formattedDetails + (job.tech ? ' &mdash; ' + job.tech : '') + '</td>';
+                    html += '<td colspan="6">' + formattedDetails + (job.tech ? ' &mdash; ' + job.tech : '') + '</td>';
                     html += '</tr>';
                 } else {
                     var status = job.status || 'scheduled';
@@ -833,11 +835,21 @@ function renderWeeklySchedule() {
                     else if (isContinued) rowClass = 'schedule-continued-row';
                     else if (status === 'complete') rowClass = 'schedule-complete-row';
 
+                    var confirmIcon = '';
+                    if (job.confirmation === 'XX') {
+                        confirmIcon = '<span style="color: #2e7d32; font-size: 18px;" title="Confirmed">✓✓</span>';
+                    } else if (job.confirmation === 'X') {
+                        confirmIcon = '<span style="color: #f57c00; font-size: 16px;" title="Attempted">✓</span>';
+                    } else {
+                        confirmIcon = '<span style="color: #bdbdbd; font-size: 16px;" title="Not confirmed">—</span>';
+                    }
+
                     html += '<tr class="' + rowClass + '" style="' + (status === 'complete' ? 'opacity: 0.6;' : '') + '">';
                     html += '<td style="font-weight: 600;">' + job.school + '</td>';
                     html += '<td>' + (isContinued ? '<em style="color: #1565c0;">Continued</em>' : formattedDetails) + '</td>';
                     html += '<td>' + (job.tech || '') + '</td>';
                     html += '<td><span class="badge" style="background: ' + statusStyle.bg + '; color: ' + statusStyle.color + '; font-size: 11px; padding: 3px 8px;">' + statusStyle.label + '</span></td>';
+                    html += '<td style="text-align: center;">' + confirmIcon + '</td>';
                     html += '<td style="color: #e65100; font-weight: 500;">' + (job.partsLocation || '') + '</td>';
                     html += '</tr>';
                 }
