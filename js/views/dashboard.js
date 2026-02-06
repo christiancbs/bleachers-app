@@ -3,7 +3,11 @@
 // ==========================================
 
 function loadOfficeDashboard() {
-    updateDashboardStats();
+    // Dashboard view is obsolete - office/admin default to Pipeline
+}
+
+function updateDashboardStats() {
+    // Stub function - old dashboard view is obsolete
 }
 
 // Track current estimates filter
