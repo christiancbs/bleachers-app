@@ -188,8 +188,9 @@ async function searchParts() {
                 ${data.parts.map(part => {
                     const price = parseFloat(part.price) || 0;
                     const priceDisplay = part.priceNote || (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
+                    const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'");
                     const imageHtml = part.imageUrl
-                        ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px;">`
+                        ? `<img src="${part.imageUrl}" onclick="event.stopPropagation(); showPartImage('${part.imageUrl}', '${safePartNumber}')" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px; cursor: pointer;" title="Click to enlarge">`
                         : '';
                     return `
                         <div class="part-result" onclick="selectPart('${part.id}')" style="display: flex; align-items: flex-start;">
@@ -244,8 +245,9 @@ async function searchTechParts() {
                 ${data.parts.map(part => {
                     const price = parseFloat(part.price) || 0;
                     const priceDisplay = part.priceNote || (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
+                    const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'");
                     const imageHtml = part.imageUrl
-                        ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px;">`
+                        ? `<img src="${part.imageUrl}" onclick="event.stopPropagation(); showPartImage('${part.imageUrl}', '${safePartNumber}')" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px; cursor: pointer;" title="Click to enlarge">`
                         : '';
                     return `
                         <div class="part-result" style="cursor: default; display: flex; align-items: flex-start;">
@@ -300,8 +302,9 @@ async function searchOfficeParts() {
                 ${data.parts.map(part => {
                     const price = parseFloat(part.price) || 0;
                     const priceDisplay = part.priceNote || (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
+                    const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'");
                     const imageHtml = part.imageUrl
-                        ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px;">`
+                        ? `<img src="${part.imageUrl}" onclick="event.stopPropagation(); showPartImage('${part.imageUrl}', '${safePartNumber}')" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px; cursor: pointer;" title="Click to enlarge">`
                         : '';
                     return `
                         <div class="part-result" style="cursor: default; display: flex; align-items: flex-start;">
