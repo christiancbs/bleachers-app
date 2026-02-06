@@ -115,6 +115,7 @@ function initializeSampleScheduleData() {
                 tech: 'Troy & Alex M (overnight)',
                 partsLocation: 'UPS: 1Z66W7040311645722 estimated delivery 2/2 end of day - shipping to school',
                 confirmation: 'X',
+                internalNotes: 'Customer called yesterday - wants this done before basketball game on Thursday. Principal is checking on gym availability.',
                 isPink: false,
                 status: 'checked_in',
                 checkedInAt: '2025-02-03T08:45:00'
@@ -1019,6 +1020,7 @@ function saveScheduleEntry() {
     const confirmation = document.getElementById('entryConfirmation').value;
     const equipmentRental = document.getElementById('entryEquipmentRental').checked;
     const notes = document.getElementById('entryNotes').value;
+    const internalNotes = document.getElementById('entryInternalNotes').value;
 
     // Get the date key for the selected day
     const weekStart = getWeekStart(scheduleWeekOffset);
@@ -1033,7 +1035,8 @@ function saveScheduleEntry() {
         partsLocation: partsLocation,
         confirmation: confirmation,
         equipmentRental: equipmentRental,
-        notes: notes
+        notes: notes,
+        internalNotes: internalNotes
     };
 
     if (entryType === 'job') {
@@ -1311,6 +1314,12 @@ function renderOfficeJobsGrid() {
                         </div>
                         ${job.partsLocation ? `<div style="color: #e65100; font-size: 13px; margin-bottom: 4px;"><strong>Parts:</strong> ${job.partsLocation}</div>` : ''}
                         ${job.notes ? `<div style="color: #6c757d; font-size: 12px; margin-bottom: 4px;">${job.notes}</div>` : ''}
+                        ${job.internalNotes ? `<div style="background: #e8f5e9; border-left: 3px solid #4CAF50; padding: 8px; margin-bottom: 4px; border-radius: 3px;">
+                            <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
+                                <span style="font-size: 10px; font-weight: 700; color: #2e7d32; text-transform: uppercase; letter-spacing: 0.5px;">🔒 Internal Notes</span>
+                            </div>
+                            <div style="color: #1b5e20; font-size: 12px;">${job.internalNotes}</div>
+                        </div>` : ''}
                         ${timestampHtml}
                         ${isPink ? '<span class="badge" style="margin-top: 8px; background: #ffe0e6; color: #c62828;">Pink Job</span>' : ''}
                         ${job.confirmation === 'XX' ? '<span class="badge badge-success" style="margin-top: 8px;">Confirmed</span>' : job.confirmation === 'X' ? '<span class="badge badge-warning" style="margin-top: 8px;">Confirmation Pending</span>' : ''}
