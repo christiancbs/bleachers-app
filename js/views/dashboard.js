@@ -454,11 +454,13 @@ function initEstimateCreate() {
 // ==========================================
 
 function loadSalesPipeline() {
+    console.log('loadSalesPipeline called');
     const container = document.getElementById('salesPipelineContent');
     if (!container) {
         console.error('salesPipelineContent container not found');
         return;
     }
+    console.log('PIPELINE_JOBS:', PIPELINE_JOBS ? PIPELINE_JOBS.length + ' jobs' : 'undefined');
 
     // Sales-specific stages from Salesmate (Story's feedback)
     var salesStages = [
