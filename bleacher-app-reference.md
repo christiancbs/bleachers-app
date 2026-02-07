@@ -1,7 +1,7 @@
 # Bleachers & Seats - App Development Reference
 
-**Last Updated:** February 6, 2026
-**Version:** v3.2.0
+**Last Updated:** February 7, 2026
+**Version:** v3.2.1
 **Branch:** `main`
 
 ---
@@ -20,11 +20,10 @@ python3 -m http.server 8080
 - **Office:** Click "office@bleachers.com" - View "Jobs" for operational status board
 - **Admin:** Click "admin@bleachers.com" - Full access to all features
 
-**Test v3.2 Features:**
-1. Login as **Office/Admin** → **Resources** → **Parts Catalog** → Search for a part
-2. Go to **Settings** → **Manage** → **Parts Catalog** tab → Add/edit parts with images
-3. **Bulk Images** tab → Upload folder of images (filenames match part numbers)
-4. **Import Pricing** tab → Upload CSV to bulk update/add parts
+**Test v3.2.1 Features:**
+1. Login as **Office** → **Settings** → **Manage** → Parts Catalog tab (Office can now manage parts)
+2. **Parts Catalog** → Search for a part with image → Click/tap card to see full-size lightbox
+3. Edit a part → Paste a screenshot directly into the image upload area (Ctrl/Cmd+V)
 
 ---
 
@@ -44,17 +43,20 @@ python3 -m http.server 8080
 - `v3.0.0` - Sales/Operations separation, feedback features
 - `v3.1.0` - Home page with bulletins & notifications
 - `v3.1.1` - Code cleanup, folder restructure
-- `v3.2.0` - **Current:** Parts catalog migrated to Vercel Postgres + Blob
+- `v3.2.0` - Parts catalog migrated to Vercel Postgres + Blob
+- `v3.2.1` - **Current:** Office parts management, image lightbox, paste upload
 
 ---
 
-## What's Built (v3.2)
+## What's Built (v3.2.1)
 
 **Core Features:**
 - **Home Page** - Role-specific landing with bulletins, notifications, and action items
 - Multi-bank inspection flow (Basketball, Indoor/Outdoor Bleacher templates)
 - **Digital Parts Catalog** - 2,100+ Hussey parts via Vercel Postgres with image support
 - **Parts Management** - Admin/Office can add/edit parts, upload images, bulk CSV import
+- **Image Lightbox** - Click any part with image to view full-size with details pill bar
+- **Screenshot Paste** - Paste images directly into part edit modal (Ctrl/Cmd+V)
 - **Sales Pipeline** - Pre-sale tracking with A/B/C deal grading, 6 Salesmate stages
 - **Project Tracker** - Post-sale operations with date tracking, labor amounts
 - **Live status tracking** (scheduled → en route → checked in → complete/unable)

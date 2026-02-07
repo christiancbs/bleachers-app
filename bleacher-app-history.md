@@ -4,6 +4,76 @@
 
 ---
 
+## Version 3.2.1 (February 7, 2026)
+
+**Office Parts Management & Image UX Improvements**
+
+**Features:**
+- **Office Role Parts Management** - Office users can now access Settings → Manage → Parts Catalog (was Admin only)
+- **Employees Tab Hidden for Office** - Only Admin sees Employees tab in Manage section
+- **Live API Search in Manage** - Parts search in Manage section now uses live API with 300ms debounce (was local filtering from 100 parts)
+- **Image Lightbox** - Click any part card with image to view full-size overlay with part details
+- **Centered Details Pill Bar** - Part number, name, price, and vendor shown in styled pill below enlarged image
+- **Clickable Part Cards** - Entire card clickable to expand (not just thumbnail)
+- **Tap to View Indicator** - "📷 Tap to view" hint on parts with images
+- **Screenshot Paste Support** - Paste images directly into part edit modal (Ctrl/Cmd+V)
+
+**Files Modified:**
+- `js/views/admin.js` - Office role access, API search, lightbox, paste handling
+- `js/utils/parts-catalog.js` - Lightbox for Tech/Office/Inspection views
+- `index.html` - Paste zone in part edit modal
+
+---
+
+## Version 3.2.0 (February 6, 2026)
+
+**Parts Catalog Migrated to Vercel Postgres + Blob**
+
+**Features:**
+- Migrated 2,100+ parts from Airtable to Vercel Postgres
+- Part images stored in Vercel Blob
+- Full CRUD API for parts management
+- Bulk CSV import for pricing updates
+- Bulk image upload (match by part number)
+- Admin Settings → Manage → Parts Catalog tab
+
+---
+
+## Version 3.1.1 (February 6, 2026)
+
+**Code Cleanup & Folder Restructure**
+
+**Cleanup:**
+- Removed 16 debug `console.log` statements across JS files
+- Implemented `addIssue()` function for legacy bleacher/outdoor inspection templates
+- Removed stale TODO comments
+
+**Folder Restructure:**
+- Moved `reference/` folder contents to `archive/old-reference-docs/` (gitignored)
+- Moved `~/catalog-extractor/` to `bleachers-app/tools/` (scripts only, data gitignored)
+- Added `tools/` to repo with catalog extraction scripts
+- Updated `.gitignore` for tools data files
+
+**Commit:** `0af0ba5`
+
+---
+
+## Version 3.1.0 (February 6, 2026)
+
+**Home Page with Bulletins & Notifications**
+
+**Features:**
+- **Home Page** - Role-specific landing page (default view after login)
+- **Company Bulletins** - Admin-managed announcements with types (info, alert, holiday, safety, HR)
+- **Notifications Panel** - Role-specific updates with mark-as-read (blue dot)
+- **Needs Attention Panel** - Pink jobs, pending reviews, scheduled jobs, parts on order
+- **Today's Jobs Panel** - Field view of daily schedule
+- **Bulletin Management** - Admin Settings → Manage → Bulletins tab
+
+**Commit:** `30a87d5`
+
+---
+
 ## Version 3.0.0 (February 6, 2026)
 
 **MAJOR RELEASE: Sales/Operations Separation & Feedback Implementation**
