@@ -283,13 +283,24 @@ function updateDashboardStats() {
 // Track current estimates filter
 var currentEstimatesFilter = 'all';
 
-function loadEstimates() {
-    // Update badge counts
-    const pendingCount = inspections.length + jobs.filter(j => j.status === 'estimate_sent').length;
-    const acceptedCount = jobs.filter(j => j.status === 'approved' || j.status === 'parts_ordered').length;
+async function loadEstimates() {
+    // Fetch from QB API and update badge counts
+    try {
+        const data = await EstimatesAPI.list({ limit: 500 });
+        const estimates = data.estimates || [];
 
-    document.getElementById('estPendingCount').textContent = pendingCount;
-    document.getElementById('estAcceptedCount').textContent = acceptedCount;
+        const pendingCount = estimates.filter(e => e.status === 'Pending').length;
+        const acceptedCount = estimates.filter(e => e.status === 'Accepted').length;
+
+        document.getElementById('estPendingCount').textContent = pendingCount;
+        document.getElementById('estAcceptedCount').textContent = acceptedCount;
+
+        // Store for filtering
+        window._qbEstimates = estimates;
+    } catch (err) {
+        console.error('Failed to load estimates:', err);
+        window._qbEstimates = [];
+    }
 
     // Load the current tab content
     filterEstimates(currentEstimatesFilter);
@@ -332,66 +343,44 @@ function loadEstimatesAll() {
     const searchEl = document.getElementById('allEstimateSearch');
     const searchTerm = searchEl ? searchEl.value.toLowerCase() : '';
 
-    // Combine all estimates
-    var allItems = [];
-
-    inspections.forEach(insp => {
-        allItems.push({
-            id: insp.id,
-            customerName: insp.customerName,
-            location: insp.location,
-            inspectionType: insp.inspectionType,
-            createdAt: insp.createdAt,
-            status: 'pending',
-            jobNumber: null
-        });
-    });
-
-    jobs.filter(j => j.status === 'estimate_sent' || j.status === 'approved' || j.status === 'parts_ordered').forEach(j => {
-        allItems.push({
-            id: j.id,
-            customerName: j.customerName || j.customer,
-            location: j.locationName || j.location,
-            inspectionType: 'job',
-            createdAt: j.createdAt || new Date().toISOString(),
-            status: j.status === 'estimate_sent' ? 'pending' : 'accepted',
-            jobNumber: j.jobNumber
-        });
-    });
+    // Use cached QB estimates
+    let estimates = window._qbEstimates || [];
 
     if (searchTerm) {
-        allItems = allItems.filter(function(item) {
-            return (item.customerName || '').toLowerCase().includes(searchTerm) ||
-                   (item.location || '').toLowerCase().includes(searchTerm) ||
-                   (item.id || '').toLowerCase().includes(searchTerm);
-        });
+        estimates = estimates.filter(e =>
+            (e.docNumber || '').toLowerCase().includes(searchTerm) ||
+            (e.customerName || '').toLowerCase().includes(searchTerm) ||
+            (e.email || '').toLowerCase().includes(searchTerm)
+        );
     }
 
-    if (allItems.length === 0) {
-        list.innerHTML = '<div class="empty-state" style="padding: 40px;"><div class="empty-icon">📋</div><p>' + (searchTerm ? 'No estimates match your search' : 'No estimates') + '</p></div>';
+    if (estimates.length === 0) {
+        list.innerHTML = `
+            <div class="empty-state" style="padding: 40px;">
+                <div class="empty-icon">📋</div>
+                <p>${searchTerm ? 'No estimates match your search' : 'No estimates found'}</p>
+                ${!searchTerm ? '<p style="font-size: 13px; color: #6c757d; margin-top: 8px;">Estimates are synced from QuickBooks</p>' : ''}
+            </div>
+        `;
     } else {
-        list.innerHTML = allItems.map(item => {
-            const statusBadge = item.status === 'pending'
-                ? '<span class="badge badge-warning">Pending</span>'
-                : '<span class="badge badge-success">Accepted</span>';
-            const typeIcon = item.inspectionType === 'basketball' ? '🏀' :
-                             item.inspectionType === 'bleacher' ? '🏟️' :
-                             item.inspectionType === 'outdoor' ? '🪑' :
-                             item.inspectionType === 'job' ? '📄' : '📋';
+        list.innerHTML = estimates.map(est => {
+            const statusStyle = EstimatesAPI.statusColors[est.status] || { bg: '#e0e0e0', color: '#616161' };
             return `
-            <div class="inspection-item" onclick="viewEstimate('${item.id}')" style="padding: 16px; border-bottom: 1px solid #e9ecef; cursor: pointer;">
-                <div class="flex-between">
-                    <div>
-                        <div style="margin-bottom: 4px;">
-                            <span class="badge badge-info">${typeIcon}</span>
+            <div class="inspection-item" onclick="viewQbEstimate('${est.id}')" style="padding: 16px; border-bottom: 1px solid #e9ecef; cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <span style="font-weight: 600; color: #007bff;">#${est.docNumber}</span>
+                            <span class="badge" style="background: ${statusStyle.bg}; color: ${statusStyle.color};">${est.status}</span>
                         </div>
-                        <strong>${item.customerName}</strong>
-                        <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">${item.location || 'No location specified'}</p>
-                        <p style="font-size: 12px; color: #6c757d; margin-top: 4px;">
-                            ${item.jobNumber ? 'Job #' + item.jobNumber + ' • ' : ''}${new Date(item.createdAt).toLocaleDateString()}
+                        <strong style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${est.customerName}</strong>
+                        <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">
+                            ${est.lineItems?.length || 0} line items • ${new Date(est.txnDate).toLocaleDateString()}
                         </p>
                     </div>
-                    ${statusBadge}
+                    <div style="text-align: right; flex-shrink: 0; margin-left: 16px;">
+                        <span style="font-weight: 600; color: #28a745; font-size: 16px;">$${(est.totalAmount || 0).toLocaleString()}</span>
+                    </div>
                 </div>
             </div>
         `}).join('');
@@ -403,56 +392,44 @@ function loadEstimatesPending() {
     const searchEl = document.getElementById('estimateSearch');
     const searchTerm = searchEl ? searchEl.value.toLowerCase() : '';
 
-    // Combine inspections (PSFs) and jobs with estimate_sent status
-    var pendingItems = inspections.slice();
-    jobs.filter(j => j.status === 'estimate_sent').forEach(j => {
-        pendingItems.push({
-            id: j.id,
-            customerName: j.customerName || j.customer,
-            location: j.locationName || j.location,
-            inspectionType: 'job',
-            createdAt: j.createdAt || new Date().toISOString(),
-            jobNumber: j.jobNumber
-        });
-    });
+    // Filter QB estimates for Pending status
+    let estimates = (window._qbEstimates || []).filter(e => e.status === 'Pending');
 
     if (searchTerm) {
-        pendingItems = pendingItems.filter(function(item) {
-            return (item.customerName || '').toLowerCase().includes(searchTerm) ||
-                   (item.location || '').toLowerCase().includes(searchTerm) ||
-                   (item.id || '').toLowerCase().includes(searchTerm);
-        });
+        estimates = estimates.filter(e =>
+            (e.docNumber || '').toLowerCase().includes(searchTerm) ||
+            (e.customerName || '').toLowerCase().includes(searchTerm) ||
+            (e.email || '').toLowerCase().includes(searchTerm)
+        );
     }
 
-    if (pendingItems.length === 0) {
-        list.innerHTML = '<div class="empty-state" style="padding: 40px;"><div class="empty-icon">📋</div><p>' + (searchTerm ? 'No estimates match your search' : 'No pending estimates') + '</p></div>';
+    if (estimates.length === 0) {
+        list.innerHTML = `
+            <div class="empty-state" style="padding: 40px;">
+                <div class="empty-icon">📋</div>
+                <p>${searchTerm ? 'No estimates match your search' : 'No pending estimates'}</p>
+            </div>
+        `;
     } else {
-        list.innerHTML = pendingItems.map(item => {
-            const typeIcon = item.inspectionType === 'basketball' ? '🏀' :
-                             item.inspectionType === 'bleacher' ? '🏟️' :
-                             item.inspectionType === 'outdoor' ? '🪑' :
-                             item.inspectionType === 'job' ? '📄' : '📋';
-            const typeLabel = item.inspectionType === 'basketball' ? 'Basketball' :
-                              item.inspectionType === 'bleacher' ? 'Indoor Bleacher' :
-                              item.inspectionType === 'outdoor' ? 'Outdoor Bleacher' :
-                              item.inspectionType === 'job' ? 'Estimate' : 'PSF';
-            return `
-            <div class="inspection-item" onclick="viewEstimate('${item.id}')" style="padding: 16px; border-bottom: 1px solid #e9ecef; cursor: pointer;">
-                <div class="flex-between">
-                    <div>
-                        <div style="margin-bottom: 4px;">
-                            <span class="badge badge-info">${typeIcon} ${typeLabel}</span>
+        list.innerHTML = estimates.map(est => `
+            <div class="inspection-item" onclick="viewQbEstimate('${est.id}')" style="padding: 16px; border-bottom: 1px solid #e9ecef; cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <span style="font-weight: 600; color: #007bff;">#${est.docNumber}</span>
                         </div>
-                        <strong>${item.customerName}</strong>
-                        <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">${item.location || 'No location specified'}</p>
-                        <p style="font-size: 12px; color: #6c757d; margin-top: 4px;">
-                            ${item.jobNumber ? 'Job #' + item.jobNumber + ' • ' : ''}${new Date(item.createdAt).toLocaleDateString()}
+                        <strong style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${est.customerName}</strong>
+                        <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">
+                            ${est.email || 'No email'} • ${new Date(est.txnDate).toLocaleDateString()}
                         </p>
                     </div>
-                    <span class="badge badge-warning">Pending</span>
+                    <div style="text-align: right; flex-shrink: 0; margin-left: 16px;">
+                        <span style="font-weight: 600; color: #28a745; font-size: 16px;">$${(est.totalAmount || 0).toLocaleString()}</span>
+                        <span class="badge badge-warning" style="display: block; margin-top: 4px;">Pending</span>
+                    </div>
                 </div>
             </div>
-        `}).join('');
+        `).join('');
     }
 }
 
@@ -667,31 +644,41 @@ function loadEstimatesAccepted() {
     const searchEl = document.getElementById('acceptedEstimateSearch');
     const searchTerm = searchEl ? searchEl.value.toLowerCase() : '';
 
-    // Filter for accepted/approved estimates
-    var acceptedEstimates = jobs.filter(j => j.status === 'approved' || j.status === 'parts_ordered');
+    // Filter QB estimates for Accepted status
+    let estimates = (window._qbEstimates || []).filter(e => e.status === 'Accepted');
 
     if (searchTerm) {
-        acceptedEstimates = acceptedEstimates.filter(function(est) {
-            return (est.customerName || est.customer || '').toLowerCase().includes(searchTerm) ||
-                   (est.locationName || est.location || '').toLowerCase().includes(searchTerm) ||
-                   (est.jobNumber || est.id || '').toString().toLowerCase().includes(searchTerm);
-        });
+        estimates = estimates.filter(e =>
+            (e.docNumber || '').toLowerCase().includes(searchTerm) ||
+            (e.customerName || '').toLowerCase().includes(searchTerm) ||
+            (e.email || '').toLowerCase().includes(searchTerm)
+        );
     }
 
-    if (acceptedEstimates.length === 0) {
-        list.innerHTML = '<div class="empty-state" style="padding: 40px;"><div class="empty-icon">✅</div><p>' + (searchTerm ? 'No estimates match your search' : 'No accepted estimates') + '</p></div>';
+    if (estimates.length === 0) {
+        list.innerHTML = `
+            <div class="empty-state" style="padding: 40px;">
+                <div class="empty-icon">✅</div>
+                <p>${searchTerm ? 'No estimates match your search' : 'No accepted estimates'}</p>
+            </div>
+        `;
     } else {
-        list.innerHTML = acceptedEstimates.map(est => `
-            <div class="inspection-item" onclick="viewEstimate('${est.id}')" style="padding: 16px; border-bottom: 1px solid #e9ecef; cursor: pointer;">
-                <div class="flex-between">
-                    <div>
-                        <strong>${est.customerName || est.customer}</strong>
-                        <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">${est.locationName || est.location || 'No location'}</p>
-                        <p style="font-size: 12px; color: #6c757d; margin-top: 4px;">
-                            Job #${est.jobNumber || est.id} • ${est.jobType || 'Service'}
+        list.innerHTML = estimates.map(est => `
+            <div class="inspection-item" onclick="viewQbEstimate('${est.id}')" style="padding: 16px; border-bottom: 1px solid #e9ecef; cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <span style="font-weight: 600; color: #007bff;">#${est.docNumber}</span>
+                        </div>
+                        <strong style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${est.customerName}</strong>
+                        <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">
+                            ${est.email || 'No email'} • ${new Date(est.txnDate).toLocaleDateString()}
                         </p>
                     </div>
-                    <span class="badge badge-success">Accepted</span>
+                    <div style="text-align: right; flex-shrink: 0; margin-left: 16px;">
+                        <span style="font-weight: 600; color: #28a745; font-size: 16px;">$${(est.totalAmount || 0).toLocaleString()}</span>
+                        <span class="badge badge-success" style="display: block; margin-top: 4px;">Accepted</span>
+                    </div>
                 </div>
             </div>
         `).join('');
@@ -706,6 +693,106 @@ function initEstimateCreate() {
             For now, use the inspection flow to generate estimates.
         </p>
     `;
+}
+
+// View QB Estimate detail
+function viewQbEstimate(estimateId) {
+    // Find estimate in cache
+    const est = (window._qbEstimates || []).find(e => e.id === estimateId);
+    if (!est) {
+        alert('Estimate not found');
+        return;
+    }
+
+    const statusStyle = EstimatesAPI.statusColors[est.status] || { bg: '#e0e0e0', color: '#616161' };
+
+    document.getElementById('estimateDetailContent').innerHTML = `
+        <div class="card" style="margin-bottom: 24px;">
+            <div class="card-header">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <h2 class="card-title" style="margin: 0;">Estimate #${est.docNumber}</h2>
+                    <span class="badge" style="background: ${statusStyle.bg}; color: ${statusStyle.color}; font-size: 14px; padding: 6px 12px;">${est.status}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                    <div>
+                        <p style="font-size: 12px; color: #6c757d; margin-bottom: 4px; text-transform: uppercase;">Customer</p>
+                        <p style="font-size: 15px; font-weight: 600;">${est.customerName}</p>
+                    </div>
+                    <div>
+                        <p style="font-size: 12px; color: #6c757d; margin-bottom: 4px; text-transform: uppercase;">Email</p>
+                        <p style="font-size: 14px;">${est.email || '-'}</p>
+                    </div>
+                    <div>
+                        <p style="font-size: 12px; color: #6c757d; margin-bottom: 4px; text-transform: uppercase;">Date</p>
+                        <p style="font-size: 14px;">${new Date(est.txnDate).toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                        <p style="font-size: 12px; color: #6c757d; margin-bottom: 4px; text-transform: uppercase;">Total</p>
+                        <p style="font-size: 20px; font-weight: 700; color: #28a745;">$${(est.totalAmount || 0).toLocaleString()}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Line Items</h2>
+                <span class="badge badge-info">${est.lineItems?.length || 0} items</span>
+            </div>
+            <div class="card-body" style="padding: 0;">
+                ${!est.lineItems || est.lineItems.length === 0 ?
+                    '<div style="text-align: center; padding: 40px; color: #6c757d;">No line items</div>' :
+                    `<div style="overflow-x: auto;">
+                        <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f8f9fa;">
+                                    <th style="padding: 12px 16px; text-align: left; font-size: 12px; text-transform: uppercase; color: #6c757d;">Description</th>
+                                    <th style="padding: 12px 16px; text-align: right; font-size: 12px; text-transform: uppercase; color: #6c757d;">Qty</th>
+                                    <th style="padding: 12px 16px; text-align: right; font-size: 12px; text-transform: uppercase; color: #6c757d;">Unit Price</th>
+                                    <th style="padding: 12px 16px; text-align: right; font-size: 12px; text-transform: uppercase; color: #6c757d;">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${est.lineItems.map(item => `
+                                    <tr style="border-bottom: 1px solid #e9ecef;">
+                                        <td style="padding: 12px 16px;">
+                                            <div style="font-weight: 500;">${item.itemName || 'Item'}</div>
+                                            ${item.description ? `<div style="font-size: 13px; color: #6c757d; margin-top: 4px; white-space: pre-wrap;">${item.description}</div>` : ''}
+                                        </td>
+                                        <td style="padding: 12px 16px; text-align: right;">${item.quantity || 1}</td>
+                                        <td style="padding: 12px 16px; text-align: right;">$${(item.unitPrice || 0).toFixed(2)}</td>
+                                        <td style="padding: 12px 16px; text-align: right; font-weight: 600;">$${(item.amount || 0).toFixed(2)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                            <tfoot>
+                                <tr style="background: #f8f9fa;">
+                                    <td colspan="3" style="padding: 12px 16px; text-align: right; font-weight: 600;">Total</td>
+                                    <td style="padding: 12px 16px; text-align: right; font-weight: 700; font-size: 16px; color: #28a745;">$${(est.totalAmount || 0).toLocaleString()}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>`
+                }
+            </div>
+        </div>
+
+        ${est.status === 'Accepted' ? `
+            <div style="margin-top: 24px; padding: 20px; background: #e8f5e9; border-radius: 8px; text-align: center;">
+                <p style="font-weight: 600; color: #2e7d32; margin-bottom: 12px;">✅ This estimate has been accepted</p>
+                <button class="btn btn-primary" onclick="createWorkOrderFromEstimate('${est.id}')">Create Work Order</button>
+            </div>
+        ` : ''}
+    `;
+
+    showView('estimateDetail');
+}
+
+// Placeholder for creating work order from accepted estimate
+function createWorkOrderFromEstimate(estimateId) {
+    alert('Work order creation coming soon!\\n\\nThis will create a work order with the labor lines as instructions.');
 }
 
 // ==========================================
