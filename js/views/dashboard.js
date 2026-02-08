@@ -782,7 +782,7 @@ function viewQbEstimate(estimateId) {
         ${est.status === 'Accepted' ? `
             <div style="margin-top: 24px; padding: 20px; background: #e8f5e9; border-radius: 8px; text-align: center;">
                 <p style="font-weight: 600; color: #2e7d32; margin-bottom: 12px;">✅ This estimate has been accepted</p>
-                <button class="btn btn-primary" onclick="createWorkOrderFromEstimate('${est.id}')">Create Work Order</button>
+                <button class="btn btn-primary" onclick="createWorkOrderFromEstimate(event, '${est.id}')">Create Work Order</button>
             </div>
         ` : ''}
     `;
@@ -790,9 +790,109 @@ function viewQbEstimate(estimateId) {
     showView('estimateDetail');
 }
 
-// Placeholder for creating work order from accepted estimate
-function createWorkOrderFromEstimate(estimateId) {
-    alert('Work order creation coming soon!\\n\\nThis will create a work order with the labor lines as instructions.');
+// Create work order from accepted estimate
+async function createWorkOrderFromEstimate(evt, estimateId) {
+    // Get estimate from cache
+    const est = (window._qbEstimates || []).find(e => e.id === estimateId);
+    if (!est) {
+        alert('Estimate not found');
+        return;
+    }
+
+    if (est.status !== 'Accepted') {
+        alert('Only accepted estimates can be converted to work orders.');
+        return;
+    }
+
+    // Check if work order already exists for this estimate
+    try {
+        const existing = await JobsAPI.list({ limit: 100 });
+        const alreadyExists = existing.jobs.find(j => j.qbEstimateId === estimateId);
+        if (alreadyExists) {
+            alert(`A work order already exists for this estimate: ${alreadyExists.jobNumber}`);
+            return;
+        }
+    } catch (err) {
+        console.error('Error checking existing work orders:', err);
+    }
+
+    // Generate job number: WO-YYYY-NNNN
+    const year = new Date().getFullYear();
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    const jobNumber = `WO-${year}-${randomNum}`;
+
+    // Build work instructions from line items
+    // Labor lines become the description, parts stored in metadata
+    const laborLines = [];
+    const partsLines = [];
+
+    (est.lineItems || []).forEach(item => {
+        const name = (item.itemName || '').toLowerCase();
+        const isLabor = name.includes('labor') || name.includes('service') ||
+                       name.includes('install') || name.includes('repair') ||
+                       name.includes('replace') || name.includes('remove');
+
+        const lineText = `• ${item.itemName || 'Item'}${item.description ? ': ' + item.description : ''} (Qty: ${item.quantity || 1})`;
+
+        if (isLabor) {
+            laborLines.push(lineText);
+        } else {
+            partsLines.push(lineText);
+        }
+    });
+
+    // If no labor lines identified, use all lines as instructions
+    const instructions = laborLines.length > 0 ? laborLines :
+        (est.lineItems || []).map(item =>
+            `• ${item.itemName || 'Item'}${item.description ? ': ' + item.description : ''} (Qty: ${item.quantity || 1})`
+        );
+
+    const description = instructions.join('\n');
+
+    // Create the work order
+    const jobData = {
+        jobNumber,
+        jobType: 'repair',
+        status: 'draft',
+        customerId: est.customerId,
+        customerName: est.customerName,
+        contactEmail: est.email,
+        title: `Work Order from Estimate #${est.docNumber}`,
+        description: description || 'See estimate for details',
+        qbEstimateId: estimateId,
+        qbEstimateTotal: est.totalAmount,
+        metadata: {
+            sourceEstimate: {
+                docNumber: est.docNumber,
+                txnDate: est.txnDate,
+                lineItems: est.lineItems
+            },
+            partsNeeded: partsLines
+        }
+    };
+
+    // Show loading state
+    const btn = evt.target;
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Creating...';
+
+    try {
+        const result = await JobsAPI.create(jobData);
+
+        // Success - show confirmation and navigate to Jobs
+        alert(`Work order ${result.job.jobNumber} created successfully!\n\nThe estimate's line items have been converted to work instructions.`);
+
+        // Navigate to Jobs view to see the new work order
+        if (typeof loadJobsView === 'function') {
+            document.querySelector('[data-view="jobs"]')?.click();
+        }
+    } catch (err) {
+        console.error('Error creating work order:', err);
+        alert('Failed to create work order: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
 }
 
 // ==========================================
