@@ -1,7 +1,7 @@
 # Bleachers & Seats - App Development Reference
 
 **Last Updated:** February 8, 2026
-**Version:** v3.2.1
+**Version:** v3.3.0
 **Branch:** `main`
 
 ---
@@ -17,13 +17,13 @@ python3 -m http.server 8080
 
 **Test Logins:**
 - **Field Staff:** Click "tech@bleachers.com" - Test status tracking in "My Jobs"
-- **Office:** Click "office@bleachers.com" - View "Jobs" for operational status board
+- **Office:** Click "office@bleachers.com" - View "Estimates" for real QB data
 - **Admin:** Click "admin@bleachers.com" - Full access to all features
 
-**Test v3.2.1 Features:**
-1. Login as **Office** → **Settings** → **Manage** → Parts Catalog tab (Office can now manage parts)
-2. **Parts Catalog** → Search for a part with image → Click/tap card to see full-size lightbox
-3. Edit a part → Paste a screenshot directly into the image upload area (Ctrl/Cmd+V)
+**Test v3.3.0 Features:**
+1. Login as **Office** → **Estimates** → See real QuickBooks estimates with line items
+2. Click any estimate → View full details with parts/labor breakdown
+3. Filter by status: All, Pending, Accepted
 
 ---
 
@@ -37,18 +37,45 @@ python3 -m http.server 8080
 | **API Repo** | github.com/christiancbs/bleachers-api |
 
 **Version Tags:**
-- `v1.0` - Original navigation (archived)
-- `v2.0` - Navigation refactor + field create
-- `v2.1.3` - Live status tracking + Jobs view (final v2)
-- `v3.0.0` - Sales/Operations separation, feedback features
-- `v3.1.0` - Home page with bulletins & notifications
-- `v3.1.1` - Code cleanup, folder restructure
-- `v3.2.0` - Parts catalog migrated to Vercel Postgres + Blob
-- `v3.2.1` - **Current:** Office parts management, image lightbox, paste upload
+- `v3.2.1` - Office parts management, image lightbox, paste upload
+- `v3.3.0` - **Current:** Jobs database, Estimates view wired to QB, EstimatesAPI
 
 ---
 
-## What's Built (v3.2.1)
+## Business Flow (IMPORTANT)
+
+```
+1. INSPECTION
+   └── Inspector documents issues at school site
+       └── Uses inspection form linked to parts catalog
+       └── Creates Part Specification Form (PSF)
+
+2. OPS REVIEW
+   └── Reviews inspection findings
+       └── Generates ESTIMATE (parts + labor pricing)
+       └── Pushes estimate TO QuickBooks ← NOT importing FROM QB
+
+3. CUSTOMER ACCEPTANCE
+   └── Customer reviews and accepts estimate
+       └── Status updates to "Accepted" in QB
+
+4. PROCUREMENT
+   └── Order parts from vendors OR pull from inventory
+
+5. WORK ORDER CREATED  ← Separate from Estimate!
+   └── Labor lines from estimate become work instructions
+   └── Internal operations document for scheduling
+
+6. PARTS RECEIVED → 7. SCHEDULE → 8. COMPLETE WORK → 9. BILL CUSTOMER
+```
+
+**Key Distinction:**
+- **Estimate** = Financial quote to customer. Lives in QuickBooks. Created in app → pushed to QB.
+- **Work Order** = Internal ops document. Created from accepted estimate's labor lines. Tracks scheduling, assignment, completion.
+
+---
+
+## What's Built (v3.3.0)
 
 **Core Features:**
 - **Home Page** - Role-specific landing with bulletins, notifications, and action items
@@ -56,14 +83,14 @@ python3 -m http.server 8080
 - **Digital Parts Catalog** - 2,100+ Hussey parts via Vercel Postgres with image support
 - **Parts Management** - Admin/Office can add/edit parts, upload images, bulk CSV import
 - **Image Lightbox** - Click any part with image to view full-size with details pill bar
-- **Screenshot Paste** - Paste images directly into part edit modal (Ctrl/Cmd+V)
-- **Sales Pipeline** - Pre-sale tracking with A/B/C deal grading, 6 Salesmate stages
-- **Project Tracker** - Post-sale operations with date tracking, labor amounts
+- **Estimates View** - Real QuickBooks data with All/Pending/Accepted tabs
+- **Estimate Detail** - Full line item breakdown with amounts
+- **Jobs Database** - Postgres tables for jobs, attachments, inspection banks
+- **Sales Pipeline** - Pre-sale tracking with A/B/C deal grading
+- **Project Tracker** - Post-sale operations with date tracking
 - **Live status tracking** (scheduled → en route → checked in → complete/unable)
-- **Jobs view** - Operational real-time status board for Office/Admin
 - Scheduling (spreadsheet view with Confirmed column, Equipment badges)
-- Ops Review workflow (submitted → under_review → approved)
-- CRM with customer hierarchy (District → Locations) and multi-contact support
+- CRM with customer hierarchy (District → Locations)
 - Unified job numbering (Job # = Estimate # = Work Order # = QB #)
 
 **Navigation:**
@@ -77,9 +104,10 @@ python3 -m http.server 8080
 | Layer | Technology |
 |-------|------------|
 | Frontend | Plain HTML/CSS/JS |
-| Backend API | Vercel (Node.js ESM) |
+| Backend API | Vercel (Node.js ESM) - **Pro Plan** |
 | Parts Database | Vercel Postgres (Neon) |
-| Parts Images | Vercel Blob |
+| Jobs Database | Vercel Postgres (Neon) - same DB |
+| File Storage | Vercel Blob |
 | Token Storage | Upstash Redis |
 | QB Integration | QuickBooks Online API (OAuth 2.0) - **CONNECTED** |
 | Hosting | GitHub Pages + Vercel |
@@ -94,176 +122,199 @@ python3 -m http.server 8080
 ├── css/app.css                # All styles
 ├── js/
 │   ├── app.js                 # Core: init, login, routing, nav
-│   ├── config.js              # API keys (gitignored, deprecated)
+│   ├── config.js              # API keys (deprecated)
 │   ├── data.js                # Constants, sample data
 │   ├── views/
-│   │   ├── admin.js           # Employee, settings, parts management, bulletins
+│   │   ├── admin.js           # Employee, settings, parts management
 │   │   ├── create.js          # Office/field unified create forms
-│   │   ├── dashboard.js       # Home, Sales Pipeline, Project Tracker, CRM
+│   │   ├── dashboard.js       # Home, Estimates, Sales Pipeline, CRM
 │   │   ├── field.js           # Field staff utilities
 │   │   ├── inspection.js      # Multi-bank inspection flow
 │   │   ├── my-jobs.js         # Field My Jobs, status updates
 │   │   ├── office.js          # Office work order management
 │   │   ├── ops-review.js      # Ops review workflow
-│   │   └── scheduling.js      # Scheduling, Jobs view, status data
+│   │   └── scheduling.js      # Scheduling, Jobs list, QB sync
 │   └── utils/
-│       ├── parts-api.js       # Parts API client (Vercel Postgres)
+│       ├── parts-api.js       # Parts API client
+│       ├── jobs-api.js        # Jobs/Work Orders API client ← NEW
+│       ├── estimates-api.js   # QB Estimates API client ← NEW
 │       ├── parts-catalog.js   # Parts search UI
 │       └── search.js          # Global search utilities
-├── tools/                     # Scripts
-│   ├── clean_hussey_csv.py    # CSV normalization
-│   ├── extract_catalog.py     # PDF extraction (Claude vision)
-│   └── migrate.html           # Airtable migration tool (one-time)
-├── vendor-data/               # Source files (gitignored)
-├── archive/                   # Old prototypes & docs (gitignored)
-└── *.png                      # Logo files
+├── bleacher-app-reference.md  # This file
+└── REFERENCE.md               # System architecture docs
 
-~/bleachers-api/               # Separate repo (Vercel backend)
+~/bleachers-api/
 ├── api/
 │   ├── _lib/
 │   │   ├── qb.js              # QuickBooks token management
 │   │   ├── db.js              # Postgres connection helper
 │   │   └── auth.js            # Role validation helper
-│   ├── auth/
+│   ├── auth/                  # OAuth endpoints
 │   │   ├── connect.js         # GET - Initiates OAuth flow
 │   │   ├── callback.js        # GET - Handles OAuth callback
-│   │   └── status.js          # GET/DELETE - Check status / disconnect
-│   ├── qb/
-│   │   ├── estimates.js       # GET /api/qb/estimates
-│   │   ├── customers.js       # GET /api/qb/customers
-│   │   └── company-info.js    # GET /api/qb/company-info
-│   └── parts/                 # Parts catalog API
-│       ├── search.js          # GET /api/parts/search
-│       ├── index.js           # POST /api/parts (add)
-│       ├── [id].js            # PUT/DELETE /api/parts/:id
-│       ├── import.js          # POST /api/parts/import (bulk CSV)
-│       └── images/
-│           ├── index.js       # POST single image upload
-│           └── bulk.js        # POST bulk image upload
+│   │   └── status.js          # GET/DELETE - Check/disconnect
+│   ├── qb/                    # QuickBooks API
+│   │   ├── estimates.js       # GET/POST estimates
+│   │   ├── customers.js       # GET customers
+│   │   └── company-info.js    # GET company info
+│   ├── parts/                 # Parts catalog API
+│   │   ├── search.js          # GET search
+│   │   ├── index.js           # POST add
+│   │   ├── [id].js            # PUT/DELETE
+│   │   ├── import.js          # POST bulk CSV
+│   │   └── images/            # Image upload
+│   └── jobs/                  # Jobs/Work Orders API ← NEW
+│       ├── index.js           # GET list, POST create
+│       ├── [id].js            # GET/PUT/DELETE single job
+│       ├── sync.js            # QB sync (needs rework)
+│       ├── attachments.js     # File uploads
+│       └── inspections.js     # Inspection banks
+├── db/
+│   └── schema-jobs.sql        # Jobs database schema
 ├── package.json
-└── vercel.json                # CORS config
+├── vercel.json                # CORS config
+└── REFERENCE.md               # System docs
 ```
 
 ---
 
-## Parts Catalog Config
+## Database Schema
 
-| Resource | Details |
-|----------|---------|
-| Database | Neon Postgres via Vercel Storage |
-| Images | Vercel Blob (`bleacher-images`) |
-| API Base | `https://bleachers-api.vercel.app/api/parts` |
+### Parts Table (existing)
+```sql
+parts: id, part_number, product_name, description, price,
+       category, subcategory, vendor, image_url, created_at
+```
 
-**API Endpoints:**
+### Jobs Tables (NEW)
+```sql
+jobs
+├── id, job_number (unique), job_type, status
+├── customer_id, customer_name, location_name, address
+├── contact_name, contact_phone, contact_email
+├── title, description, special_instructions
+├── assigned_to, scheduled_date, estimated_hours
+├── qb_estimate_id, qb_estimate_total, qb_synced_at
+├── created_at, updated_at, completed_at
+└── metadata (JSONB)
+
+job_attachments
+├── id, job_id (FK), type, filename, blob_url
+├── content_type, file_size, part_number, vendor
+└── uploaded_by, uploaded_at, metadata (JSONB)
+
+inspection_banks
+├── id, job_id (FK), bank_name, bleacher_type
+├── row_count, seat_count
+├── checklist_data (JSONB), issues (JSONB)
+├── status, inspected_at, inspected_by
+└── created_at, updated_at
+```
+
+**Job Types:** `repair`, `inspection`, `service_call`, `go_see`
+**Job Status:** `draft`, `scheduled`, `in_progress`, `completed`, `on_hold`, `cancelled`
+
+---
+
+## API Endpoints
+
+### QuickBooks (`/api/qb/`)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/estimates?limit=N&status=X` | List estimates |
+| POST | `/estimates` | Create estimate in QB |
+| GET | `/customers?search=X` | Search customers |
+| GET | `/company-info` | Test connection |
+
+### Parts (`/api/parts/`)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/search?q=&category=&vendor=` | Search parts |
-| POST | `/` | Add single part |
+| POST | `/` | Add part |
 | PUT | `/:id` | Update part |
 | DELETE | `/:id` | Delete part |
 | POST | `/import` | Bulk CSV import |
-| POST | `/images` | Upload single image |
-| POST | `/images/bulk` | Upload folder (match by part #) |
+| POST | `/images` | Upload image |
+
+### Jobs (`/api/jobs/`) - NEW
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/?status=&job_type=&q=` | List/search jobs |
+| POST | `/` | Create job |
+| GET | `/:id` | Get job with attachments |
+| PUT | `/:id` | Update job |
+| DELETE | `/:id` | Delete job |
+| POST | `/attachments` | Upload photo/PDF |
+| POST | `/inspections` | Add inspection bank |
 
 **Auth:** Write operations require `X-User-Role: admin` or `office` header.
 
 ---
 
-## QuickBooks Integration (LIVE)
-
-**Status:** Connected to production QB (realm: 123145718017157)
-
-**API Endpoints:**
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/auth/connect` | Start OAuth flow |
-| GET | `/api/auth/status` | Check connection status |
-| DELETE | `/api/auth/status` | Disconnect from QB |
-| GET | `/api/qb/estimates?limit=N` | Fetch estimates |
-| GET | `/api/qb/customers` | Fetch customers |
-
-**Test:** `curl https://bleachers-api.vercel.app/api/qb/estimates?limit=5`
-
-**Notes:**
-- Uses `com.intuit.quickbooks.accounting` scope (readonly not available in production)
-- Tokens auto-refresh via Upstash Redis
-- Only admin QB users can authorize the connection
-- Vercel Hobby plan limit: 12 serverless functions (currently at limit)
-
----
-
 ## Next Steps
 
-**In Progress - Jobs Database:**
-1. Create `jobs` table schema in Vercel Postgres
-2. Create `job_attachments` table for photos/PDFs
-3. Create `inspection_banks` table for multi-bank inspections
-4. Build API endpoints (like parts catalog pattern)
-5. Import QB estimates into jobs database
-6. PDF upload for historical work orders
-
-**Planned Database Schema:**
-```
-jobs
-├── id, job_number, job_type, status
-├── customer_id, location_id, location_name, address
-├── description, special_instructions
-├── assigned_to, scheduled_date
-├── created_at, updated_at, completed_at
-└── qb_estimate_id (link to QB)
-
-job_attachments
-├── id, job_id, type (photo, pdf, part_spec_form)
-├── blob_url, filename, uploaded_at
-└── metadata (JSON)
-
-inspection_banks (for multi-bank inspections)
-├── id, job_id, bank_name, bleacher_type
-├── checklist_data (JSON), issues (JSON)
-```
+**Immediate (Work Order Flow):**
+1. ~~Jobs database~~ ✅ DONE
+2. ~~Estimates view wired to QB~~ ✅ DONE
+3. **Create Work Order from Accepted Estimate** - Button exists, needs implementation
+4. **Estimate Builder** - Create estimates in app → push to QB
+5. Remove/repurpose incorrect Jobs view (was importing estimates as jobs)
 
 **Short-term:**
-1. Signature capture for work orders
-2. Archived jobs tab (for 1000+ completed jobs)
-3. Field Guide / Help Desk in Resources section
-4. Offline mode for parts catalog
+1. Parts tracking on work orders (needed, ordered, received)
+2. Signature capture for work orders
+3. Offline mode for parts catalog
+4. Field Guide / Help Desk
+
+**Data Cleanup:**
+- Jobs table has 500 imported QB estimates - need to clear/repurpose as actual work orders
 
 ---
 
 ## Troubleshooting
 
-**Buttons/Navigation Not Working:**
-1. Open browser console (F12 or Cmd+Option+I)
-2. Look for red errors - syntax errors will prevent subsequent JS files from loading
-3. Check script load order in index.html (config → data → views → utils → app)
-4. Hard refresh (Cmd+Shift+R or Ctrl+Shift+F5) to clear cache
+**Estimates Not Loading:**
+1. Check browser console for errors
+2. Test API: `curl https://bleachers-api.vercel.app/api/qb/estimates?limit=5`
+3. If QB disconnected, reconnect via `/api/auth/connect`
 
 **Parts Catalog Not Loading:**
-1. Check browser console for errors
-2. Verify bleachers-api is deployed and running
-3. Test API directly: `https://bleachers-api.vercel.app/api/parts/search?q=motor`
-4. Check Vercel dashboard for Postgres/Blob connection status
+1. Test API: `https://bleachers-api.vercel.app/api/parts/search?q=motor`
+2. Check Vercel dashboard for Postgres status
 
 **Status Updates Not Persisting:**
 1. Check localStorage in DevTools → Application → Local Storage
-2. Look for keys: `scheduleDataOriginal`, `scheduleDataSouthern`
-3. Clear if corrupted: `localStorage.clear()` in console
-
-**Bulletins/Notifications Not Showing:**
-1. Check localStorage keys: `companyBulletins`, `userNotifications`
-2. Hard refresh (Cmd+Shift+R) to reload data.js
-3. To reset to defaults: delete keys in localStorage and refresh
+2. Clear if corrupted: `localStorage.clear()` in console
 
 ---
 
 ## Critical Principles
 
 - **"If it didn't happen in QuickBooks, it didn't happen at all"**
+- **Estimates are created IN the app, pushed TO QuickBooks** (not imported from QB)
+- **Work Orders are separate from Estimates** - internal ops documents
 - **Inspector after-hours work is the #1 pain point**
 - **Schools have poor WiFi** - offline mode critical
 - **Multi-vendor jobs are common** - search all vendors
-- **DIY approach is working** - keep building
 
 ---
 
-*For version history and completed milestones, see `bleacher-app-history.md`*
+## Test Commands
+
+```bash
+# Test QB connection
+curl https://bleachers-api.vercel.app/api/qb/company-info
+
+# Get QB estimates
+curl "https://bleachers-api.vercel.app/api/qb/estimates?limit=5"
+
+# Search parts
+curl "https://bleachers-api.vercel.app/api/parts/search?q=seat+board"
+
+# List work orders
+curl https://bleachers-api.vercel.app/api/jobs
+```
+
+---
+
+*For version history, see `bleacher-app-history.md`*
