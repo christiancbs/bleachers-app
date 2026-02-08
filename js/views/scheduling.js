@@ -1218,15 +1218,27 @@ function switchJobsTab(tab) {
     }
 }
 
+// Search jobs (debounced)
+let searchJobsTimeout;
+function searchJobs() {
+    clearTimeout(searchJobsTimeout);
+    searchJobsTimeout = setTimeout(() => {
+        switchJobsTab(currentJobsTab);
+    }, 300);
+}
+
 // Load jobs for a specific tab from API
 async function loadJobsTabContent(tabName, statusFilter = '') {
     const container = document.getElementById(`jobsList${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`);
     if (!container) return;
 
+    const searchTerm = document.getElementById('jobsSearchInput')?.value || '';
+
     container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading...</div>';
 
     try {
         const data = await JobsAPI.list({
+            q: searchTerm,
             status: statusFilter,
             limit: 100
         });
@@ -1240,10 +1252,13 @@ async function loadJobsTabContent(tabName, statusFilter = '') {
                 completed: 'No completed jobs yet.',
                 shitList: 'No problem jobs. Everything is running smoothly!'
             };
+            const message = searchTerm
+                ? `No jobs matching "${searchTerm}"`
+                : (emptyMessages[tabName] || 'No jobs found');
             container.innerHTML = `
                 <div style="padding: 40px; text-align: center; color: #6c757d;">
-                    <div style="font-size: 48px; margin-bottom: 16px;">${tabName === 'shitList' ? '🎉' : '📋'}</div>
-                    <p>${emptyMessages[tabName] || 'No jobs found'}</p>
+                    <div style="font-size: 48px; margin-bottom: 16px;">${searchTerm ? '🔍' : (tabName === 'shitList' ? '🎉' : '📋')}</div>
+                    <p>${message}</p>
                 </div>
             `;
             return;

@@ -485,6 +485,11 @@
                             <button class="btn btn-primary" onclick="showView('officeCreate')">+ Create Job</button>
                         </div>
 
+                        <!-- Search Bar -->
+                        <div style="margin-bottom: 16px;">
+                            <input type="text" id="jobsSearchInput" class="form-input" placeholder="Search jobs by number, customer, or location..." oninput="searchJobs()" style="max-width: 400px;">
+                        </div>
+
                         <!-- Main Jobs Tabs -->
                         <div style="display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e9ecef;">
                             <button class="schedule-tab active" onclick="switchJobsTab('all')" id="jobsTabAll">All</button>
