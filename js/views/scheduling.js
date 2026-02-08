@@ -1370,3 +1370,408 @@ function nextOfficeJobsWeek() {
     renderOfficeJobsGrid();
 }
 
+// ==========================================
+// JOBS LIST (API-BACKED)
+// ==========================================
+
+let jobsListData = [];
+let jobsListOffset = 0;
+const JOBS_PAGE_SIZE = 25;
+
+// Load jobs from API
+async function loadJobsList() {
+    const container = document.getElementById('jobsList');
+    const countEl = document.getElementById('jobsCount');
+
+    try {
+        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading jobs...</div>';
+
+        const status = document.getElementById('jobsStatusFilter')?.value || '';
+        const jobType = document.getElementById('jobsTypeFilter')?.value || '';
+        const search = document.getElementById('jobsSearchInput')?.value || '';
+
+        jobsListOffset = 0;
+        const data = await JobsAPI.list({
+            q: search,
+            status: status,
+            jobType: jobType,
+            limit: JOBS_PAGE_SIZE,
+            offset: 0
+        });
+
+        jobsListData = data.jobs || [];
+        countEl.textContent = `${data.count} jobs`;
+
+        renderJobsList();
+
+        // Show/hide load more
+        document.getElementById('jobsLoadMore').style.display =
+            data.count >= JOBS_PAGE_SIZE ? 'block' : 'none';
+
+    } catch (err) {
+        console.error('Failed to load jobs:', err);
+        container.innerHTML = `
+            <div style="padding: 40px; text-align: center; color: #dc3545;">
+                <div style="font-size: 32px; margin-bottom: 12px;">⚠️</div>
+                <p>Failed to load jobs: ${err.message}</p>
+                <button class="btn btn-outline" onclick="loadJobsList()" style="margin-top: 12px;">Retry</button>
+            </div>
+        `;
+    }
+}
+
+// Load more jobs (pagination)
+async function loadMoreJobs() {
+    try {
+        const status = document.getElementById('jobsStatusFilter')?.value || '';
+        const jobType = document.getElementById('jobsTypeFilter')?.value || '';
+        const search = document.getElementById('jobsSearchInput')?.value || '';
+
+        jobsListOffset += JOBS_PAGE_SIZE;
+
+        const data = await JobsAPI.list({
+            q: search,
+            status: status,
+            jobType: jobType,
+            limit: JOBS_PAGE_SIZE,
+            offset: jobsListOffset
+        });
+
+        jobsListData = [...jobsListData, ...(data.jobs || [])];
+        renderJobsList();
+
+        // Hide load more if no more results
+        if (data.count < JOBS_PAGE_SIZE) {
+            document.getElementById('jobsLoadMore').style.display = 'none';
+        }
+    } catch (err) {
+        console.error('Failed to load more jobs:', err);
+        alert('Failed to load more jobs: ' + err.message);
+    }
+}
+
+// Filter jobs (debounced)
+let filterJobsTimeout;
+function filterJobsList() {
+    clearTimeout(filterJobsTimeout);
+    filterJobsTimeout = setTimeout(() => {
+        loadJobsList();
+    }, 300);
+}
+
+// Render jobs list
+function renderJobsList() {
+    const container = document.getElementById('jobsList');
+
+    if (!jobsListData || jobsListData.length === 0) {
+        container.innerHTML = `
+            <div style="padding: 40px; text-align: center; color: #6c757d;">
+                <div style="font-size: 48px; margin-bottom: 16px;">📋</div>
+                <p>No jobs found</p>
+                <button class="btn btn-outline" onclick="showQbSyncModal()" style="margin-top: 12px;">Import from QuickBooks</button>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '<div style="display: flex; flex-direction: column; gap: 0;">';
+
+    jobsListData.forEach(job => {
+        const statusColor = JobsAPI.statusColors[job.status] || '#6c757d';
+        const typeLabel = JobsAPI.jobTypeLabels[job.jobType] || job.jobType;
+        const amount = job.qbEstimateTotal ? `$${parseFloat(job.qbEstimateTotal).toLocaleString()}` : '';
+
+        html += `
+            <div class="job-list-item" onclick="openJobDetail(${job.id})" style="
+                padding: 16px 20px;
+                border-bottom: 1px solid #e9ecef;
+                cursor: pointer;
+                display: flex;
+                align-items: flex-start;
+                gap: 16px;
+                transition: background 0.15s;
+            " onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'">
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                        <span style="font-weight: 600; color: #007bff;">#${job.jobNumber}</span>
+                        <span class="badge" style="background: ${statusColor}20; color: ${statusColor}; font-size: 11px; padding: 2px 8px;">
+                            ${job.status.replace('_', ' ')}
+                        </span>
+                        <span class="badge" style="background: #e9ecef; color: #495057; font-size: 11px; padding: 2px 8px;">
+                            ${typeLabel}
+                        </span>
+                    </div>
+                    <div style="font-weight: 500; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${job.customerName || 'No customer'}
+                    </div>
+                    <div style="font-size: 13px; color: #6c757d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${job.locationName || job.address || ''}
+                    </div>
+                </div>
+                <div style="text-align: right; flex-shrink: 0;">
+                    ${amount ? `<div style="font-weight: 600; color: #28a745;">${amount}</div>` : ''}
+                    ${job.scheduledDate ? `<div style="font-size: 12px; color: #6c757d;">📅 ${new Date(job.scheduledDate).toLocaleDateString()}</div>` : ''}
+                    ${job.assignedTo ? `<div style="font-size: 12px; color: #6c757d;">👷 ${job.assignedTo}</div>` : ''}
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Open job detail
+async function openJobDetail(jobId) {
+    try {
+        const data = await JobsAPI.get(jobId);
+        const job = data.job;
+
+        // Store for editing
+        window.currentApiJob = job;
+
+        // Show in a modal or navigate to detail view
+        showJobDetailModal(job);
+    } catch (err) {
+        console.error('Failed to load job:', err);
+        alert('Failed to load job details: ' + err.message);
+    }
+}
+
+// Show job detail modal
+function showJobDetailModal(job) {
+    const statusColor = JobsAPI.statusColors[job.status] || '#6c757d';
+    const typeLabel = JobsAPI.jobTypeLabels[job.jobType] || job.jobType;
+
+    // Create modal HTML
+    const modalHtml = `
+        <div id="jobDetailModal" class="modal-backdrop" onclick="if(event.target===this)closeJobDetailModal()">
+            <div class="modal" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <div>
+                        <h2 style="margin: 0;">Job #${job.jobNumber}</h2>
+                        <div style="margin-top: 8px; display: flex; gap: 8px;">
+                            <span class="badge" style="background: ${statusColor}20; color: ${statusColor};">${job.status.replace('_', ' ')}</span>
+                            <span class="badge" style="background: #e9ecef; color: #495057;">${typeLabel}</span>
+                        </div>
+                    </div>
+                    <button onclick="closeJobDetailModal()" style="background:none;border:none;font-size:24px;cursor:pointer;">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div>
+                            <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Customer</label>
+                            <p style="margin: 4px 0; font-weight: 500;">${job.customerName || '-'}</p>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Location</label>
+                            <p style="margin: 4px 0;">${job.locationName || '-'}</p>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Address</label>
+                            <p style="margin: 4px 0;">${job.address || '-'}</p>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Contact</label>
+                            <p style="margin: 4px 0;">${job.contactEmail || '-'}</p>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Estimate Total</label>
+                            <p style="margin: 4px 0; font-weight: 600; color: #28a745;">${job.qbEstimateTotal ? '$' + parseFloat(job.qbEstimateTotal).toLocaleString() : '-'}</p>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Scheduled Date</label>
+                            <p style="margin: 4px 0;">${job.scheduledDate ? new Date(job.scheduledDate).toLocaleDateString() : 'Not scheduled'}</p>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Assigned To</label>
+                            <p style="margin: 4px 0;">${job.assignedTo || 'Unassigned'}</p>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">QB Synced</label>
+                            <p style="margin: 4px 0;">${job.qbSyncedAt ? new Date(job.qbSyncedAt).toLocaleString() : '-'}</p>
+                        </div>
+                    </div>
+
+                    ${job.description ? `
+                        <div style="margin-bottom: 20px;">
+                            <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Description</label>
+                            <div style="margin-top: 8px; padding: 12px; background: #f8f9fa; border-radius: 8px; font-size: 13px; white-space: pre-wrap; max-height: 200px; overflow-y: auto;">${job.description}</div>
+                        </div>
+                    ` : ''}
+
+                    ${job.attachments && job.attachments.length > 0 ? `
+                        <div style="margin-bottom: 20px;">
+                            <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Attachments (${job.attachments.length})</label>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                                ${job.attachments.map(a => `
+                                    <a href="${a.blobUrl}" target="_blank" style="display: block; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid #dee2e6;">
+                                        ${a.contentType?.startsWith('image/')
+                                            ? `<img src="${a.blobUrl}" style="width: 100%; height: 100%; object-fit: cover;">`
+                                            : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f8f9fa;">📄</div>`
+                                        }
+                                    </a>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${job.inspectionBanks && job.inspectionBanks.length > 0 ? `
+                        <div>
+                            <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Inspection Banks (${job.inspectionBanks.length})</label>
+                            <div style="margin-top: 8px;">
+                                ${job.inspectionBanks.map(bank => `
+                                    <div style="padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
+                                        <div style="font-weight: 500;">${bank.bankName}</div>
+                                        <div style="font-size: 13px; color: #6c757d;">${bank.bleacherType || ''} • ${bank.status}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline" onclick="closeJobDetailModal()">Close</button>
+                    <button class="btn btn-primary" onclick="editJob(${job.id})">Edit Job</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Remove existing modal if any
+    const existing = document.getElementById('jobDetailModal');
+    if (existing) existing.remove();
+
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeJobDetailModal() {
+    const modal = document.getElementById('jobDetailModal');
+    if (modal) modal.remove();
+}
+
+// Edit job (placeholder - can expand later)
+function editJob(jobId) {
+    alert('Edit functionality coming soon. Job ID: ' + jobId);
+}
+
+// ==========================================
+// QB SYNC MODAL
+// ==========================================
+
+let qbSyncPreviewData = null;
+
+async function showQbSyncModal() {
+    const modal = document.getElementById('qbSyncModal');
+    const body = document.getElementById('qbSyncModalBody');
+    const footer = document.getElementById('qbSyncModalFooter');
+
+    modal.classList.remove('hidden');
+    footer.style.display = 'none';
+    body.innerHTML = '<p style="text-align: center; padding: 20px;">Checking for new estimates...</p>';
+
+    try {
+        const data = await JobsAPI.syncPreview(100);
+        qbSyncPreviewData = data;
+
+        if (data.available.length === 0) {
+            body.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 48px; margin-bottom: 12px;">✅</div>
+                    <p style="font-weight: 500;">All caught up!</p>
+                    <p style="color: #6c757d;">No new QuickBooks estimates to import.</p>
+                    <p style="color: #6c757d; font-size: 13px; margin-top: 12px;">
+                        ${data.alreadySynced.length} estimates already synced
+                    </p>
+                </div>
+            `;
+            footer.style.display = 'none';
+        } else {
+            body.innerHTML = `
+                <div style="margin-bottom: 16px;">
+                    <p style="font-weight: 500; margin-bottom: 8px;">
+                        ${data.available.length} new estimates ready to import
+                    </p>
+                    <p style="color: #6c757d; font-size: 13px;">
+                        ${data.alreadySynced.length} already synced
+                    </p>
+                </div>
+                <div style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px;">
+                    ${data.available.slice(0, 20).map(e => `
+                        <div style="padding: 12px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between;">
+                            <div>
+                                <span style="font-weight: 500;">#${e.docNumber}</span>
+                                <span style="color: #6c757d; margin-left: 8px;">${e.customerName}</span>
+                            </div>
+                            <span style="color: #28a745; font-weight: 500;">$${e.totalAmount?.toLocaleString() || 0}</span>
+                        </div>
+                    `).join('')}
+                    ${data.available.length > 20 ? `
+                        <div style="padding: 12px; text-align: center; color: #6c757d; font-size: 13px;">
+                            + ${data.available.length - 20} more...
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            footer.style.display = 'flex';
+            document.getElementById('qbSyncConfirmBtn').textContent = `Import ${data.available.length} Estimates`;
+        }
+    } catch (err) {
+        console.error('Sync preview failed:', err);
+        body.innerHTML = `
+            <div style="text-align: center; padding: 20px; color: #dc3545;">
+                <div style="font-size: 32px; margin-bottom: 12px;">⚠️</div>
+                <p>Failed to check QuickBooks: ${err.message}</p>
+            </div>
+        `;
+    }
+}
+
+function closeQbSyncModal() {
+    document.getElementById('qbSyncModal').classList.add('hidden');
+}
+
+async function runQbSync() {
+    const body = document.getElementById('qbSyncModalBody');
+    const footer = document.getElementById('qbSyncModalFooter');
+    const btn = document.getElementById('qbSyncConfirmBtn');
+
+    btn.disabled = true;
+    btn.textContent = 'Importing...';
+
+    try {
+        const result = await JobsAPI.syncImport({ all: true });
+
+        body.innerHTML = `
+            <div style="text-align: center; padding: 20px;">
+                <div style="font-size: 48px; margin-bottom: 12px;">🎉</div>
+                <p style="font-weight: 500; font-size: 18px;">Import Complete!</p>
+                <p style="color: #28a745; font-size: 24px; font-weight: 600; margin: 12px 0;">
+                    ${result.imported?.length || 0} jobs imported
+                </p>
+                ${result.skipped?.length ? `<p style="color: #6c757d; font-size: 13px;">${result.skipped.length} skipped (already synced)</p>` : ''}
+                ${result.errors?.length ? `<p style="color: #dc3545; font-size: 13px;">${result.errors.length} errors</p>` : ''}
+            </div>
+        `;
+        footer.style.display = 'none';
+
+        // Reload jobs list
+        setTimeout(() => {
+            closeQbSyncModal();
+            loadJobsList();
+        }, 2000);
+
+    } catch (err) {
+        console.error('Sync failed:', err);
+        body.innerHTML = `
+            <div style="text-align: center; padding: 20px; color: #dc3545;">
+                <div style="font-size: 32px; margin-bottom: 12px;">❌</div>
+                <p>Import failed: ${err.message}</p>
+            </div>
+        `;
+        btn.disabled = false;
+        btn.textContent = 'Retry';
+    }
+}
+

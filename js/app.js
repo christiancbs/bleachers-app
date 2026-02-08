@@ -232,7 +232,7 @@ function showView(view) {
     } else if (view === 'jobs') {
         document.getElementById('jobsView').classList.remove('hidden');
         setActiveNav('jobs');
-        loadOfficeJobs();
+        loadJobsList();
     } else if (view === 'scheduling') {
         document.getElementById('schedulingView').classList.remove('hidden');
         setActiveNav('scheduling');
