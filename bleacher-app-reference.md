@@ -1,7 +1,7 @@
 # Bleachers & Seats - App Development Reference
 
 **Last Updated:** February 8, 2026
-**Version:** v3.3.0
+**Version:** v3.3.1
 **Branch:** `main`
 
 ---
@@ -38,7 +38,8 @@ python3 -m http.server 8080
 
 **Version Tags:**
 - `v3.2.1` - Office parts management, image lightbox, paste upload
-- `v3.3.0` - **Current:** Jobs database, Estimates view wired to QB, EstimatesAPI
+- `v3.3.0` - Jobs database, Estimates view wired to QB, EstimatesAPI
+- `v3.3.1` - **Current:** Jobs view mirrors field staff for real-time visibility
 
 ---
 
@@ -85,13 +86,13 @@ python3 -m http.server 8080
 - **Image Lightbox** - Click any part with image to view full-size with details pill bar
 - **Estimates View** - Real QuickBooks data with All/Pending/Accepted tabs
 - **Estimate Detail** - Full line item breakdown with amounts
-- **Jobs Database** - Postgres tables for jobs, attachments, inspection banks
+- **Jobs View** - Office sees same format as field staff "My Jobs" (real-time visibility)
+- **Work Orders Database** - Postgres tables for work orders, attachments, inspection banks
 - **Sales Pipeline** - Pre-sale tracking with A/B/C deal grading
 - **Project Tracker** - Post-sale operations with date tracking
 - **Live status tracking** (scheduled → en route → checked in → complete/unable)
 - Scheduling (spreadsheet view with Confirmed column, Equipment badges)
 - CRM with customer hierarchy (District → Locations)
-- Unified job numbering (Job # = Estimate # = Work Order # = QB #)
 
 **Navigation:**
 - **Office/Admin:** Home | Search | Sales (Sales Pipeline, Accounts) | Procurement (Ops Review, Estimates, Parts Orders) | Logistics (Shipping, Jobs, Scheduling, Project Tracker) | Resources (Parts Catalog) | Settings
@@ -136,8 +137,8 @@ python3 -m http.server 8080
 │   │   └── scheduling.js      # Scheduling, Jobs list, QB sync
 │   └── utils/
 │       ├── parts-api.js       # Parts API client
-│       ├── jobs-api.js        # Jobs/Work Orders API client ← NEW
-│       ├── estimates-api.js   # QB Estimates API client ← NEW
+│       ├── jobs-api.js        # Work Orders API client
+│       ├── estimates-api.js   # QB Estimates API client
 │       ├── parts-catalog.js   # Parts search UI
 │       └── search.js          # Global search utilities
 ├── bleacher-app-reference.md  # This file
@@ -163,10 +164,10 @@ python3 -m http.server 8080
 │   │   ├── [id].js            # PUT/DELETE
 │   │   ├── import.js          # POST bulk CSV
 │   │   └── images/            # Image upload
-│   └── jobs/                  # Jobs/Work Orders API ← NEW
+│   └── jobs/                  # Work Orders API
 │       ├── index.js           # GET list, POST create
-│       ├── [id].js            # GET/PUT/DELETE single job
-│       ├── sync.js            # QB sync (needs rework)
+│       ├── [id].js            # GET/PUT/DELETE single work order
+│       ├── sync.js            # (deprecated - was incorrect QB import)
 │       ├── attachments.js     # File uploads
 │       └── inspections.js     # Inspection banks
 ├── db/
@@ -186,9 +187,9 @@ parts: id, part_number, product_name, description, price,
        category, subcategory, vendor, image_url, created_at
 ```
 
-### Jobs Tables (NEW)
+### Work Orders Tables
 ```sql
-jobs
+jobs  -- Work orders (NOT estimates)
 ├── id, job_number (unique), job_type, status
 ├── customer_id, customer_name, location_name, address
 ├── contact_name, contact_phone, contact_email
@@ -211,8 +212,8 @@ inspection_banks
 └── created_at, updated_at
 ```
 
-**Job Types:** `repair`, `inspection`, `service_call`, `go_see`
-**Job Status:** `draft`, `scheduled`, `in_progress`, `completed`, `on_hold`, `cancelled`
+**Work Order Types:** `repair`, `inspection`, `service_call`, `go_see`
+**Work Order Status:** `draft`, `scheduled`, `in_progress`, `completed`, `on_hold`, `cancelled`
 
 ---
 
@@ -236,14 +237,14 @@ inspection_banks
 | POST | `/import` | Bulk CSV import |
 | POST | `/images` | Upload image |
 
-### Jobs (`/api/jobs/`) - NEW
+### Work Orders (`/api/jobs/`)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/?status=&job_type=&q=` | List/search jobs |
-| POST | `/` | Create job |
-| GET | `/:id` | Get job with attachments |
-| PUT | `/:id` | Update job |
-| DELETE | `/:id` | Delete job |
+| GET | `/?status=&job_type=&q=` | List/search work orders |
+| POST | `/` | Create work order |
+| GET | `/:id` | Get work order with attachments |
+| PUT | `/:id` | Update work order |
+| DELETE | `/:id` | Delete work order |
 | POST | `/attachments` | Upload photo/PDF |
 | POST | `/inspections` | Add inspection bank |
 
@@ -256,18 +257,15 @@ inspection_banks
 **Immediate (Work Order Flow):**
 1. ~~Jobs database~~ ✅ DONE
 2. ~~Estimates view wired to QB~~ ✅ DONE
-3. **Create Work Order from Accepted Estimate** - Button exists, needs implementation
-4. **Estimate Builder** - Create estimates in app → push to QB
-5. Remove/repurpose incorrect Jobs view (was importing estimates as jobs)
+3. ~~Jobs view mirrors field staff~~ ✅ DONE
+4. **Create Work Order from Accepted Estimate** - Button exists, needs implementation
+5. **Estimate Builder** - Create estimates in app → push to QB
 
 **Short-term:**
 1. Parts tracking on work orders (needed, ordered, received)
 2. Signature capture for work orders
 3. Offline mode for parts catalog
 4. Field Guide / Help Desk
-
-**Data Cleanup:**
-- Jobs table has 500 imported QB estimates - need to clear/repurpose as actual work orders
 
 ---
 
@@ -311,7 +309,7 @@ curl "https://bleachers-api.vercel.app/api/qb/estimates?limit=5"
 # Search parts
 curl "https://bleachers-api.vercel.app/api/parts/search?q=seat+board"
 
-# List work orders
+# List work orders (currently empty - create from accepted estimates)
 curl https://bleachers-api.vercel.app/api/jobs
 ```
 
