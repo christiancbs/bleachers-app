@@ -1,6 +1,6 @@
 # Bleachers & Seats - App Development Reference
 
-**Last Updated:** February 7, 2026
+**Last Updated:** February 8, 2026
 **Version:** v3.2.1
 **Branch:** `main`
 
@@ -81,7 +81,7 @@ python3 -m http.server 8080
 | Parts Database | Vercel Postgres (Neon) |
 | Parts Images | Vercel Blob |
 | Token Storage | Upstash Redis |
-| QB Integration | QuickBooks Online API (OAuth 2.0) |
+| QB Integration | QuickBooks Online API (OAuth 2.0) - **CONNECTED** |
 | Hosting | GitHub Pages + Vercel |
 
 ---
@@ -124,8 +124,14 @@ python3 -m http.server 8080
 │   │   ├── qb.js              # QuickBooks token management
 │   │   ├── db.js              # Postgres connection helper
 │   │   └── auth.js            # Role validation helper
-│   ├── auth/                  # OAuth flow
-│   ├── qb/                    # QuickBooks endpoints
+│   ├── auth/
+│   │   ├── connect.js         # GET - Initiates OAuth flow
+│   │   ├── callback.js        # GET - Handles OAuth callback
+│   │   └── status.js          # GET/DELETE - Check status / disconnect
+│   ├── qb/
+│   │   ├── estimates.js       # GET /api/qb/estimates
+│   │   ├── customers.js       # GET /api/qb/customers
+│   │   └── company-info.js    # GET /api/qb/company-info
 │   └── parts/                 # Parts catalog API
 │       ├── search.js          # GET /api/parts/search
 │       ├── index.js           # POST /api/parts (add)
@@ -163,24 +169,64 @@ python3 -m http.server 8080
 
 ---
 
+## QuickBooks Integration (LIVE)
+
+**Status:** Connected to production QB (realm: 123145718017157)
+
+**API Endpoints:**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/auth/connect` | Start OAuth flow |
+| GET | `/api/auth/status` | Check connection status |
+| DELETE | `/api/auth/status` | Disconnect from QB |
+| GET | `/api/qb/estimates?limit=N` | Fetch estimates |
+| GET | `/api/qb/customers` | Fetch customers |
+
+**Test:** `curl https://bleachers-api.vercel.app/api/qb/estimates?limit=5`
+
+**Notes:**
+- Uses `com.intuit.quickbooks.accounting` scope (readonly not available in production)
+- Tokens auto-refresh via Upstash Redis
+- Only admin QB users can authorize the connection
+- Vercel Hobby plan limit: 12 serverless functions (currently at limit)
+
+---
+
 ## Next Steps
 
-**Immediate:**
-1. Get Draper CSV and import via Parts Catalog
-2. Upload Hussey part images (Bulk Images tab)
-3. QB integration testing (sandbox ready)
+**In Progress - Jobs Database:**
+1. Create `jobs` table schema in Vercel Postgres
+2. Create `job_attachments` table for photos/PDFs
+3. Create `inspection_banks` table for multi-bank inspections
+4. Build API endpoints (like parts catalog pattern)
+5. Import QB estimates into jobs database
+6. PDF upload for historical work orders
+
+**Planned Database Schema:**
+```
+jobs
+├── id, job_number, job_type, status
+├── customer_id, location_id, location_name, address
+├── description, special_instructions
+├── assigned_to, scheduled_date
+├── created_at, updated_at, completed_at
+└── qb_estimate_id (link to QB)
+
+job_attachments
+├── id, job_id, type (photo, pdf, part_spec_form)
+├── blob_url, filename, uploaded_at
+└── metadata (JSON)
+
+inspection_banks (for multi-bank inspections)
+├── id, job_id, bank_name, bleacher_type
+├── checklist_data (JSON), issues (JSON)
+```
 
 **Short-term:**
 1. Signature capture for work orders
 2. Archived jobs tab (for 1000+ completed jobs)
-3. PO view pulling from estimates
+3. Field Guide / Help Desk in Resources section
 4. Offline mode for parts catalog
-
-**QuickBooks Integration (Built, needs testing):**
-1. Set `QB_CLIENT_ID` and `QB_CLIENT_SECRET` in Vercel
-2. Create sandbox company at developer.intuit.com
-3. Test OAuth flow and estimate creation
-4. Backend already exists at bleachers-api.vercel.app
 
 ---
 
