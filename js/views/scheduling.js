@@ -1214,7 +1214,7 @@ function switchJobsTab(tab) {
     } else if (tab === 'completed') {
         loadJobsTabContent('completed', 'completed');
     } else if (tab === 'shitList') {
-        loadJobsTabContent('shitList', 'on_hold');
+        loadJobsTabContent('shitList', 'unable_to_complete');
     }
 }
 
@@ -1264,7 +1264,7 @@ async function loadJobsTabContent(tabName, statusFilter = '') {
             return;
         }
 
-        container.innerHTML = renderJobsListHtml(jobs, tabName);
+        container.innerHTML = renderJobsListHtml(jobs);
     } catch (err) {
         console.error('Failed to load jobs:', err);
         container.innerHTML = `
@@ -1278,7 +1278,7 @@ async function loadJobsTabContent(tabName, statusFilter = '') {
 }
 
 // Render jobs list HTML (reusable for all tabs)
-function renderJobsListHtml(jobs, tabName) {
+function renderJobsListHtml(jobs) {
     let html = '<div style="display: flex; flex-direction: column; gap: 0;">';
 
     jobs.forEach(job => {
@@ -1322,16 +1322,6 @@ function renderJobsListHtml(jobs, tabName) {
                     ${job.scheduledDate ? `<div style="font-size: 12px; color: #6c757d;">📅 ${new Date(job.scheduledDate).toLocaleDateString()}</div>` : ''}
                     ${job.assignedTo ? `<div style="font-size: 12px; color: #6c757d;">👷 ${job.assignedTo}</div>` : ''}
                     <div style="font-size: 11px; color: #adb5bd;">Created ${createdDate}</div>
-                    ${tabName !== 'shitList' && job.status !== 'on_hold' && job.status !== 'completed' ? `
-                        <button class="btn btn-outline" onclick="event.stopPropagation(); addToShitList(${job.id}, '${job.jobNumber}')" style="font-size: 11px; padding: 4px 8px; color: #c62828; border-color: #c62828;">
-                            Add to Shit List
-                        </button>
-                    ` : ''}
-                    ${tabName === 'shitList' ? `
-                        <button class="btn btn-outline" onclick="event.stopPropagation(); removeFromShitList(${job.id}, '${job.jobNumber}')" style="font-size: 11px; padding: 4px 8px; color: #2e7d32; border-color: #2e7d32;">
-                            Remove from Shit List
-                        </button>
-                    ` : ''}
                 </div>
             </div>
         `;
@@ -1339,38 +1329,6 @@ function renderJobsListHtml(jobs, tabName) {
 
     html += '</div>';
     return html;
-}
-
-// Add job to shit list (set status to on_hold)
-async function addToShitList(jobId, jobNumber) {
-    const reason = prompt(`Why is ${jobNumber} going on the Shit List?\n\n(e.g., waiting on parts, customer not responding, etc.)`);
-    if (reason === null) return; // Cancelled
-
-    try {
-        await JobsAPI.update(jobId, {
-            status: 'on_hold',
-            metadata: { shitListReason: reason, shitListDate: new Date().toISOString() }
-        });
-        alert(`${jobNumber} added to Shit List`);
-        switchJobsTab(currentJobsTab); // Refresh current tab
-    } catch (err) {
-        console.error('Failed to add to shit list:', err);
-        alert('Failed to update job: ' + err.message);
-    }
-}
-
-// Remove job from shit list (set status back to draft)
-async function removeFromShitList(jobId, jobNumber) {
-    if (!confirm(`Remove ${jobNumber} from Shit List and move back to Backlog?`)) return;
-
-    try {
-        await JobsAPI.update(jobId, { status: 'draft' });
-        alert(`${jobNumber} moved to Backlog`);
-        switchJobsTab('shitList'); // Refresh shit list
-    } catch (err) {
-        console.error('Failed to remove from shit list:', err);
-        alert('Failed to update job: ' + err.message);
-    }
 }
 
 // Load This Week tab (original weekly grid view)
