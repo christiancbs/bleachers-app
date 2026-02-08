@@ -475,71 +475,29 @@
                         </div>
                     </div>
 
-                    <!-- Jobs View (Operational view for Office/Admin) -->
+                    <!-- Jobs View (Mirrors Field Staff My Jobs for real-time visibility) -->
                     <div id="jobsView" class="hidden">
-                        <div class="page-header" style="margin-bottom: 20px;">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
-                                <div>
-                                    <h1 class="page-title">Jobs</h1>
-                                    <p class="page-subtitle">Work orders synced from QuickBooks</p>
+                        <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+                            <div>
+                                <h1 class="page-title">Jobs</h1>
+                                <p class="page-subtitle">Real-time view of field staff activity</p>
+                                <div style="display: flex; gap: 12px; align-items: center; margin-top: 12px;">
+                                    <button class="btn btn-outline" onclick="prevOfficeJobsWeek()" style="padding: 8px 12px;">← Prev</button>
+                                    <span id="officeJobsWeekLabel" style="font-weight: 600; min-width: 180px; text-align: center;"></span>
+                                    <button class="btn btn-outline" onclick="nextOfficeJobsWeek()" style="padding: 8px 12px;">Next →</button>
                                 </div>
-                                <div style="display: flex; gap: 8px;">
-                                    <button class="btn btn-outline" onclick="showQbSyncModal()" id="qbSyncBtn">🔄 QB Sync</button>
-                                    <button class="btn btn-primary" onclick="showView('officeCreate')">+ Create Job</button>
-                                </div>
                             </div>
+                            <button class="btn btn-primary" onclick="showView('officeCreate')">+ Create Job</button>
                         </div>
 
-                        <!-- Search & Filters -->
-                        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
-                            <input type="text" id="jobsSearchInput" class="form-input" placeholder="Search jobs..." oninput="filterJobsList()" style="max-width: 280px; min-width: 200px;">
-                            <select id="jobsStatusFilter" class="form-input" onchange="filterJobsList()" style="width: 150px;">
-                                <option value="">All Status</option>
-                                <option value="draft">Draft</option>
-                                <option value="scheduled">Scheduled</option>
-                                <option value="in_progress">In Progress</option>
-                                <option value="completed">Completed</option>
-                                <option value="on_hold">On Hold</option>
-                                <option value="cancelled">Cancelled</option>
-                            </select>
-                            <select id="jobsTypeFilter" class="form-input" onchange="filterJobsList()" style="width: 150px;">
-                                <option value="">All Types</option>
-                                <option value="repair">Repair</option>
-                                <option value="inspection">Inspection</option>
-                                <option value="service_call">Service Call</option>
-                                <option value="go_see">Go-See</option>
-                            </select>
-                            <span id="jobsCount" style="color: #6c757d; font-size: 14px; margin-left: auto;">Loading...</span>
+                        <!-- Territory Tabs -->
+                        <div style="display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e9ecef;">
+                            <button class="schedule-tab active" onclick="switchOfficeJobsTerritory('original')" id="officeJobsOriginalTab">Original Territory (KY/TN)</button>
+                            <button class="schedule-tab" onclick="switchOfficeJobsTerritory('southern')" id="officeJobsSouthernTab">Southern Territory (AL/FL)</button>
                         </div>
 
-                        <!-- Jobs List -->
-                        <div id="jobsList" class="card">
-                            <div style="padding: 40px; text-align: center; color: #6c757d;">
-                                Loading jobs...
-                            </div>
-                        </div>
-
-                        <!-- Load More -->
-                        <div id="jobsLoadMore" style="text-align: center; margin-top: 16px; display: none;">
-                            <button class="btn btn-outline" onclick="loadMoreJobs()">Load More</button>
-                        </div>
-                    </div>
-
-                    <!-- QB Sync Modal -->
-                    <div id="qbSyncModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeQbSyncModal()">
-                        <div class="modal" style="max-width: 600px;">
-                            <div class="modal-header">
-                                <h2>QuickBooks Sync</h2>
-                                <button onclick="closeQbSyncModal()" style="background:none;border:none;font-size:24px;cursor:pointer;">&times;</button>
-                            </div>
-                            <div class="modal-body" id="qbSyncModalBody">
-                                <p style="text-align: center; padding: 20px;">Checking for new estimates...</p>
-                            </div>
-                            <div class="modal-footer" id="qbSyncModalFooter" style="display: none;">
-                                <button class="btn btn-outline" onclick="closeQbSyncModal()">Cancel</button>
-                                <button class="btn btn-primary" onclick="runQbSync()" id="qbSyncConfirmBtn">Import All</button>
-                            </div>
-                        </div>
+                        <!-- Jobs Grid (same format as field staff My Jobs) -->
+                        <div id="officeJobsGrid"></div>
                     </div>
 
                     <!-- Accounts View -->
