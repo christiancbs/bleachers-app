@@ -1178,14 +1178,188 @@ function truncateText(text, maxLength) {
 }
 
 // ==========================================
-// OFFICE JOBS VIEW (Operational view for Office/Admin)
-// Shows all active jobs in list format with ability to edit/create
+// OFFICE JOBS VIEW (Tabbed: All | Backlog | This Week | Completed | Shit List)
 // ==========================================
 
 let officeJobsWeekOffset = 0;
 let currentOfficeJobsTerritory = 'original';
+let currentJobsTab = 'all';
 
+// Main entry point for Jobs view
 function loadOfficeJobs() {
+    // Load the current tab (default: all)
+    switchJobsTab(currentJobsTab);
+}
+
+// Switch between jobs tabs
+function switchJobsTab(tab) {
+    currentJobsTab = tab;
+
+    // Update tab buttons
+    const tabs = ['all', 'backlog', 'thisWeek', 'completed', 'shitList'];
+    tabs.forEach(t => {
+        const btn = document.getElementById(`jobsTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        const content = document.getElementById(`jobsContent${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        if (btn) btn.classList.toggle('active', t === tab);
+        if (content) content.classList.toggle('hidden', t !== tab);
+    });
+
+    // Load content for the selected tab
+    if (tab === 'thisWeek') {
+        loadThisWeekJobs();
+    } else if (tab === 'all') {
+        loadJobsTabContent('all');
+    } else if (tab === 'backlog') {
+        loadJobsTabContent('backlog', 'draft');
+    } else if (tab === 'completed') {
+        loadJobsTabContent('completed', 'completed');
+    } else if (tab === 'shitList') {
+        loadJobsTabContent('shitList', 'on_hold');
+    }
+}
+
+// Load jobs for a specific tab from API
+async function loadJobsTabContent(tabName, statusFilter = '') {
+    const container = document.getElementById(`jobsList${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`);
+    if (!container) return;
+
+    container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading...</div>';
+
+    try {
+        const data = await JobsAPI.list({
+            status: statusFilter,
+            limit: 100
+        });
+
+        const jobs = data.jobs || [];
+
+        if (jobs.length === 0) {
+            const emptyMessages = {
+                all: 'No jobs found. Create a work order from an accepted estimate.',
+                backlog: 'No jobs in backlog. All work orders are scheduled!',
+                completed: 'No completed jobs yet.',
+                shitList: 'No problem jobs. Everything is running smoothly!'
+            };
+            container.innerHTML = `
+                <div style="padding: 40px; text-align: center; color: #6c757d;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">${tabName === 'shitList' ? '🎉' : '📋'}</div>
+                    <p>${emptyMessages[tabName] || 'No jobs found'}</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = renderJobsListHtml(jobs, tabName);
+    } catch (err) {
+        console.error('Failed to load jobs:', err);
+        container.innerHTML = `
+            <div style="padding: 40px; text-align: center; color: #dc3545;">
+                <div style="font-size: 32px; margin-bottom: 12px;">⚠️</div>
+                <p>Failed to load jobs: ${err.message}</p>
+                <button class="btn btn-outline" onclick="switchJobsTab('${tabName}')" style="margin-top: 12px;">Retry</button>
+            </div>
+        `;
+    }
+}
+
+// Render jobs list HTML (reusable for all tabs)
+function renderJobsListHtml(jobs, tabName) {
+    let html = '<div style="display: flex; flex-direction: column; gap: 0;">';
+
+    jobs.forEach(job => {
+        const statusColor = JobsAPI.statusColors[job.status] || '#6c757d';
+        const typeLabel = JobsAPI.jobTypeLabels[job.jobType] || job.jobType;
+        const amount = job.qbEstimateTotal ? `$${parseFloat(job.qbEstimateTotal).toLocaleString()}` : '';
+
+        // Format created date
+        const createdDate = job.createdAt ? new Date(job.createdAt).toLocaleDateString() : '';
+
+        html += `
+            <div class="job-list-item" style="
+                padding: 16px 20px;
+                border-bottom: 1px solid #e9ecef;
+                cursor: pointer;
+                display: flex;
+                align-items: flex-start;
+                gap: 16px;
+                transition: background 0.15s;
+            " onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'">
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
+                        <span style="font-weight: 600; color: #007bff;">#${job.jobNumber}</span>
+                        <span class="badge" style="background: ${statusColor}20; color: ${statusColor}; font-size: 11px; padding: 2px 8px;">
+                            ${job.status.replace('_', ' ')}
+                        </span>
+                        <span class="badge" style="background: #e9ecef; color: #495057; font-size: 11px; padding: 2px 8px;">
+                            ${typeLabel}
+                        </span>
+                    </div>
+                    <div style="font-weight: 500; margin-bottom: 4px;">
+                        ${job.customerName || 'No customer'}
+                    </div>
+                    <div style="font-size: 13px; color: #6c757d; margin-bottom: 8px;">
+                        ${job.title || job.locationName || ''}
+                    </div>
+                    ${job.description ? `<div style="font-size: 13px; color: #495057; white-space: pre-wrap; max-height: 60px; overflow: hidden;">${job.description.substring(0, 150)}${job.description.length > 150 ? '...' : ''}</div>` : ''}
+                </div>
+                <div style="text-align: right; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+                    ${amount ? `<div style="font-weight: 600; color: #28a745;">${amount}</div>` : ''}
+                    ${job.scheduledDate ? `<div style="font-size: 12px; color: #6c757d;">📅 ${new Date(job.scheduledDate).toLocaleDateString()}</div>` : ''}
+                    ${job.assignedTo ? `<div style="font-size: 12px; color: #6c757d;">👷 ${job.assignedTo}</div>` : ''}
+                    <div style="font-size: 11px; color: #adb5bd;">Created ${createdDate}</div>
+                    ${tabName !== 'shitList' && job.status !== 'on_hold' && job.status !== 'completed' ? `
+                        <button class="btn btn-outline" onclick="event.stopPropagation(); addToShitList(${job.id}, '${job.jobNumber}')" style="font-size: 11px; padding: 4px 8px; color: #c62828; border-color: #c62828;">
+                            Add to Shit List
+                        </button>
+                    ` : ''}
+                    ${tabName === 'shitList' ? `
+                        <button class="btn btn-outline" onclick="event.stopPropagation(); removeFromShitList(${job.id}, '${job.jobNumber}')" style="font-size: 11px; padding: 4px 8px; color: #2e7d32; border-color: #2e7d32;">
+                            Remove from Shit List
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    return html;
+}
+
+// Add job to shit list (set status to on_hold)
+async function addToShitList(jobId, jobNumber) {
+    const reason = prompt(`Why is ${jobNumber} going on the Shit List?\n\n(e.g., waiting on parts, customer not responding, etc.)`);
+    if (reason === null) return; // Cancelled
+
+    try {
+        await JobsAPI.update(jobId, {
+            status: 'on_hold',
+            metadata: { shitListReason: reason, shitListDate: new Date().toISOString() }
+        });
+        alert(`${jobNumber} added to Shit List`);
+        switchJobsTab(currentJobsTab); // Refresh current tab
+    } catch (err) {
+        console.error('Failed to add to shit list:', err);
+        alert('Failed to update job: ' + err.message);
+    }
+}
+
+// Remove job from shit list (set status back to draft)
+async function removeFromShitList(jobId, jobNumber) {
+    if (!confirm(`Remove ${jobNumber} from Shit List and move back to Backlog?`)) return;
+
+    try {
+        await JobsAPI.update(jobId, { status: 'draft' });
+        alert(`${jobNumber} moved to Backlog`);
+        switchJobsTab('shitList'); // Refresh shit list
+    } catch (err) {
+        console.error('Failed to remove from shit list:', err);
+        alert('Failed to update job: ' + err.message);
+    }
+}
+
+// Load This Week tab (original weekly grid view)
+function loadThisWeekJobs() {
     initializeSampleScheduleData();
     // Set offset to show sample data week
     const sampleDate = new Date('2025-02-03');

@@ -475,29 +475,71 @@
                         </div>
                     </div>
 
-                    <!-- Jobs View (Mirrors Field Staff My Jobs for real-time visibility) -->
+                    <!-- Jobs View (Tabbed: All | Backlog | This Week | Completed | Shit List) -->
                     <div id="jobsView" class="hidden">
                         <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
                             <div>
                                 <h1 class="page-title">Jobs</h1>
-                                <p class="page-subtitle">Real-time view of field staff activity</p>
-                                <div style="display: flex; gap: 12px; align-items: center; margin-top: 12px;">
-                                    <button class="btn btn-outline" onclick="prevOfficeJobsWeek()" style="padding: 8px 12px;">← Prev</button>
-                                    <span id="officeJobsWeekLabel" style="font-weight: 600; min-width: 180px; text-align: center;"></span>
-                                    <button class="btn btn-outline" onclick="nextOfficeJobsWeek()" style="padding: 8px 12px;">Next →</button>
-                                </div>
+                                <p class="page-subtitle">Work orders and field operations</p>
                             </div>
                             <button class="btn btn-primary" onclick="showView('officeCreate')">+ Create Job</button>
                         </div>
 
-                        <!-- Territory Tabs -->
+                        <!-- Main Jobs Tabs -->
                         <div style="display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e9ecef;">
-                            <button class="schedule-tab active" onclick="switchOfficeJobsTerritory('original')" id="officeJobsOriginalTab">Original Territory (KY/TN)</button>
-                            <button class="schedule-tab" onclick="switchOfficeJobsTerritory('southern')" id="officeJobsSouthernTab">Southern Territory (AL/FL)</button>
+                            <button class="schedule-tab active" onclick="switchJobsTab('all')" id="jobsTabAll">All</button>
+                            <button class="schedule-tab" onclick="switchJobsTab('backlog')" id="jobsTabBacklog">Backlog</button>
+                            <button class="schedule-tab" onclick="switchJobsTab('thisWeek')" id="jobsTabThisWeek">This Week</button>
+                            <button class="schedule-tab" onclick="switchJobsTab('completed')" id="jobsTabCompleted">Completed</button>
+                            <button class="schedule-tab" onclick="switchJobsTab('shitList')" id="jobsTabShitList">Shit List</button>
                         </div>
 
-                        <!-- Jobs Grid (same format as field staff My Jobs) -->
-                        <div id="officeJobsGrid"></div>
+                        <!-- Tab Content: All Jobs -->
+                        <div id="jobsContentAll">
+                            <div id="jobsListAll" style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"></div>
+                        </div>
+
+                        <!-- Tab Content: Backlog (draft status, needs scheduling) -->
+                        <div id="jobsContentBacklog" class="hidden">
+                            <div style="background: #fff3e0; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                                <strong style="color: #e65100;">📋 Backlog</strong>
+                                <span style="color: #6c757d; margin-left: 8px;">Draft work orders awaiting scheduling</span>
+                            </div>
+                            <div id="jobsListBacklog" style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"></div>
+                        </div>
+
+                        <!-- Tab Content: This Week (weekly grid view) -->
+                        <div id="jobsContentThisWeek" class="hidden">
+                            <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+                                <button class="btn btn-outline" onclick="prevOfficeJobsWeek()" style="padding: 8px 12px;">← Prev</button>
+                                <span id="officeJobsWeekLabel" style="font-weight: 600; min-width: 180px; text-align: center;"></span>
+                                <button class="btn btn-outline" onclick="nextOfficeJobsWeek()" style="padding: 8px 12px;">Next →</button>
+                            </div>
+                            <!-- Territory Tabs -->
+                            <div style="display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e9ecef;">
+                                <button class="schedule-tab active" onclick="switchOfficeJobsTerritory('original')" id="officeJobsOriginalTab">Original Territory (KY/TN)</button>
+                                <button class="schedule-tab" onclick="switchOfficeJobsTerritory('southern')" id="officeJobsSouthernTab">Southern Territory (AL/FL)</button>
+                            </div>
+                            <div id="officeJobsGrid"></div>
+                        </div>
+
+                        <!-- Tab Content: Completed -->
+                        <div id="jobsContentCompleted" class="hidden">
+                            <div style="background: #e8f5e9; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                                <strong style="color: #2e7d32;">✅ Completed</strong>
+                                <span style="color: #6c757d; margin-left: 8px;">Finished work orders</span>
+                            </div>
+                            <div id="jobsListCompleted" style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"></div>
+                        </div>
+
+                        <!-- Tab Content: Shit List (on_hold status) -->
+                        <div id="jobsContentShitList" class="hidden">
+                            <div style="background: #ffebee; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                                <strong style="color: #c62828;">💩 Shit List</strong>
+                                <span style="color: #6c757d; margin-left: 8px;">Problem jobs - waiting on parts, customer issues, etc.</span>
+                            </div>
+                            <div id="jobsListShitList" style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"></div>
+                        </div>
                     </div>
 
                     <!-- Accounts View -->
