@@ -875,7 +875,34 @@ function renderPlanningSchedule() {
     // Use next week for planning
     const weekStart = getWeekStart(scheduleWeekOffset + 1);
 
-    let html = '<div style="margin-bottom: 16px; padding: 12px; background: #e8f5e9; border-radius: 8px;">';
+    let html = '';
+
+    // Selected job panel (if a job is selected for planning)
+    if (selectedPlanningJob) {
+        const job = selectedPlanningJob;
+        html += `
+            <div style="margin-bottom: 20px; padding: 16px; background: #fff3e0; border: 2px solid #ff9800; border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <span style="font-size: 18px;">📋</span>
+                            <strong style="color: #e65100;">Ready to Place</strong>
+                        </div>
+                        <div style="font-weight: 600; color: #007bff; margin-bottom: 4px;">#${job.jobNumber}</div>
+                        <div style="font-weight: 500;">${job.customerName || 'No customer'}</div>
+                        <div style="font-size: 13px; color: #6c757d;">${job.title || job.locationName || ''}</div>
+                        ${job.qbEstimateTotal ? `<div style="font-weight: 600; color: #28a745; margin-top: 4px;">$${parseFloat(job.qbEstimateTotal).toLocaleString()}</div>` : ''}
+                    </div>
+                    <button class="btn btn-outline" onclick="clearPlanningSelection()" style="font-size: 12px;">Cancel</button>
+                </div>
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #ffcc80; font-size: 13px; color: #e65100;">
+                    👇 Click a day below to place this job on the schedule
+                </div>
+            </div>
+        `;
+    }
+
+    html += '<div style="margin-bottom: 16px; padding: 12px; background: #e8f5e9; border-radius: 8px;">';
     html += '<strong>Planning for: Week of ' + weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + '</strong>';
     html += '</div>';
 
@@ -894,13 +921,25 @@ function renderPlanningSchedule() {
     for (let i = 0; i < 5; i++) {
         const dayDate = new Date(weekStart);
         dayDate.setDate(weekStart.getDate() + i);
+        const dateKey = formatDateKey(dayDate);
         const dayLabel = days[i] + ' ' + (dayDate.getMonth() + 1) + '/' + dayDate.getDate();
 
-        html += '<tr class="schedule-day-row">';
+        // Highlight row if job is selected
+        const rowStyle = selectedPlanningJob ? 'cursor: pointer; transition: background 0.15s;' : '';
+        const rowClick = selectedPlanningJob ? `onclick="placeJobOnDay('${dateKey}')" onmouseover="this.style.background='#fff3e0'" onmouseout="this.style.background=''"` : '';
+
+        html += `<tr class="schedule-day-row" style="${rowStyle}" ${rowClick}>`;
         html += '<td colspan="3">' + dayLabel + '</td>';
-        html += '<td style="text-align: right; background: inherit;"><button class="btn btn-sm" style="padding: 2px 10px; font-size: 11px;" onclick="addJobToDay(\'' + formatDateKey(dayDate) + '\')">+ Add</button></td>';
+        html += `<td style="text-align: right; background: inherit;">
+            ${selectedPlanningJob
+                ? `<span style="color: #ff9800; font-size: 12px;">Click to place here →</span>`
+                : `<button class="btn btn-sm" style="padding: 2px 10px; font-size: 11px;" onclick="addJobToDay('${dateKey}')">+ Add</button>`
+            }
+        </td>`;
         html += '</tr>';
-        html += '<tr><td colspan="4" style="padding: 12px; text-align: center; color: #adb5bd; font-size: 12px;">Drag jobs here or click + Add</td></tr>';
+        html += '<tr><td colspan="4" style="padding: 12px; text-align: center; color: #adb5bd; font-size: 12px;">' +
+            (selectedPlanningJob ? 'Click the day header above to place the job' : 'Drag jobs here or click + Add') +
+            '</td></tr>';
     }
 
     html += '</tbody></table>';
@@ -1323,8 +1362,8 @@ function renderJobsListHtml(jobs) {
                     ${job.assignedTo ? `<div style="font-size: 12px; color: #6c757d;">👷 ${job.assignedTo}</div>` : ''}
                     <div style="font-size: 11px; color: #adb5bd;">Created ${createdDate}</div>
                     ${(job.status === 'draft' || job.status === 'unable_to_complete') ? `
-                        <button class="btn btn-primary" onclick="event.stopPropagation(); showAddToScheduleModal(${job.id}, '${job.jobNumber}')" style="font-size: 12px; padding: 6px 12px; margin-top: 4px;">
-                            Add to Schedule
+                        <button class="btn btn-primary" onclick="event.stopPropagation(); addToPlanning(${job.id})" style="font-size: 12px; padding: 6px 12px; margin-top: 4px;">
+                            Add to Planning
                         </button>
                     ` : ''}
                 </div>
@@ -1336,45 +1375,64 @@ function renderJobsListHtml(jobs) {
     return html;
 }
 
-// Show modal to add job to schedule
-function showAddToScheduleModal(jobId, jobNumber) {
-    const date = prompt(`Schedule ${jobNumber} for which date?\n\nEnter date (MM/DD/YYYY):`);
-    if (!date) return;
+// Selected job for planning
+let selectedPlanningJob = null;
 
-    const tech = prompt('Assign to which technician?\n\n(Leave blank to assign later)');
+// Add job to planning - navigate to Planning tab with job selected
+async function addToPlanning(jobId) {
+    try {
+        // Fetch the full job data
+        const data = await JobsAPI.get(jobId);
+        selectedPlanningJob = data.job;
 
-    scheduleJob(jobId, jobNumber, date, tech);
+        // Navigate to Scheduling view
+        showView('scheduling');
+
+        // Switch to Planning tab
+        setTimeout(() => {
+            switchScheduleTab('planning');
+        }, 100);
+    } catch (err) {
+        console.error('Failed to load job for planning:', err);
+        alert('Failed to load job: ' + err.message);
+    }
 }
 
-// Schedule a job (update status and date)
-async function scheduleJob(jobId, jobNumber, dateStr, assignedTo) {
+// Place selected job on a specific day
+async function placeJobOnDay(dateKey) {
+    if (!selectedPlanningJob) {
+        alert('No job selected. Go to Jobs > Backlog and click "Add to Planning" on a job.');
+        return;
+    }
+
+    const job = selectedPlanningJob;
+    const tech = prompt(`Assign ${job.jobNumber} to which technician?\n\n(Leave blank to assign later)`);
+
     try {
-        // Parse the date
-        const dateParts = dateStr.split('/');
-        let scheduledDate;
-        if (dateParts.length === 3) {
-            scheduledDate = new Date(dateParts[2], dateParts[0] - 1, dateParts[1]);
-        } else {
-            scheduledDate = new Date(dateStr);
-        }
+        // Parse dateKey (YYYY-MM-DD format)
+        const scheduledDate = new Date(dateKey + 'T12:00:00');
 
-        if (isNaN(scheduledDate.getTime())) {
-            alert('Invalid date format. Please use MM/DD/YYYY');
-            return;
-        }
-
-        await JobsAPI.update(jobId, {
+        await JobsAPI.update(job.id, {
             status: 'scheduled',
-            scheduledDate: scheduledDate.toISOString().split('T')[0],
-            assignedTo: assignedTo || null
+            scheduledDate: dateKey,
+            assignedTo: tech || null
         });
 
-        alert(`${jobNumber} scheduled for ${scheduledDate.toLocaleDateString()}${assignedTo ? ' - Assigned to ' + assignedTo : ''}`);
-        switchJobsTab(currentJobsTab); // Refresh current tab
+        alert(`${job.jobNumber} scheduled for ${scheduledDate.toLocaleDateString()}${tech ? ' - Assigned to ' + tech : ''}`);
+
+        // Clear selection and refresh
+        selectedPlanningJob = null;
+        renderPlanningSchedule();
     } catch (err) {
         console.error('Failed to schedule job:', err);
         alert('Failed to schedule job: ' + err.message);
     }
+}
+
+// Clear selected planning job
+function clearPlanningSelection() {
+    selectedPlanningJob = null;
+    renderPlanningSchedule();
 }
 
 // Load This Week tab (original weekly grid view)
