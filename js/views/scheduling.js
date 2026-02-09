@@ -1338,10 +1338,10 @@ function renderJobsListHtml(jobs) {
 
 // Show modal to add job to schedule
 function showAddToScheduleModal(jobId, jobNumber) {
-    const date = prompt(\`Schedule \${jobNumber} for which date?\\n\\nEnter date (MM/DD/YYYY):\`);
+    const date = prompt(`Schedule ${jobNumber} for which date?\n\nEnter date (MM/DD/YYYY):`);
     if (!date) return;
 
-    const tech = prompt('Assign to which technician?\\n\\n(Leave blank to assign later)');
+    const tech = prompt('Assign to which technician?\n\n(Leave blank to assign later)');
 
     scheduleJob(jobId, jobNumber, date, tech);
 }
@@ -1369,7 +1369,7 @@ async function scheduleJob(jobId, jobNumber, dateStr, assignedTo) {
             assignedTo: assignedTo || null
         });
 
-        alert(\`\${jobNumber} scheduled for \${scheduledDate.toLocaleDateString()}\${assignedTo ? ' - Assigned to ' + assignedTo : ''}\`);
+        alert(`${jobNumber} scheduled for ${scheduledDate.toLocaleDateString()}${assignedTo ? ' - Assigned to ' + assignedTo : ''}`);
         switchJobsTab(currentJobsTab); // Refresh current tab
     } catch (err) {
         console.error('Failed to schedule job:', err);
@@ -1788,10 +1788,21 @@ function showJobDetailModal(job) {
 
                     ${job.description ? `
                         <div style="margin-bottom: 20px;">
-                            <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Description</label>
+                            <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Work Instructions</label>
                             <div style="margin-top: 8px; padding: 12px; background: #f8f9fa; border-radius: 8px; font-size: 13px; white-space: pre-wrap; max-height: 200px; overflow-y: auto;">${job.description}</div>
                         </div>
                     ` : ''}
+
+                    <!-- Parts Tracking Section -->
+                    <div style="margin-bottom: 20px; border: 1px solid #e9ecef; border-radius: 8px; overflow: hidden;">
+                        <div style="background: #f8f9fa; padding: 12px 16px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center;">
+                            <label style="font-size: 12px; color: #6c757d; text-transform: uppercase; margin: 0;">Parts Tracking</label>
+                            <button class="btn btn-outline" onclick="editPartsTracking(${job.id})" style="font-size: 11px; padding: 4px 8px;">Edit</button>
+                        </div>
+                        <div style="padding: 16px;">
+                            ${renderPartsTrackingFields(job.metadata?.partsTracking || {})}
+                        </div>
+                    </div>
 
                     ${job.attachments && job.attachments.length > 0 ? `
                         <div style="margin-bottom: 20px;">
@@ -1847,6 +1858,84 @@ function closeJobDetailModal() {
 // Edit job (placeholder - can expand later)
 function editJob(jobId) {
     alert('Edit functionality coming soon. Job ID: ' + jobId);
+}
+
+// Render parts tracking fields
+function renderPartsTrackingFields(partsData) {
+    const fields = [
+        { key: 'partsOrdered', label: 'Parts Ordered', type: 'boolean' },
+        { key: 'poNumber', label: 'Our PO #', type: 'text' },
+        { key: 'promiseDate', label: 'Promise/Ship Date', type: 'date' },
+        { key: 'destination', label: 'Destination', type: 'text' },
+        { key: 'partsReceived', label: 'Parts Received', type: 'boolean' },
+        { key: 'partsLocation', label: 'Parts Location', type: 'text' }
+    ];
+
+    return `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            ${fields.map(f => {
+                const value = partsData[f.key];
+                let displayValue = '-';
+
+                if (f.type === 'boolean') {
+                    displayValue = value ? '<span style="color: #28a745;">Yes</span>' : '<span style="color: #6c757d;">No</span>';
+                } else if (f.type === 'date' && value) {
+                    displayValue = new Date(value).toLocaleDateString();
+                } else if (value) {
+                    displayValue = value;
+                }
+
+                return `
+                    <div>
+                        <label style="font-size: 11px; color: #6c757d; text-transform: uppercase;">${f.label}</label>
+                        <p style="margin: 2px 0; font-size: 14px;">${displayValue}</p>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+}
+
+// Edit parts tracking
+async function editPartsTracking(jobId) {
+    const job = window.currentApiJob;
+    if (!job) return;
+
+    const partsData = job.metadata?.partsTracking || {};
+
+    // Simple prompt-based editing for now
+    const poNumber = prompt('Our PO #:', partsData.poNumber || '');
+    if (poNumber === null) return;
+
+    const promiseDate = prompt('Promise/Ship Date (MM/DD/YYYY):', partsData.promiseDate ? new Date(partsData.promiseDate).toLocaleDateString() : '');
+    const destination = prompt('Destination:', partsData.destination || '');
+    const partsLocation = prompt('Parts Location:', partsData.partsLocation || '');
+    const partsOrdered = confirm('Have parts been ordered?');
+    const partsReceived = confirm('Have parts been received?');
+
+    try {
+        const updatedMetadata = {
+            ...job.metadata,
+            partsTracking: {
+                partsOrdered,
+                poNumber,
+                promiseDate: promiseDate ? new Date(promiseDate).toISOString() : null,
+                destination,
+                partsReceived,
+                partsLocation
+            }
+        };
+
+        await JobsAPI.update(jobId, { metadata: updatedMetadata });
+        alert('Parts tracking updated!');
+
+        // Refresh the modal
+        closeJobDetailModal();
+        openJobDetail(jobId);
+    } catch (err) {
+        console.error('Failed to update parts tracking:', err);
+        alert('Failed to update: ' + err.message);
+    }
 }
 
 // ==========================================
