@@ -336,34 +336,123 @@ function showTechView(view) {
 
 // Unified Create form functions
 let createPhoto = null;
+let createSelectedCustomer = null;
 
 function initCreateForm() {
-    // Populate customer dropdown
-    var select = document.getElementById('createCustomerSelect');
-    var html = '<option value="">Select a customer...</option>';
-    CUSTOMERS.forEach(function(cust) {
-        cust.locations.forEach(function(loc) {
-            var locContact = getPrimaryContact(loc.contacts);
-            html += '<option value="' + loc.id + '" data-customer-id="' + cust.id + '" data-customer-name="' + cust.name + '" data-location-name="' + loc.name + '" data-location-address="' + loc.address + '" data-contact="' + (locContact.name || '') + '" data-phone="' + (locContact.phone || '') + '">  ' + loc.name + ' (' + cust.name + ')</option>';
-        });
-    });
-    select.innerHTML = html;
-
     // Reset all fields
     document.getElementById('createTypeSelect').value = '';
-    document.getElementById('createCustomerSelect').value = '';
+    document.getElementById('createCustomerSearch').value = '';
+    document.getElementById('createCustomerId').value = '';
+    document.getElementById('createLocationId').value = '';
+    document.getElementById('createCustomerResults').classList.add('hidden');
     document.getElementById('createCustomerInfo').classList.add('hidden');
     document.getElementById('createFormFields').classList.add('hidden');
     document.getElementById('createSubmitBtn').classList.add('hidden');
     document.getElementById('createInspectionFields').classList.add('hidden');
-    document.getElementById('createWorkOrderFields').classList.add('hidden');
+    document.getElementById('createCustomFields').classList.add('hidden');
     document.getElementById('createDescriptionGroup').classList.add('hidden');
     document.getElementById('createPhotoGroup').classList.add('hidden');
     document.getElementById('createNotes').value = '';
     var descEl = document.getElementById('createDescription');
     if (descEl) descEl.value = '';
+    var customEl = document.getElementById('createCustomName');
+    if (customEl) customEl.value = '';
     document.getElementById('createPhotoPreview').innerHTML = '';
     createPhoto = null;
+    createSelectedCustomer = null;
+}
+
+function searchCreateCustomers(query) {
+    var resultsEl = document.getElementById('createCustomerResults');
+    if (!query || query.length < 2) {
+        resultsEl.classList.add('hidden');
+        return;
+    }
+
+    var q = query.toLowerCase();
+    var matches = [];
+
+    if (typeof CUSTOMERS !== 'undefined' && CUSTOMERS.length > 0) {
+        CUSTOMERS.forEach(function(cust) {
+            cust.locations.forEach(function(loc) {
+                var searchText = (loc.name + ' ' + cust.name + ' ' + (loc.address || '')).toLowerCase();
+                if (searchText.includes(q)) {
+                    var locContact = getPrimaryContact(loc.contacts);
+                    matches.push({
+                        locationId: loc.id,
+                        customerId: cust.id,
+                        customerName: cust.name,
+                        locationName: loc.name,
+                        address: loc.address || '',
+                        contact: locContact.name || '',
+                        phone: locContact.phone || ''
+                    });
+                }
+            });
+        });
+    }
+
+    var html = '';
+    if (matches.length > 0) {
+        html = matches.slice(0, 8).map(function(m) {
+            return '<div class="customer-result-item" onclick=\'selectCreateCustomer(' + JSON.stringify(m) + ')\'>' +
+                '<strong>' + m.customerName + '</strong>' +
+                (m.locationName !== m.customerName ? ' <span style="color: #6c757d;">- ' + m.locationName + '</span>' : '') +
+                '<div style="font-size: 12px; color: #6c757d;">' + m.address + '</div>' +
+            '</div>';
+        }).join('');
+    }
+
+    // Always add custom entry option
+    html += '<div class="customer-result-item" onclick="showCustomCustomerEntry()" style="border-top: 2px solid #dee2e6; background: #f8f9fa;">' +
+        '<strong style="color: #007bff;">+ Enter Custom Customer</strong>' +
+        '<div style="font-size: 12px; color: #6c757d;">Not in the list? Add manually</div>' +
+    '</div>';
+
+    resultsEl.innerHTML = html;
+    resultsEl.classList.remove('hidden');
+}
+
+function showCustomCustomerEntry() {
+    document.getElementById('createCustomerResults').classList.add('hidden');
+
+    var name = prompt('Enter customer/school name:');
+    if (!name) return;
+
+    var address = prompt('Enter address (optional):') || '';
+
+    createSelectedCustomer = {
+        locationId: 'custom_' + Date.now(),
+        customerId: 'custom_' + Date.now(),
+        customerName: name,
+        locationName: name,
+        address: address,
+        contact: '',
+        phone: '',
+        isCustom: true
+    };
+
+    document.getElementById('createCustomerSearch').value = name;
+    document.getElementById('createAddress').textContent = address || 'Custom entry';
+    document.getElementById('createContact').textContent = '';
+    document.getElementById('createCustomerInfo').classList.remove('hidden');
+}
+
+function selectCreateCustomer(customer) {
+    createSelectedCustomer = customer;
+    var displayName = customer.customerName;
+    if (customer.locationName && customer.locationName !== customer.customerName) {
+        displayName += ' - ' + customer.locationName;
+    }
+    document.getElementById('createCustomerSearch').value = displayName;
+    document.getElementById('createCustomerId').value = customer.customerId;
+    document.getElementById('createLocationId').value = customer.locationId;
+    document.getElementById('createCustomerResults').classList.add('hidden');
+
+    // Show customer info
+    document.getElementById('createAddress').textContent = customer.address;
+    document.getElementById('createContact').textContent = customer.contact + (customer.phone ? ' - ' + customer.phone : '');
+    document.getElementById('createCustomerInfo').classList.remove('hidden');
 }
 
 function onCreateTypeChange() {
@@ -380,43 +469,38 @@ function onCreateTypeChange() {
 
     // Hide all type-specific fields first
     document.getElementById('createInspectionFields').classList.add('hidden');
-    document.getElementById('createWorkOrderFields').classList.add('hidden');
+    document.getElementById('createCustomFields').classList.add('hidden');
     document.getElementById('createDescriptionGroup').classList.add('hidden');
     document.getElementById('createPhotoGroup').classList.add('hidden');
 
     var btn = document.getElementById('createSubmitBtn');
+    var typeLabels = {
+        'inspection': 'Inspection',
+        'work_order': 'Work Order',
+        'service_call': 'Service Call',
+        'go_see': 'Go-See',
+        'field_check': 'Field Check',
+        'custom': 'Job'
+    };
 
     if (type === 'inspection') {
         document.getElementById('createInspectionFields').classList.remove('hidden');
         document.getElementById('createJobNumber').value = nextJobNumber;
         document.getElementById('createJobDate').value = new Date().toISOString().split('T')[0];
         btn.textContent = 'Create Inspection';
-    } else if (type === 'work_order') {
-        document.getElementById('createWorkOrderFields').classList.remove('hidden');
+    } else if (type === 'custom') {
+        document.getElementById('createCustomFields').classList.remove('hidden');
         document.getElementById('createDescriptionGroup').classList.remove('hidden');
         document.getElementById('createPhotoGroup').classList.remove('hidden');
         document.getElementById('createDescription').placeholder = 'What needs to be done...';
-        btn.textContent = 'Create Work Order';
-    } else if (type === 'parts_spec') {
+        btn.textContent = 'Create Job';
+    } else {
+        // work_order, service_call, go_see, field_check
         document.getElementById('createDescriptionGroup').classList.remove('hidden');
         document.getElementById('createPhotoGroup').classList.remove('hidden');
-        document.getElementById('createDescription').placeholder = 'What parts are needed for...';
-        btn.textContent = 'Create Parts Spec';
+        document.getElementById('createDescription').placeholder = 'What needs to be done...';
+        btn.textContent = 'Create ' + typeLabels[type];
     }
-}
-
-function updateCreateCustomerInfo() {
-    var select = document.getElementById('createCustomerSelect');
-    var locId = select.value;
-    var infoEl = document.getElementById('createCustomerInfo');
-    if (!locId) { infoEl.classList.add('hidden'); return; }
-    var option = select.options[select.selectedIndex];
-    var address = option.dataset.locationAddress || '';
-    var contact = option.dataset.contact || '';
-    var phone = option.dataset.phone || '';
-    document.getElementById('createAddress').textContent = address;
-    document.getElementById('createContact').textContent = contact + (phone ? ' - ' + phone : '');
-    infoEl.classList.remove('hidden');
 }
 
 function handleCreatePhoto(input) {
@@ -432,16 +516,17 @@ function handleCreatePhoto(input) {
 
 function submitCreate() {
     var type = document.getElementById('createTypeSelect').value;
-    var select = document.getElementById('createCustomerSelect');
-    var locId = select.value;
 
-    if (!locId) { alert('Please select a customer.'); return; }
+    if (!createSelectedCustomer) {
+        alert('Please select a customer.');
+        return;
+    }
 
-    var option = select.options[select.selectedIndex];
-    var locationName = option.dataset.locationName || '';
-    var customerName = option.dataset.customerName || '';
-    var address = option.dataset.locationAddress || '';
-    var customerId = option.dataset.customerId || '';
+    var locationName = createSelectedCustomer.locationName;
+    var customerName = createSelectedCustomer.customerName;
+    var address = createSelectedCustomer.address;
+    var customerId = createSelectedCustomer.customerId;
+    var locId = createSelectedCustomer.locationId;
 
     if (type === 'inspection') {
         // Wire into existing inspection flow
@@ -467,44 +552,65 @@ function submitCreate() {
         currentJob.banks.push(createNewBank('East Side'));
         showBankInspection();
 
-    } else if (type === 'work_order') {
+    } else if (type === 'work_order' || type === 'service_call' || type === 'go_see' || type === 'field_check' || type === 'custom') {
         var desc = document.getElementById('createDescription').value.trim();
         if (!desc) { alert('Please add a description.'); return; }
 
-        var jobType = document.getElementById('createWoJobType').value;
+        // For custom type, get the custom name
+        var jobType = type;
+        if (type === 'custom') {
+            var customName = document.getElementById('createCustomName').value.trim();
+            if (!customName) { alert('Please enter a custom job name.'); return; }
+            jobType = customName;
+        }
+
         var notes = document.getElementById('createNotes').value.trim();
 
         var nextNum = parseInt(localStorage.getItem('nextJobNumber') || '17500');
         var jobNumber = '' + nextNum;
         localStorage.setItem('nextJobNumber', '' + (nextNum + 1));
 
-        var key = 'wo_' + jobNumber;
-        TECH_WORK_ORDERS[key] = {
+        // Create job via API
+        var jobData = {
             jobNumber: jobNumber,
             jobType: jobType,
+            status: 'draft',
+            customerId: customerId,
+            customerName: customerName,
+            locationId: locId,
             locationName: locationName,
-            address: address,
-            contactName: '',
-            contactPhone: '',
+            locationAddress: address,
             description: desc,
-            partsLocation: '',
-            specialInstructions: notes,
-            scheduledTime: ''
+            notes: notes,
+            createdBy: 'Tech'
         };
 
-        alert('Work Order #' + jobNumber + ' created for ' + locationName);
-        showTechView('create');
+        var submitBtn = document.getElementById('createSubmitBtn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Creating...';
 
-    } else if (type === 'parts_spec') {
-        var desc = document.getElementById('createDescription').value.trim();
-        if (!desc) { alert('Please add a description.'); return; }
+        JobsAPI.create(jobData)
+            .then(function(result) {
+                var typeLabel = {
+                    'work_order': 'Work Order',
+                    'service_call': 'Service Call',
+                    'go_see': 'Go-See',
+                    'field_check': 'Field Check'
+                }[type] || jobType;
 
-        var nextNum = parseInt(localStorage.getItem('nextJobNumber') || '17500');
-        var jobNumber = '' + nextNum;
-        localStorage.setItem('nextJobNumber', '' + (nextNum + 1));
-
-        alert('Parts Spec #' + jobNumber + ' created for ' + locationName);
-        showTechView('create');
+                alert(typeLabel + ' #' + jobNumber + ' created!\n\nIt is now in Jobs → Backlog.');
+                initCreateForm();
+                showTechView('myjobs');
+            })
+            .catch(function(err) {
+                console.error('Failed to create job:', err);
+                alert('Failed to create job: ' + err.message);
+            })
+            .finally(function() {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create';
+            });
+        return;
     }
 }
 

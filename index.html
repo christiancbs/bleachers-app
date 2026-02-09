@@ -658,11 +658,25 @@
                         </div>
 
                         <!-- Filter Tabs with Badges -->
-                        <div style="display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e9ecef;">
+                        <div style="display: flex; gap: 0; margin-bottom: 0; border-bottom: 2px solid #e9ecef;">
                             <button class="schedule-tab active" onclick="filterOpsReview('all')" id="opsFilterAll">All</button>
                             <button class="schedule-tab" onclick="filterOpsReview('submitted')" id="opsFilterSubmitted">Needs Review <span id="opsNeedsReviewCount" class="badge" style="background: #ffcdd2; color: #c62828; margin-left: 6px;">0</span></button>
                             <button class="schedule-tab" onclick="filterOpsReview('under_review')" id="opsFilterUnderReview">Under Review <span id="opsUnderReviewCount" class="badge" style="background: #fff3e0; color: #e65100; margin-left: 6px;">0</span></button>
                             <button class="schedule-tab" onclick="filterOpsReview('approved')" id="opsFilterApproved">Approved <span id="opsApprovedCount" class="badge" style="background: #c8e6c9; color: #2e7d32; margin-left: 6px;">0</span></button>
+                        </div>
+
+                        <!-- Approved Sub-Filters (shown when Approved tab is active) -->
+                        <div id="approvedSubFilters" class="sub-filters hidden">
+                            <button class="btn btn-sm active" onclick="filterApprovedSub('all')" id="subFilterAll" style="font-size: 12px; padding: 6px 12px;">All Approved</button>
+                            <button class="btn btn-sm btn-outline" onclick="filterApprovedSub('awaiting_wo')" id="subFilterAwaitingWO" style="font-size: 12px; padding: 6px 12px; border-color: #ff9800; color: #ff9800;">
+                                Awaiting Work Order <span id="subAwaitingWOCount" class="badge" style="background: #fff3e0; color: #e65100; margin-left: 4px; font-size: 10px;">0</span>
+                            </button>
+                            <button class="btn btn-sm btn-outline" onclick="filterApprovedSub('awaiting_estimate')" id="subFilterAwaitingEst" style="font-size: 12px; padding: 6px 12px; border-color: #1565c0; color: #1565c0;">
+                                Awaiting Estimate <span id="subAwaitingEstCount" class="badge" style="background: #e3f2fd; color: #1565c0; margin-left: 4px; font-size: 10px;">0</span>
+                            </button>
+                            <button class="btn btn-sm btn-outline" onclick="filterApprovedSub('complete')" id="subFilterComplete" style="font-size: 12px; padding: 6px 12px; border-color: #2e7d32; color: #2e7d32;">
+                                Complete <span id="subCompleteCount" class="badge" style="background: #c8e6c9; color: #2e7d32; margin-left: 4px; font-size: 10px;">0</span>
+                            </button>
                         </div>
 
                         <div class="card">
@@ -1013,21 +1027,35 @@
                             </div>
                             <div class="card-body">
                                 <div class="form-group">
-                                    <label class="form-label">What are you creating? *</label>
+                                    <label class="form-label">Job Type *</label>
                                     <select id="officeCreateTypeSelect" class="form-select" onchange="onOfficeCreateTypeChange()" style="font-size: 16px; padding: 14px;">
-                                        <option value="">Select...</option>
-                                        <option value="parts_spec">Parts Spec Form</option>
-                                        <option value="work_order">Work Order</option>
+                                        <option value="">Select job type...</option>
                                         <option value="inspection">Inspection</option>
+                                        <option value="work_order">Work Order</option>
+                                        <option value="service_call">Service Call</option>
+                                        <option value="go_see">Go-See</option>
+                                        <option value="field_check">Field Check</option>
+                                        <option value="custom">Custom</option>
                                     </select>
+                                </div>
+
+                                <!-- Custom job name field (shows right below Job Type when Custom selected) -->
+                                <div id="officeCreateCustomFields" class="hidden">
+                                    <div class="form-group">
+                                        <label class="form-label">Custom Job Name *</label>
+                                        <input type="text" id="officeCreateCustomName" class="form-input" placeholder="Enter custom job type..." style="font-size: 16px; padding: 14px;">
+                                    </div>
                                 </div>
 
                                 <div id="officeCreateFormFields" class="hidden">
                                     <div class="form-group">
                                         <label class="form-label">Customer / School *</label>
-                                        <select id="officeCreateCustomerSelect" class="form-select" onchange="updateOfficeCreateCustomerInfo()" style="font-size: 16px; padding: 14px;">
-                                            <option value="">Select a customer...</option>
-                                        </select>
+                                        <div style="position: relative;">
+                                            <input type="text" id="officeCreateCustomerSearch" class="form-input" placeholder="Start typing to search..." autocomplete="off" oninput="searchOfficeCreateCustomers(this.value)" style="font-size: 16px; padding: 14px;">
+                                            <div id="officeCreateCustomerResults" class="customer-search-results hidden"></div>
+                                            <input type="hidden" id="officeCreateCustomerId">
+                                            <input type="hidden" id="officeCreateLocationId">
+                                        </div>
                                     </div>
                                     <div id="officeCreateCustomerInfo" class="hidden" style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-top: 8px; margin-bottom: 16px;">
                                         <p id="officeCreateAddress" style="font-size: 13px; color: #6c757d;"></p>
@@ -1053,19 +1081,6 @@
                                                 <label class="form-label">Date</label>
                                                 <input type="date" id="officeCreateJobDate" class="form-input" style="font-size: 16px; padding: 14px;">
                                             </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Work Order-only fields -->
-                                    <div id="officeCreateWorkOrderFields" class="hidden">
-                                        <div class="form-group">
-                                            <label class="form-label">Job Type *</label>
-                                            <select id="officeCreateWoJobType" class="form-select" style="font-size: 16px; padding: 14px;">
-                                                <option value="Service Call">Service Call</option>
-                                                <option value="Repair">Repair</option>
-                                                <option value="Inspection">Inspection</option>
-                                                <option value="Go See">Go See</option>
-                                            </select>
                                         </div>
                                     </div>
 
@@ -2365,21 +2380,35 @@
                             </div>
                             <div class="card-body">
                                 <div class="form-group">
-                                    <label class="form-label">What are you creating? *</label>
+                                    <label class="form-label">Job Type *</label>
                                     <select id="fieldCreateTypeSelect" class="form-select" onchange="onFieldCreateTypeChange()" style="font-size: 16px; padding: 14px;">
-                                        <option value="">Select...</option>
-                                        <option value="parts_spec">Parts Spec Form</option>
-                                        <option value="work_order">Work Order</option>
+                                        <option value="">Select job type...</option>
                                         <option value="inspection">Inspection</option>
+                                        <option value="work_order">Work Order</option>
+                                        <option value="service_call">Service Call</option>
+                                        <option value="go_see">Go-See</option>
+                                        <option value="field_check">Field Check</option>
+                                        <option value="custom">Custom</option>
                                     </select>
+                                </div>
+
+                                <!-- Custom job name field (shows right below Job Type when Custom selected) -->
+                                <div id="fieldCreateCustomFields" class="hidden">
+                                    <div class="form-group">
+                                        <label class="form-label">Custom Job Name *</label>
+                                        <input type="text" id="fieldCreateCustomName" class="form-input" placeholder="Enter custom job type..." style="font-size: 16px; padding: 14px;">
+                                    </div>
                                 </div>
 
                                 <div id="fieldCreateFormFields" class="hidden">
                                     <div class="form-group">
                                         <label class="form-label">Customer / School *</label>
-                                        <select id="fieldCreateCustomerSelect" class="form-select" onchange="updateFieldCreateCustomerInfo()" style="font-size: 16px; padding: 14px;">
-                                            <option value="">Select a customer...</option>
-                                        </select>
+                                        <div style="position: relative;">
+                                            <input type="text" id="fieldCreateCustomerSearch" class="form-input" placeholder="Start typing to search..." autocomplete="off" oninput="searchFieldCreateCustomers(this.value)" style="font-size: 16px; padding: 14px;">
+                                            <div id="fieldCreateCustomerResults" class="customer-search-results hidden"></div>
+                                            <input type="hidden" id="fieldCreateCustomerId">
+                                            <input type="hidden" id="fieldCreateLocationId">
+                                        </div>
                                     </div>
                                     <div id="fieldCreateCustomerInfo" class="hidden" style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-top: 8px; margin-bottom: 16px;">
                                         <p id="fieldCreateAddress" style="font-size: 13px; color: #6c757d;"></p>
@@ -2405,19 +2434,6 @@
                                                 <label class="form-label">Date</label>
                                                 <input type="date" id="fieldCreateJobDate" class="form-input" style="font-size: 16px; padding: 14px;">
                                             </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Work Order-only fields -->
-                                    <div id="fieldCreateWorkOrderFields" class="hidden">
-                                        <div class="form-group">
-                                            <label class="form-label">Job Type *</label>
-                                            <select id="fieldCreateWoJobType" class="form-select" style="font-size: 16px; padding: 14px;">
-                                                <option value="Service Call">Service Call</option>
-                                                <option value="Repair">Repair</option>
-                                                <option value="Inspection">Inspection</option>
-                                                <option value="Go See">Go See</option>
-                                            </select>
                                         </div>
                                     </div>
 
@@ -2562,22 +2578,36 @@
                             </div>
                             <div class="card-body">
                                 <div class="form-group">
-                                    <label class="form-label">What are you creating? *</label>
+                                    <label class="form-label">Job Type *</label>
                                     <select id="createTypeSelect" class="form-select" onchange="onCreateTypeChange()" style="font-size: 16px; padding: 14px;">
-                                        <option value="">Select...</option>
-                                        <option value="parts_spec">Parts Spec Form</option>
-                                        <option value="work_order">Work Order</option>
+                                        <option value="">Select job type...</option>
                                         <option value="inspection">Inspection</option>
+                                        <option value="work_order">Work Order</option>
+                                        <option value="service_call">Service Call</option>
+                                        <option value="go_see">Go-See</option>
+                                        <option value="field_check">Field Check</option>
+                                        <option value="custom">Custom</option>
                                     </select>
+                                </div>
+
+                                <!-- Custom job name field (shows right below Job Type when Custom selected) -->
+                                <div id="createCustomFields" class="hidden">
+                                    <div class="form-group">
+                                        <label class="form-label">Custom Job Name *</label>
+                                        <input type="text" id="createCustomName" class="form-input" placeholder="Enter custom job type..." style="font-size: 16px; padding: 14px;">
+                                    </div>
                                 </div>
 
                                 <!-- Everything below hidden until type selected -->
                                 <div id="createFormFields" class="hidden">
                                     <div class="form-group">
                                         <label class="form-label">Customer / School *</label>
-                                        <select id="createCustomerSelect" class="form-select" onchange="updateCreateCustomerInfo()" style="font-size: 16px; padding: 14px;">
-                                            <option value="">Select a customer...</option>
-                                        </select>
+                                        <div style="position: relative;">
+                                            <input type="text" id="createCustomerSearch" class="form-input" placeholder="Start typing to search..." autocomplete="off" oninput="searchCreateCustomers(this.value)" style="font-size: 16px; padding: 14px;">
+                                            <div id="createCustomerResults" class="customer-search-results hidden"></div>
+                                            <input type="hidden" id="createCustomerId">
+                                            <input type="hidden" id="createLocationId">
+                                        </div>
                                     </div>
                                     <div id="createCustomerInfo" class="hidden" style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-top: 8px; margin-bottom: 16px;">
                                         <p id="createAddress" style="font-size: 13px; color: #6c757d;"></p>
@@ -2603,19 +2633,6 @@
                                                 <label class="form-label">Date</label>
                                                 <input type="date" id="createJobDate" class="form-input" style="font-size: 16px; padding: 14px;">
                                             </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Work Order-only fields -->
-                                    <div id="createWorkOrderFields" class="hidden">
-                                        <div class="form-group">
-                                            <label class="form-label">Job Type *</label>
-                                            <select id="createWoJobType" class="form-select" style="font-size: 16px; padding: 14px;">
-                                                <option value="Service Call">Service Call</option>
-                                                <option value="Repair">Repair</option>
-                                                <option value="Inspection">Inspection</option>
-                                                <option value="Go See">Go See</option>
-                                            </select>
                                         </div>
                                     </div>
 
@@ -3921,6 +3938,169 @@
         </div>
     </div>
 
+    <!-- Estimate Builder - Add Part Modal -->
+    <div id="addPartModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>Add Part</h2>
+                <button class="btn btn-outline" style="padding: 4px 12px;" onclick="closeAddPartModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="estPartSearch" class="form-input" placeholder="Search parts by name or part number..." oninput="searchPartsForEstimate()" style="width: 100%; margin-bottom: 16px;">
+                <div id="estPartsResults" style="max-height: 400px; overflow-y: auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estimate Builder - Add Labor Modal -->
+    <div id="addLaborModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Add Labor</h2>
+                <button class="btn btn-outline" style="padding: 4px 12px;" onclick="closeAddLaborModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Hours</label>
+                    <input type="number" id="laborHours" class="form-input" min="0.5" step="0.5" value="1">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Hourly Rate ($)</label>
+                    <input type="number" id="laborRate" class="form-input" min="0" step="1" value="65">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description (optional)</label>
+                    <input type="text" id="laborDescription" class="form-input" placeholder="e.g., Installation labor">
+                </div>
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="addLaborFromModal()" style="width: 100%;">Add Labor</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estimate Builder - Add Custom Item Modal -->
+    <div id="addCustomModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2>Add Custom Item</h2>
+                <button class="btn btn-outline" style="padding: 4px 12px;" onclick="closeAddCustomModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Item Name</label>
+                    <input type="text" id="customItemName" class="form-input" placeholder="e.g., Special order bracket">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description (optional)</label>
+                    <textarea id="customItemDesc" class="form-input" rows="2" placeholder="Optional description..."></textarea>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" id="customItemQty" class="form-input" min="1" value="1">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">Unit Price ($)</label>
+                        <input type="number" id="customItemPrice" class="form-input" min="0" step="0.01" value="0">
+                    </div>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="addCustomFromModal()" style="width: 100%;">Add Item</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Work Order Modal -->
+    <div id="createWorkOrderModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h2>Create Work Order</h2>
+                <button class="btn btn-outline" style="padding: 4px 12px;" onclick="closeCreateWorkOrderModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- Job Info (read-only) -->
+                <div style="background: #f8f9fa; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <span style="font-weight: 700; color: #0066cc;">Job #</span>
+                        <input type="text" id="woJobNumber" class="form-input" style="width: 100px;" readonly>
+                    </div>
+                </div>
+
+                <!-- Customer & Location -->
+                <div class="form-group">
+                    <label class="form-label">Customer</label>
+                    <input type="text" id="woCustomerName" class="form-input" readonly style="background: #f8f9fa;">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Location</label>
+                    <input type="text" id="woLocationName" class="form-input" readonly style="background: #f8f9fa;">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Address</label>
+                    <input type="text" id="woLocationAddress" class="form-input" readonly style="background: #f8f9fa;">
+                </div>
+
+                <!-- Job Type -->
+                <div class="form-group">
+                    <label class="form-label">Job Type</label>
+                    <select id="woJobType" class="form-input">
+                        <option value="repair">Repair</option>
+                        <option value="inspection">Inspection</option>
+                        <option value="service_call">Service Call</option>
+                        <option value="go_see">Go-See</option>
+                    </select>
+                </div>
+
+                <!-- Description -->
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="woDescription" class="form-input" rows="3" placeholder="Work to be performed..."></textarea>
+                </div>
+
+                <!-- Contact Info -->
+                <div style="display: flex; gap: 12px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">Contact Name</label>
+                        <input type="text" id="woContactName" class="form-input" placeholder="On-site contact">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">Contact Phone</label>
+                        <input type="text" id="woContactPhone" class="form-input" placeholder="(xxx) xxx-xxxx">
+                    </div>
+                </div>
+
+                <!-- Special Instructions -->
+                <div class="form-group">
+                    <label class="form-label">Special Instructions</label>
+                    <textarea id="woSpecialInstructions" class="form-input" rows="2" placeholder="Access notes, parking, etc."></textarea>
+                </div>
+
+                <!-- Notes -->
+                <div class="form-group">
+                    <label class="form-label">Internal Notes</label>
+                    <textarea id="woNotes" class="form-input" rows="2" placeholder="Notes for the team..."></textarea>
+                </div>
+
+                <!-- Parts Info -->
+                <div style="background: #e3f2fd; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="font-size: 13px; color: #1565c0;" id="woPartsInfo">
+                        Parts from inspection will be attached
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn btn-outline" onclick="closeCreateWorkOrderModal()" style="flex: 1;">Cancel</button>
+                    <button class="btn btn-primary" id="woSubmitBtn" onclick="submitWorkOrderFromModal()" style="flex: 1; background: #ff9800;">
+                        Create Work Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Config (API keys - gitignored, load first) -->
     <script src="js/config.js"></script>
     <!-- Data & Constants -->
@@ -3931,6 +4111,7 @@
     <script src="js/views/office.js"></script>
     <script src="js/views/field.js"></script>
     <script src="js/views/dashboard.js"></script>
+    <script src="js/views/estimate-builder.js"></script>
     <script src="js/views/ops-review.js"></script>
     <script src="js/views/scheduling.js"></script>
     <script src="js/views/create.js"></script>

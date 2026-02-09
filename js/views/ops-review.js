@@ -3,11 +3,18 @@
 // List view, detail view, status flow
 // ==========================================
 
+let currentApprovedSubFilter = 'all'; // 'all', 'awaiting_wo', 'awaiting_estimate', 'complete'
+
 function loadOpsReview() {
     const reviewJobs = inspectionJobs.filter(j => j.status === 'submitted' || j.status === 'under_review' || j.status === 'approved');
     const submitted = reviewJobs.filter(j => j.status === 'submitted');
     const underReview = reviewJobs.filter(j => j.status === 'under_review');
     const approved = reviewJobs.filter(j => j.status === 'approved');
+
+    // Count approved sub-categories
+    const awaitingWO = approved.filter(j => !j.hasWorkOrder);
+    const awaitingEstimate = approved.filter(j => j.hasWorkOrder && !j.hasEstimate);
+    const complete = approved.filter(j => j.hasWorkOrder && j.hasEstimate);
 
     // Update stat cards
     document.getElementById('opsNeedsReviewCount').textContent = submitted.length;
@@ -27,17 +34,49 @@ function loadOpsReview() {
         filteredJobs = reviewJobs.filter(j => j.status === currentOpsFilter);
     }
 
+    // Apply approved sub-filter
+    if (currentOpsFilter === 'approved' && currentApprovedSubFilter !== 'all') {
+        if (currentApprovedSubFilter === 'awaiting_wo') {
+            filteredJobs = filteredJobs.filter(j => !j.hasWorkOrder);
+        } else if (currentApprovedSubFilter === 'awaiting_estimate') {
+            filteredJobs = filteredJobs.filter(j => j.hasWorkOrder && !j.hasEstimate);
+        } else if (currentApprovedSubFilter === 'complete') {
+            filteredJobs = filteredJobs.filter(j => j.hasWorkOrder && j.hasEstimate);
+        }
+    }
+
     // Update filter tab active states
     document.getElementById('opsFilterAll').classList.toggle('active', currentOpsFilter === 'all');
     document.getElementById('opsFilterSubmitted').classList.toggle('active', currentOpsFilter === 'submitted');
     document.getElementById('opsFilterUnderReview').classList.toggle('active', currentOpsFilter === 'under_review');
     document.getElementById('opsFilterApproved').classList.toggle('active', currentOpsFilter === 'approved');
 
+    // Show/hide approved sub-filters
+    const subFiltersContainer = document.getElementById('approvedSubFilters');
+    if (subFiltersContainer) {
+        if (currentOpsFilter === 'approved') {
+            subFiltersContainer.classList.remove('hidden');
+            // Update sub-filter counts and active states
+            document.getElementById('subFilterAll').classList.toggle('active', currentApprovedSubFilter === 'all');
+            document.getElementById('subFilterAwaitingWO').classList.toggle('active', currentApprovedSubFilter === 'awaiting_wo');
+            document.getElementById('subFilterAwaitingEst').classList.toggle('active', currentApprovedSubFilter === 'awaiting_estimate');
+            document.getElementById('subFilterComplete').classList.toggle('active', currentApprovedSubFilter === 'complete');
+            document.getElementById('subAwaitingWOCount').textContent = awaitingWO.length;
+            document.getElementById('subAwaitingEstCount').textContent = awaitingEstimate.length;
+            document.getElementById('subCompleteCount').textContent = complete.length;
+        } else {
+            subFiltersContainer.classList.add('hidden');
+        }
+    }
+
     const list = document.getElementById('opsReviewList');
     if (filteredJobs.length === 0) {
         const emptyMsg = currentOpsFilter === 'all' ? 'No inspections to review yet' :
             currentOpsFilter === 'submitted' ? 'No inspections awaiting review' :
             currentOpsFilter === 'under_review' ? 'No inspections currently under review' :
+            currentApprovedSubFilter === 'awaiting_wo' ? 'All approved inspections have work orders' :
+            currentApprovedSubFilter === 'awaiting_estimate' ? 'All work orders have estimates' :
+            currentApprovedSubFilter === 'complete' ? 'No fully processed inspections yet' :
             'No approved inspections';
         list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>${emptyMsg}</p></div>`;
         return;
@@ -102,6 +141,15 @@ function loadOpsReview() {
 
 function filterOpsReview(filter) {
     currentOpsFilter = filter;
+    // Reset sub-filter when changing main filter
+    if (filter !== 'approved') {
+        currentApprovedSubFilter = 'all';
+    }
+    loadOpsReview();
+}
+
+function filterApprovedSub(subFilter) {
+    currentApprovedSubFilter = subFilter;
     loadOpsReview();
 }
 
@@ -238,31 +286,92 @@ function renderOpsReviewDetail(job) {
         `).join('');
     }
 
-    // Generate estimate button (only for non-approved)
-    const estimateBtn = job.status !== 'approved' ? `
+    // Check if work order or estimate exists for this inspection
+    const hasWorkOrder = job.workOrderId || job.hasWorkOrder;
+    const hasEstimate = job.estimateId || job.hasEstimate;
+
+    // Action buttons - three separate actions
+    const actionsCard = job.status !== 'approved' ? `
         <div class="card" style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white;">
             <div class="card-body">
-                <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">Generate QuickBooks Estimate</h3>
+                <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">Inspection Actions</h3>
                 <p style="margin-bottom: 16px; opacity: 0.9; font-size: 14px;">
-                    Approve this inspection, create a work order, and push the estimate to QuickBooks.
+                    Review and approve this inspection, then create work order and/or estimate.
                 </p>
-                <button class="btn btn-lg" onclick="generateEstimateFromJob()"
-                    style="background: white; color: #4CAF50; font-weight: 700; width: 100%;">
-                    Approve & Generate Estimate
-                </button>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <button class="btn btn-lg" onclick="approveInspectionOnly()"
+                        style="background: white; color: #4CAF50; font-weight: 700; flex: 1; min-width: 150px;">
+                        Approve
+                    </button>
+                    <button class="btn btn-lg" onclick="openCreateWorkOrderModal()" disabled
+                        style="background: rgba(255,255,255,0.3); color: white; font-weight: 700; flex: 1; min-width: 150px; cursor: not-allowed;"
+                        title="Approve inspection first">
+                        Create Work Order
+                    </button>
+                    <button class="btn btn-lg" onclick="buildEstimateFromInspection()" disabled
+                        style="background: rgba(255,255,255,0.3); color: white; font-weight: 700; flex: 1; min-width: 150px; cursor: not-allowed;"
+                        title="Approve inspection first">
+                        Build Estimate
+                    </button>
+                </div>
             </div>
         </div>
     ` : `
         <div class="card" style="background: #e8f5e9; border: 2px solid #4CAF50;">
-            <div class="card-body" style="text-align: center;">
-                <div style="font-size: 24px; margin-bottom: 8px;">&#10003;</div>
-                <p style="font-weight: 600; color: #2e7d32;">This inspection has been approved</p>
-                <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">
-                    Reviewed ${job.reviewedAt ? new Date(job.reviewedAt).toLocaleDateString() : ''} ${job.reviewedBy ? 'by ' + job.reviewedBy : ''}
-                </p>
+            <div class="card-body">
+                <div style="margin-bottom: 16px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                        <span style="font-size: 20px;">✓</span>
+                        <span style="font-weight: 600; color: #2e7d32;">Inspection Approved</span>
+                    </div>
+                    <p style="font-size: 13px; color: #6c757d; margin: 0;">
+                        Reviewed ${job.reviewedAt ? new Date(job.reviewedAt).toLocaleDateString() : ''} ${job.reviewedBy ? 'by ' + job.reviewedBy : ''}
+                    </p>
+                </div>
+
+                <!-- Status indicators -->
+                <div style="display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 16px;">${hasWorkOrder ? '✓' : '○'}</span>
+                        <span style="color: ${hasWorkOrder ? '#2e7d32' : '#6c757d'};">Work Order ${hasWorkOrder ? 'Created' : 'Pending'}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 16px;">${hasEstimate ? '✓' : '○'}</span>
+                        <span style="color: ${hasEstimate ? '#2e7d32' : '#6c757d'};">Estimate ${hasEstimate ? 'Created' : 'Pending'}</span>
+                    </div>
+                </div>
+
+                <!-- Action buttons -->
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    ${!hasWorkOrder ? `
+                        <button class="btn" onclick="openCreateWorkOrderModal()"
+                            style="background: #ff9800; color: white; font-weight: 600; flex: 1; min-width: 150px;">
+                            Create Work Order
+                        </button>
+                    ` : `
+                        <button class="btn btn-outline" onclick="viewWorkOrder('${job.workOrderId}')"
+                            style="flex: 1; min-width: 150px;">
+                            View Work Order
+                        </button>
+                    `}
+                    ${!hasEstimate ? `
+                        <button class="btn" onclick="buildEstimateFromInspection()"
+                            style="background: #1565c0; color: white; font-weight: 600; flex: 1; min-width: 150px;">
+                            Build Estimate
+                        </button>
+                    ` : `
+                        <button class="btn btn-outline" onclick="viewEstimate('${job.estimateId}')"
+                            style="flex: 1; min-width: 150px;">
+                            View Estimate
+                        </button>
+                    `}
+                </div>
             </div>
         </div>
     `;
+
+    // Keep backward compatibility
+    const estimateBtn = actionsCard;
 
     container.innerHTML = `
         <div class="card" style="border-left: 4px solid #4CAF50;">
@@ -330,5 +439,211 @@ function updateOpsReviewBadge() {
     if (badge) {
         badge.textContent = submitted.length;
         badge.style.display = submitted.length > 0 ? 'inline-block' : 'none';
+    }
+}
+
+// ==========================================
+// INSPECTION ACTIONS
+// ==========================================
+
+// Approve inspection only (just status change, no work order)
+function approveInspectionOnly() {
+    if (!currentJob) {
+        alert('No job selected');
+        return;
+    }
+
+    const message = `Approve this inspection?\n\n` +
+        `Job #${currentJob.jobNumber}\n` +
+        `${currentJob.locationName}\n` +
+        `${currentJob.banks?.length || 0} bank(s) inspected\n\n` +
+        `You can then create a work order and/or estimate.`;
+
+    if (!confirm(message)) return;
+
+    // Mark inspection as approved
+    currentJob.status = 'approved';
+    currentJob.reviewedBy = currentRole === 'admin' ? 'Admin' : 'Office';
+    currentJob.reviewedAt = new Date().toISOString();
+
+    // Save inspection status
+    const idx = inspectionJobs.findIndex(j => j.jobNumber === currentJob.jobNumber);
+    if (idx >= 0) inspectionJobs[idx] = currentJob;
+    localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
+
+    alert(`Inspection #${currentJob.jobNumber} approved!`);
+
+    // Refresh the view to show updated status
+    renderOpsReviewDetail(currentJob);
+    updateOpsReviewBadge();
+}
+
+// ==========================================
+// WORK ORDER BUILDER
+// ==========================================
+
+// Open work order creation modal
+function openCreateWorkOrderModal() {
+    if (!currentJob) {
+        alert('No job selected');
+        return;
+    }
+
+    // Count issues for description
+    let issueCount = 0;
+    currentJob.banks?.forEach(bank => {
+        issueCount += (bank.understructureIssues?.length || 0);
+        issueCount += (bank.topSideIssues?.length || 0);
+    });
+
+    // Determine default job type
+    const defaultJobType = currentJob.inspectionType === 'basketball' ? 'repair' :
+                           (currentJob.selectedParts?.length > 0 ? 'repair' : 'inspection');
+
+    // Build default description
+    const typeLabel = currentJob.inspectionType === 'basketball' ? 'Basketball Goal' :
+                      currentJob.inspectionType === 'bleacher' ? 'Indoor Bleacher' : 'Outdoor Bleacher';
+
+    // Pre-fill the modal form
+    document.getElementById('woJobNumber').value = currentJob.jobNumber;
+    document.getElementById('woCustomerName').value = currentJob.customerName || '';
+    document.getElementById('woLocationName').value = currentJob.locationName || '';
+    document.getElementById('woLocationAddress').value = currentJob.locationAddress || '';
+    document.getElementById('woJobType').value = defaultJobType;
+    document.getElementById('woDescription').value = `${typeLabel} - ${issueCount} issues found across ${currentJob.banks?.length || 0} bank(s).`;
+    document.getElementById('woContactName').value = '';
+    document.getElementById('woContactPhone').value = '';
+    document.getElementById('woSpecialInstructions').value = '';
+    document.getElementById('woNotes').value = `Inspector: ${currentJob.inspectorName || 'Unknown'}. Certificate: ${currentJob.inspectorCertificate || 'N/A'}`;
+
+    // Show parts count
+    const partsCount = currentJob.selectedParts?.length || 0;
+    document.getElementById('woPartsInfo').textContent = partsCount > 0
+        ? `${partsCount} part(s) from inspection will be attached`
+        : 'No parts specified in inspection';
+
+    // Show modal
+    document.getElementById('createWorkOrderModal').classList.remove('hidden');
+}
+
+// Close work order modal
+function closeCreateWorkOrderModal() {
+    document.getElementById('createWorkOrderModal').classList.add('hidden');
+}
+
+// Submit work order from modal
+async function submitWorkOrderFromModal() {
+    const submitBtn = document.getElementById('woSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creating...';
+
+    try {
+        const jobData = {
+            jobNumber: document.getElementById('woJobNumber').value,
+            jobType: document.getElementById('woJobType').value,
+            status: 'draft',  // Draft = unassigned/backlog
+            customerId: currentJob.customerId,
+            customerName: document.getElementById('woCustomerName').value,
+            locationId: currentJob.locationId,
+            locationName: document.getElementById('woLocationName').value,
+            locationAddress: document.getElementById('woLocationAddress').value,
+            description: document.getElementById('woDescription').value,
+            contactName: document.getElementById('woContactName').value,
+            contactPhone: document.getElementById('woContactPhone').value,
+            specialInstructions: document.getElementById('woSpecialInstructions').value,
+            notes: document.getElementById('woNotes').value,
+            inspectionJobNumber: currentJob.jobNumber,
+            partsNeeded: currentJob.selectedParts || [],
+            createdBy: currentRole === 'admin' ? 'Admin' : 'Office'
+        };
+
+        const result = await JobsAPI.create(jobData);
+
+        // Add inspection banks to the job
+        if (result.job && result.job.id && currentJob.banks) {
+            for (const bank of currentJob.banks) {
+                try {
+                    await JobsAPI.addInspectionBank(result.job.id, {
+                        bankName: bank.name,
+                        bleacherType: bank.bleacherType,
+                        rowCount: bank.tiers || bank.rows,
+                        checklistData: {
+                            understructure: bank.understructureChecklist,
+                            topSide: bank.topSideChecklist
+                        },
+                        issues: [
+                            ...(bank.understructureIssues || []).map(i => ({ ...i, location: 'understructure' })),
+                            ...(bank.topSideIssues || []).map(i => ({ ...i, location: 'topside' }))
+                        ]
+                    });
+                } catch (bankErr) {
+                    console.warn('Failed to add inspection bank:', bankErr);
+                }
+            }
+        }
+
+        // Mark inspection as having a work order
+        currentJob.hasWorkOrder = true;
+        currentJob.workOrderId = result.job?.id;
+        const idx = inspectionJobs.findIndex(j => j.jobNumber === currentJob.jobNumber);
+        if (idx >= 0) inspectionJobs[idx] = currentJob;
+        localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
+
+        closeCreateWorkOrderModal();
+        alert(`Work order created!\n\nJob #${jobData.jobNumber} is now in Jobs → Backlog.`);
+
+        // Refresh view
+        renderOpsReviewDetail(currentJob);
+
+    } catch (err) {
+        console.error('Failed to create work order:', err);
+        alert(`Failed to create work order: ${err.message}`);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Work Order';
+    }
+}
+
+// View work order (placeholder)
+function viewWorkOrder(workOrderId) {
+    alert(`View work order: ${workOrderId}\n\nNavigating to Jobs view...`);
+    showView('jobs');
+}
+
+// View estimate (placeholder)
+function viewEstimate(estimateId) {
+    alert(`View estimate: ${estimateId}\n\nNavigating to Estimates view...`);
+    showView('estimates');
+}
+
+// ==========================================
+// ESTIMATE BUILDER INTEGRATION
+// ==========================================
+
+// Open estimate builder with pre-filled inspection data
+function buildEstimateFromInspection() {
+    if (!currentJob) {
+        alert('No job selected');
+        return;
+    }
+
+    // Prepare data for estimate builder
+    const prefillData = {
+        jobNumber: currentJob.jobNumber,
+        customerId: currentJob.customerId,
+        customerName: currentJob.customerName,
+        locationId: currentJob.locationId,
+        locationName: currentJob.locationName,
+        locationAddress: currentJob.locationAddress,
+        selectedParts: currentJob.selectedParts || [],
+        banks: currentJob.banks || [],
+        inspectionType: currentJob.inspectionType
+    };
+
+    // Call the estimate builder (from estimate-builder.js)
+    if (typeof openEstimateBuilderFromInspection === 'function') {
+        openEstimateBuilderFromInspection(prefillData);
+    } else {
+        alert('Estimate builder not available');
     }
 }

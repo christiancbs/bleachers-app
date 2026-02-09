@@ -686,13 +686,12 @@ function loadEstimatesAccepted() {
 }
 
 function initEstimateCreate() {
-    const form = document.getElementById('createEstimateForm');
-    form.innerHTML = `
-        <p style="color: #6c757d; text-align: center; padding: 40px;">
-            Estimate creation form coming soon.<br><br>
-            For now, use the inspection flow to generate estimates.
-        </p>
-    `;
+    // Use the estimate builder module
+    if (typeof initEstimateBuilder === 'function') {
+        initEstimateBuilder();
+    } else {
+        console.error('Estimate builder not loaded');
+    }
 }
 
 // View QB Estimate detail
