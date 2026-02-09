@@ -767,8 +767,6 @@
                         <div style="display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e9ecef; margin-top: 4px;">
                             <button class="schedule-tab active" onclick="switchScheduleTab('thisWeek')" id="thisWeekTab">This Week</button>
                             <button class="schedule-tab" onclick="switchScheduleTab('planning')" id="planningTab">Planning</button>
-                            <button class="schedule-tab" onclick="switchScheduleTab('backlog')" id="backlogTab">Backlog <span id="backlogCount" class="badge badge-success" style="margin-left: 6px;">0</span></button>
-                            <button class="schedule-tab" onclick="switchScheduleTab('shitList')" id="shitListTab">Shit List <span id="shitListCount" class="badge" style="margin-left: 6px; background: #ffe0e6; color: #c62828;">0</span></button>
                         </div>
 
                         <!-- This Week View -->
@@ -791,86 +789,6 @@
                                 </div>
                             </div>
                             <div id="planningScheduleGrid"></div>
-                        </div>
-
-                        <!-- Backlog -->
-                        <div id="backlogView" class="hidden">
-                            <div class="stats-grid" style="margin-bottom: 20px;">
-                                <div class="stat-card green">
-                                    <div class="stat-value" id="readyPartsReceived">0</div>
-                                    <div class="stat-label">Parts Received</div>
-                                </div>
-                                <div class="stat-card blue">
-                                    <div class="stat-value" id="readyInspectionsOnly">0</div>
-                                    <div class="stat-label">Inspections Only</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div class="stat-value" id="readyTotalLabor">$0</div>
-                                    <div class="stat-label">Total Labor Value</div>
-                                </div>
-                            </div>
-
-                            <div class="card">
-                                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                                    <h2 class="card-title">Backlog</h2>
-                                    <div style="display: flex; gap: 8px;">
-                                        <select id="readyFilterCounty" class="form-input" style="width: 150px; padding: 6px 10px;" onchange="filterReadyJobs()">
-                                            <option value="">All Counties</option>
-                                        </select>
-                                        <select id="readyFilterType" class="form-input" style="width: 130px; padding: 6px 10px;" onchange="filterReadyJobs()">
-                                            <option value="">All Types</option>
-                                            <option value="Repair">Repair</option>
-                                            <option value="Inspection">Inspection</option>
-                                            <option value="Service Call">Service Call</option>
-                                            <option value="Go See">Go See</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="card-body" id="readyJobsList" style="padding: 0;"></div>
-                            </div>
-                        </div>
-
-                        <!-- Shit List (Pink Jobs - Incomplete/Return) -->
-                        <div id="shitListView" class="hidden">
-                            <div style="padding: 16px; background: #fff0f0; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #c62828;">
-                                <div style="display: flex; align-items: center; gap: 12px;">
-                                    <span style="font-size: 24px;">&#x1F534;</span>
-                                    <div>
-                                        <strong style="color: #c62828;">The Shit List</strong>
-                                        <p style="font-size: 13px; color: #6c757d; margin-top: 2px;">Jobs that weren't completed - wrong parts, couldn't access site, additional work needed. These need to be rescheduled.</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="stats-grid" style="margin-bottom: 20px;">
-                                <div class="stat-card" style="background: #fff0f0;">
-                                    <div class="stat-value" style="color: #c62828;" id="shitListTotal">0</div>
-                                    <div class="stat-label">Total Pink Jobs</div>
-                                </div>
-                                <div class="stat-card" style="background: #fff3e0;">
-                                    <div class="stat-value" style="color: #e65100;" id="shitListWrongPart">0</div>
-                                    <div class="stat-label">Wrong/Missing Part</div>
-                                </div>
-                                <div class="stat-card" style="background: #e3f2fd;">
-                                    <div class="stat-value" style="color: #1565c0;" id="shitListOther">0</div>
-                                    <div class="stat-label">Other Reasons</div>
-                                </div>
-                            </div>
-                            <div class="card">
-                                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                                    <h2 class="card-title" style="color: #c62828;">Pink Jobs</h2>
-                                    <div style="display: flex; gap: 8px;">
-                                        <select id="shitListFilterReason" class="form-input" style="width: 180px; padding: 6px 10px;" onchange="filterShitList()">
-                                            <option value="">All Reasons</option>
-                                            <option value="Wrong Part">Wrong/Missing Part</option>
-                                            <option value="Can't Access">Can't Access Site</option>
-                                            <option value="Additional Work">Additional Work Needed</option>
-                                            <option value="Equipment Issue">Equipment Issue</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="card-body" id="shitListJobsList" style="padding: 0;"></div>
-                            </div>
                         </div>
 
                         <!-- Add Entry Modal -->

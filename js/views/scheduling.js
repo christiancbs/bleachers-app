@@ -1322,6 +1322,11 @@ function renderJobsListHtml(jobs) {
                     ${job.scheduledDate ? `<div style="font-size: 12px; color: #6c757d;">📅 ${new Date(job.scheduledDate).toLocaleDateString()}</div>` : ''}
                     ${job.assignedTo ? `<div style="font-size: 12px; color: #6c757d;">👷 ${job.assignedTo}</div>` : ''}
                     <div style="font-size: 11px; color: #adb5bd;">Created ${createdDate}</div>
+                    ${(job.status === 'draft' || job.status === 'unable_to_complete') ? `
+                        <button class="btn btn-primary" onclick="event.stopPropagation(); showAddToScheduleModal(${job.id}, '${job.jobNumber}')" style="font-size: 12px; padding: 6px 12px; margin-top: 4px;">
+                            Add to Schedule
+                        </button>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -1329,6 +1334,47 @@ function renderJobsListHtml(jobs) {
 
     html += '</div>';
     return html;
+}
+
+// Show modal to add job to schedule
+function showAddToScheduleModal(jobId, jobNumber) {
+    const date = prompt(\`Schedule \${jobNumber} for which date?\\n\\nEnter date (MM/DD/YYYY):\`);
+    if (!date) return;
+
+    const tech = prompt('Assign to which technician?\\n\\n(Leave blank to assign later)');
+
+    scheduleJob(jobId, jobNumber, date, tech);
+}
+
+// Schedule a job (update status and date)
+async function scheduleJob(jobId, jobNumber, dateStr, assignedTo) {
+    try {
+        // Parse the date
+        const dateParts = dateStr.split('/');
+        let scheduledDate;
+        if (dateParts.length === 3) {
+            scheduledDate = new Date(dateParts[2], dateParts[0] - 1, dateParts[1]);
+        } else {
+            scheduledDate = new Date(dateStr);
+        }
+
+        if (isNaN(scheduledDate.getTime())) {
+            alert('Invalid date format. Please use MM/DD/YYYY');
+            return;
+        }
+
+        await JobsAPI.update(jobId, {
+            status: 'scheduled',
+            scheduledDate: scheduledDate.toISOString().split('T')[0],
+            assignedTo: assignedTo || null
+        });
+
+        alert(\`\${jobNumber} scheduled for \${scheduledDate.toLocaleDateString()}\${assignedTo ? ' - Assigned to ' + assignedTo : ''}\`);
+        switchJobsTab(currentJobsTab); // Refresh current tab
+    } catch (err) {
+        console.error('Failed to schedule job:', err);
+        alert('Failed to schedule job: ' + err.message);
+    }
 }
 
 // Load This Week tab (original weekly grid view)
