@@ -1,7 +1,7 @@
 # Bleachers & Seats - App Development Reference
 
-**Last Updated:** February 8, 2026
-**Version:** v3.4.0
+**Last Updated:** February 9, 2026
+**Version:** v3.5.0
 **Branch:** `main`
 
 ---
@@ -20,11 +20,10 @@ python3 -m http.server 8080
 - **Office:** Click "office@bleachers.com" - View "Estimates" for real QB data
 - **Admin:** Click "admin@bleachers.com" - Full access to all features
 
-**Test v3.4.0 Features:**
-1. Login as **Office** → **Estimates** → Click accepted estimate → **Create Work Order**
-2. Go to **Jobs** → See new work order in **All** and **Backlog** tabs
-3. Click **Add to Planning** → Navigate to **Scheduling > Planning** → Place on a day
-4. Click any job → See **Parts Tracking** section with edit capability
+**Test v3.5.0 Features:**
+1. Login as **Office** → **Jobs** → Use **Territory filter tabs** (All/Original KY-TN/Southern AL-FL)
+2. Go to **Accounts** → Click a customer → **Equipment tab** → See equipment counts per location
+3. Click **Edit** on any location to update equipment counts (Goals, Straps, Edge Pads, Bleacher Banks)
 
 ---
 
@@ -41,7 +40,8 @@ python3 -m http.server 8080
 - `v3.2.1` - Office parts management, image lightbox, paste upload
 - `v3.3.0` - Jobs database, Estimates view wired to QB, EstimatesAPI
 - `v3.3.1` - Jobs view mirrors field staff for real-time visibility
-- `v3.4.0` - **Current:** Create WO from estimate, Jobs tabs, Parts Tracking, Planning workflow
+- `v3.4.0` - Create WO from estimate, Jobs tabs, Parts Tracking, Planning workflow
+- `v3.5.0` - **Current:** Territory View, Site Equipment Profile
 
 ---
 
@@ -86,7 +86,7 @@ python3 -m http.server 8080
 
 ---
 
-## What's Built (v3.4.0)
+## What's Built (v3.5.0)
 
 **Core Features:**
 - **Home Page** - Role-specific landing with bulletins, notifications, and action items
@@ -103,6 +103,7 @@ python3 -m http.server 8080
   - **This Week** - Weekly grid view with territory tabs
   - **Completed** - Finished work orders
   - **Shit List** - Jobs marked "Unable to Complete" by field staff
+- **Territory View** - Filter jobs by All Territories / Original (KY/TN) / Southern (AL/FL)
 - **Jobs Search** - Search by job number, customer, or location
 - **Job Detail Modal** - Full job info with **Parts Tracking** section
 - **Parts Tracking** - PO #, promise date, destination, received status, location
@@ -113,6 +114,7 @@ python3 -m http.server 8080
 - **Live status tracking** (scheduled → en route → checked in → complete/unable)
 - Scheduling (This Week + Planning tabs)
 - CRM with customer hierarchy (District → Locations)
+- **Site Equipment Profile** - Equipment counts per location (Goals, Straps, Edge Pads, Bleacher Banks) with edit capability
 
 **Navigation:**
 - **Office/Admin:** Home | Search | Sales (Sales Pipeline, Accounts) | Procurement (Ops Review, Estimates) | Logistics (Jobs, Scheduling, Project Tracker) | Resources (Parts Catalog) | Settings
@@ -143,7 +145,6 @@ python3 -m http.server 8080
 ├── css/app.css                # All styles
 ├── js/
 │   ├── app.js                 # Core: init, login, routing, nav
-│   ├── config.js              # API keys (deprecated)
 │   ├── data.js                # Constants, sample data
 │   ├── views/
 │   │   ├── admin.js           # Employee, settings, parts management
@@ -161,7 +162,15 @@ python3 -m http.server 8080
 │       ├── estimates-api.js   # QB Estimates API client
 │       ├── parts-catalog.js   # Parts search UI
 │       └── search.js          # Global search utilities
-├── scripts/                   # Local data migration scripts (not deployed)
+├── scripts/
+│   └── servicepal-migration/  # ServicePal data extraction
+│       ├── scraper.js         # Puppeteer-based scraper
+│       ├── config.json        # Credentials (gitignored)
+│       ├── output/            # Scraped data (gitignored)
+│       │   ├── jobs/          # Job JSON files
+│       │   ├── photos/        # Downloaded images
+│       │   └── _progress.json # Resume state
+│       └── MIGRATION-REFERENCE.md
 ├── bleacher-app-reference.md  # This file
 └── REFERENCE.md               # System architecture docs
 
@@ -298,7 +307,75 @@ inspection_banks
 2. Offline mode for parts catalog
 3. Field Guide / Help Desk
 4. Drag-and-drop in Planning view
-5. ServicePal data migration (scripts ready locally)
+5. ~~ServicePal data migration~~ **IN PROGRESS** - scraper running
+
+---
+
+## ServicePal Migration (IN PROGRESS)
+
+**Status:** Scraper running - extracting all historical job data from ServicePal.
+
+**Current Stats (as of Feb 9, 2026):**
+- **302 jobs** scraped (of ~16,854 total)
+- **478 work orders** extracted
+- **1,279 photos** downloaded
+- **58MB** output so far
+
+**Form Types Detected:**
+| Type | Count | Description |
+|------|-------|-------------|
+| Work Order | 224 | Standard job completion form |
+| Go See: Bleacher Parts Spec | 32 | Inspection/spec forms |
+| Bleacher Inspection Form | 57 | Indoor bleacher inspections |
+
+**Territory Distribution:**
+| Territory | Jobs |
+|-----------|------|
+| TN | 70 (64%) |
+| AL | 33 (30%) |
+| FL | 6 (5%) |
+
+**Scraper Location:** `~/bleachers-app/scripts/servicepal-migration/`
+
+**Commands:**
+```bash
+cd ~/bleachers-app/scripts/servicepal-migration
+
+# Resume scraping (prevents Mac sleep)
+caffeinate -i npm run scrape:resume
+
+# Test run (10 jobs only)
+npm run scrape:test
+
+# Full fresh start
+npm run scrape
+```
+
+**Output:**
+- `output/jobs/{jobNumber}.json` - Full job data with work orders
+- `output/photos/{jobNumber}_photo_{n}.jpg` - Downloaded images
+- `output/_progress.json` - Resume state and stats
+
+**Data Sources Being Consolidated:**
+1. **ServicePal** - All historical jobs, work orders, photos, technician notes
+2. **QuickBooks** - Estimates, customers, invoices (API connected)
+3. **Salesmate** - Contact data (separate export)
+
+**Key Patterns Discovered:**
+- Teams organized by territory (TNBSTeam, ALBSTeam, etc.)
+- Parts staged at regional shops ("TN Shop", "FL Shop")
+- Vehicle/toolbox checklists done daily
+- Jobs reference estimate numbers (e.g., "TN522009") - linkable to QB
+- Common repairs: drive wheel cleaning, motor tensioning, guide rods, deck boards
+
+**Potential New Features from Data:**
+- Territory View for scheduling
+- Fleet/Vehicle Management
+- Site Equipment Profile (goal counts, strap counts per location)
+- Shop Inventory tracking
+- Tech Hours Dashboard
+
+**Next:** Build import script to load ServicePal data into bleachers-app Postgres.
 
 ---
 
