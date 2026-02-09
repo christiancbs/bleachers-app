@@ -1,7 +1,7 @@
 # Bleachers & Seats - App Development Reference
 
 **Last Updated:** February 9, 2026
-**Version:** v3.5.0
+**Version:** v3.6.0
 **Branch:** `main`
 
 ---
@@ -20,10 +20,12 @@ python3 -m http.server 8080
 - **Office:** Click "office@bleachers.com" - View "Estimates" for real QB data
 - **Admin:** Click "admin@bleachers.com" - Full access to all features
 
-**Test v3.5.0 Features:**
-1. Login as **Office** → **Jobs** → Use **Territory filter tabs** (All/Original KY-TN/Southern AL-FL)
-2. Go to **Accounts** → Click a customer → **Equipment tab** → See equipment counts per location
-3. Click **Edit** on any location to update equipment counts (Goals, Straps, Edge Pads, Bleacher Banks)
+**Test v3.6.0 Features:**
+1. Login as **Office** → **Create** → Select job type (Inspection, Work Order, Service Call, Go-See, Field Check, Custom)
+2. Type in **Customer/School** field → See **typeahead search** (County first, school second) + Custom entry option
+3. Go to **Ops Review** → Click an inspection → See **three buttons** (Approve | Create Work Order | Build Estimate)
+4. Under Approved tab → Use **sub-filters** (Awaiting WO, Awaiting Estimate, Complete)
+5. Go to **Estimates** → **+ Create Estimate** tab → Use the **Estimate Builder**
 
 ---
 
@@ -41,7 +43,8 @@ python3 -m http.server 8080
 - `v3.3.0` - Jobs database, Estimates view wired to QB, EstimatesAPI
 - `v3.3.1` - Jobs view mirrors field staff for real-time visibility
 - `v3.4.0` - Create WO from estimate, Jobs tabs, Parts Tracking, Planning workflow
-- `v3.5.0` - **Current:** Territory View, Site Equipment Profile
+- `v3.5.0` - Territory View, Site Equipment Profile
+- `v3.6.0` - **Current:** Estimate Builder, streamlined Create Job, Ops Review workflow
 
 ---
 
@@ -86,7 +89,7 @@ python3 -m http.server 8080
 
 ---
 
-## What's Built (v3.5.0)
+## What's Built (v3.6.0)
 
 **Core Features:**
 - **Home Page** - Role-specific landing with bulletins, notifications, and action items
@@ -96,6 +99,7 @@ python3 -m http.server 8080
 - **Image Lightbox** - Click any part with image to view full-size with details pill bar
 - **Estimates View** - Real QuickBooks data with All/Pending/Accepted tabs
 - **Estimate Detail** - Full line item breakdown + **Create Work Order** button
+- **Estimate Builder** - Create estimates with parts, labor, and custom line items → push to QB
 - **Create Work Order from Estimate** - Converts accepted estimate to work order with labor lines as instructions
 - **Jobs View (Tabbed):**
   - **All** - All work orders
@@ -115,6 +119,10 @@ python3 -m http.server 8080
 - Scheduling (This Week + Planning tabs)
 - CRM with customer hierarchy (District → Locations)
 - **Site Equipment Profile** - Equipment counts per location (Goals, Straps, Edge Pads, Bleacher Banks) with edit capability
+- **Streamlined Create Job** - Job types: Inspection, Work Order, Service Call, Go-See, Field Check, Custom
+- **Customer Typeahead Search** - Start typing to search, county first then school, + custom entry option
+- **Ops Review Workflow** - Three-button approach (Approve | Create Work Order | Build Estimate)
+- **Approved Sub-Filters** - Track inspections: Awaiting WO, Awaiting Estimate, Complete
 
 **Navigation:**
 - **Office/Admin:** Home | Search | Sales (Sales Pipeline, Accounts) | Procurement (Ops Review, Estimates) | Logistics (Jobs, Scheduling, Project Tracker) | Resources (Parts Catalog) | Settings
@@ -148,13 +156,14 @@ python3 -m http.server 8080
 │   ├── data.js                # Constants, sample data
 │   ├── views/
 │   │   ├── admin.js           # Employee, settings, parts management
-│   │   ├── create.js          # Office/field unified create forms
+│   │   ├── create.js          # Office/field unified create forms with typeahead
 │   │   ├── dashboard.js       # Home, Estimates, Sales Pipeline, CRM
+│   │   ├── estimate-builder.js # Estimate Builder with line items
 │   │   ├── field.js           # Field staff utilities
 │   │   ├── inspection.js      # Multi-bank inspection flow
 │   │   ├── my-jobs.js         # Field My Jobs, status updates
 │   │   ├── office.js          # Office work order management
-│   │   ├── ops-review.js      # Ops review workflow
+│   │   ├── ops-review.js      # Ops review workflow with 3-button actions
 │   │   └── scheduling.js      # Scheduling, Jobs list, Planning, Parts Tracking
 │   └── utils/
 │       ├── parts-api.js       # Parts API client
@@ -242,7 +251,7 @@ inspection_banks
 └── created_at, updated_at
 ```
 
-**Work Order Types:** `repair`, `inspection`, `service_call`, `go_see`
+**Work Order Types:** `inspection`, `work_order`, `service_call`, `go_see`, `field_check`, or custom string
 **Work Order Status:** `draft`, `scheduled`, `in_progress`, `completed`, `unable_to_complete`, `cancelled`
 
 **Parts Tracking (in metadata.partsTracking):**
@@ -300,7 +309,8 @@ inspection_banks
 5. ~~Jobs view with tabs (All/Backlog/This Week/Completed/Shit List)~~ ✅ DONE
 6. ~~Parts Tracking on work orders~~ ✅ DONE
 7. ~~Add to Planning workflow~~ ✅ DONE
-8. **Estimate Builder** - Create estimates in app → push to QB
+8. ~~Estimate Builder~~ ✅ DONE - Create estimates with parts, labor, custom items → push to QB
+9. ~~Streamlined Create Job form~~ ✅ DONE - Typeahead customer search, job types
 
 **Short-term:**
 1. Signature capture for work orders
