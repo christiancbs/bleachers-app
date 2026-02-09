@@ -1352,6 +1352,43 @@ function viewCustomerDetail(customerId) {
         contactsList.innerHTML = districtContactsHtml || '<div class="empty-state"><p>No district-level contacts</p></div>';
     }
 
+    // Populate equipment tab
+    const equipmentList = document.getElementById('custEquipmentList');
+    if (equipmentList) {
+        equipmentList.innerHTML = customer.locations.map(loc => {
+            const eq = loc.equipment || {};
+            return `
+                <div class="inspection-item" style="margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <strong style="font-size: 15px;">${loc.name}</strong>
+                            <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">${loc.address}</p>
+                        </div>
+                        <button class="btn btn-outline" style="font-size: 11px; padding: 4px 8px;" onclick="editLocationEquipment('${customer.id}', '${loc.id}')">Edit</button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 12px; background: #f8f9fa; padding: 16px; border-radius: 8px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: #2196F3;">${eq.basketballGoals || 0}</div>
+                            <div style="font-size: 11px; color: #6c757d;">Goals</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: #4CAF50;">${eq.safetyStraps || 0}</div>
+                            <div style="font-size: 11px; color: #6c757d;">Straps</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: #FF9800;">${eq.edgePads || 0}</div>
+                            <div style="font-size: 11px; color: #6c757d;">Edge Pads</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: #9C27B0;">${eq.bleacherBanks || 0}</div>
+                            <div style="font-size: 11px; color: #6c757d;">Bleacher Banks</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('') || '<div style="padding: 40px; text-align: center; color: #6c757d;">No locations</div>';
+    }
+
     // Show detail view and default to locations tab
     showView('customerDetail');
     showCustomerTab('locations');
@@ -1394,6 +1431,38 @@ function showCustomerTab(tab) {
             btnEl.style.color = '#212529';
         }
     }
+}
+
+// Edit equipment counts for a location
+function editLocationEquipment(customerId, locationId) {
+    const customer = CUSTOMERS.find(c => c.id === customerId);
+    const location = customer?.locations.find(l => l.id === locationId);
+    if (!location) return;
+
+    const eq = location.equipment || {};
+
+    const goals = prompt('Basketball Goals:', eq.basketballGoals || 0);
+    if (goals === null) return;
+
+    const straps = prompt('Safety Straps:', eq.safetyStraps || 0);
+    if (straps === null) return;
+
+    const pads = prompt('Edge Pads:', eq.edgePads || 0);
+    if (pads === null) return;
+
+    const banks = prompt('Bleacher Banks:', eq.bleacherBanks || 0);
+    if (banks === null) return;
+
+    location.equipment = {
+        basketballGoals: parseInt(goals) || 0,
+        safetyStraps: parseInt(straps) || 0,
+        edgePads: parseInt(pads) || 0,
+        bleacherBanks: parseInt(banks) || 0
+    };
+
+    // Refresh the view
+    viewCustomerDetail(customerId);
+    showCustomerTab('equipment');
 }
 
 // ==========================================

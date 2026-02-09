@@ -416,6 +416,13 @@
                             <input type="text" id="jobsSearchInput" class="form-input" placeholder="Search jobs by number, customer, or location..." oninput="searchJobs()" style="max-width: 400px;">
                         </div>
 
+                        <!-- Territory Filter -->
+                        <div style="display: flex; gap: 0; margin-bottom: 8px; border-bottom: 1px solid #dee2e6;">
+                            <button class="schedule-tab small active" onclick="switchJobsTerritory('all')" id="jobsTerritoryAll">All Territories</button>
+                            <button class="schedule-tab small" onclick="switchJobsTerritory('original')" id="jobsTerritoryOriginal">Original (KY/TN)</button>
+                            <button class="schedule-tab small" onclick="switchJobsTerritory('southern')" id="jobsTerritorySouthern">Southern (AL/FL)</button>
+                        </div>
+
                         <!-- Main Jobs Tabs -->
                         <div style="display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e9ecef;">
                             <button class="schedule-tab active" onclick="switchJobsTab('all')" id="jobsTabAll">All</button>
@@ -634,7 +641,10 @@
 
                                 <!-- Equipment Tab -->
                                 <div id="customerEquipmentTab" class="hidden">
-                                    <p style="color: #6c757d; text-align: center; padding: 40px;">Equipment registry coming soon...</p>
+                                    <div style="margin-bottom: 16px;">
+                                        <p style="color: #6c757d; margin: 0;">Equipment inventory at each location</p>
+                                    </div>
+                                    <div id="custEquipmentList"></div>
                                 </div>
                             </div>
                         </div>
@@ -821,7 +831,7 @@
                                 </div>
                                 <div class="modal-footer">
                                     <button class="btn btn-secondary" onclick="closeAddEntryModal()">Cancel</button>
-                                    <button class="btn btn-primary" onclick="saveScheduleEntry()">Add to Schedule</button>
+                                    <button class="btn btn-primary" onclick="saveScheduleEntry()">Add to Planning</button>
                                 </div>
                             </div>
                         </div>

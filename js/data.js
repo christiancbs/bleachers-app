@@ -35,6 +35,7 @@ const CUSTOMERS = [
                 id: 'loc1',
                 name: 'Ripley High School',
                 address: '254 S Jefferson St, Ripley, TN 38063',
+                equipment: { basketballGoals: 6, safetyStraps: 4, edgePads: 2, bleacherBanks: 2 },
                 contacts: [
                     { id: 'loc1con1', name: 'Chris McCorkle', title: 'Principal', phone: '(731) 635-2642', email: '', roles: ['scheduling', 'access'] }
                 ]
@@ -80,6 +81,7 @@ const CUSTOMERS = [
                 id: 'loc5',
                 name: 'Wilson Central High School',
                 address: '1414 Baddour Pkwy, Lebanon, TN 37087',
+                equipment: { basketballGoals: 8, safetyStraps: 6, edgePads: 4, bleacherBanks: 3 },
                 contacts: [
                     { id: 'loc5con1', name: 'David Brown', title: 'Athletic Director', phone: '(615) 443-5765', email: '', roles: ['scheduling', 'equipment'] }
                 ]
@@ -118,6 +120,7 @@ const CUSTOMERS = [
                 id: 'loc8',
                 name: 'Franklin High School',
                 address: '810 Hillsboro Rd, Franklin, TN 37064',
+                equipment: { basketballGoals: 10, safetyStraps: 8, edgePads: 6, bleacherBanks: 4 },
                 contacts: [
                     { id: 'loc8con1', name: 'Mike Davis', title: 'Maintenance Supervisor', phone: '(615) 794-6624', email: '', roles: ['scheduling', 'access', 'equipment'] }
                 ]
@@ -126,6 +129,7 @@ const CUSTOMERS = [
                 id: 'loc9',
                 name: 'Brentwood High School',
                 address: '5304 Murray Ln, Brentwood, TN 37027',
+                equipment: { basketballGoals: 12, safetyStraps: 10, edgePads: 8, bleacherBanks: 5 },
                 contacts: [
                     { id: 'loc9con1', name: 'Lisa Chen', title: 'Athletic Director', phone: '(615) 472-4450', email: '', roles: ['scheduling', 'equipment'] }
                 ]

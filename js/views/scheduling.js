@@ -996,7 +996,7 @@ function loadBacklog() {
                 <div style="text-align: right; min-width: 100px;">
                     <div style="font-weight: 600; font-size: 16px; color: #2e7d32;">$${job.laborAmount.toLocaleString()}</div>
                     <div style="font-size: 11px; color: #6c757d; margin-top: 4px;">Accepted ${new Date(job.acceptedDate).toLocaleDateString()}</div>
-                    <button class="btn btn-sm btn-primary" style="margin-top: 12px;" onclick="event.stopPropagation(); addJobToSchedule('${job.id}')">Add to Schedule</button>
+                    <button class="btn btn-sm btn-primary" style="margin-top: 12px;" onclick="event.stopPropagation(); addJobToSchedule('${job.id}')">Add to Planning</button>
                 </div>
             </div>
         `;
@@ -1223,6 +1223,31 @@ function truncateText(text, maxLength) {
 let officeJobsWeekOffset = 0;
 let currentOfficeJobsTerritory = 'original';
 let currentJobsTab = 'all';
+let currentJobsTerritory = 'all'; // 'all', 'original', 'southern'
+
+// Switch territory filter for all job tabs
+function switchJobsTerritory(territory) {
+    currentJobsTerritory = territory;
+
+    // Update territory tab buttons
+    ['all', 'original', 'southern'].forEach(t => {
+        const btn = document.getElementById(`jobsTerritory${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        if (btn) btn.classList.toggle('active', t === territory);
+    });
+
+    // Reload current tab with new territory filter
+    switchJobsTab(currentJobsTab);
+}
+
+// Helper: Determine territory from address state
+function getJobTerritory(job) {
+    const addr = job.address || '';
+    const match = addr.match(/,\s*([A-Z]{2})\s+\d{5}/);
+    if (match) {
+        return ['TN', 'KY'].includes(match[1]) ? 'original' : 'southern';
+    }
+    return 'original'; // default
+}
 
 // Main entry point for Jobs view
 function loadOfficeJobs() {
@@ -1284,16 +1309,23 @@ async function loadJobsTabContent(tabName, statusFilter = '') {
 
         const jobs = data.jobs || [];
 
-        if (jobs.length === 0) {
+        // Apply territory filter (client-side)
+        let filteredJobs = jobs;
+        if (currentJobsTerritory !== 'all') {
+            filteredJobs = jobs.filter(job => getJobTerritory(job) === currentJobsTerritory);
+        }
+
+        if (filteredJobs.length === 0) {
             const emptyMessages = {
                 all: 'No jobs found. Create a work order from an accepted estimate.',
                 backlog: 'No jobs in backlog. All work orders are scheduled!',
                 completed: 'No completed jobs yet.',
                 shitList: 'No problem jobs. Everything is running smoothly!'
             };
+            const territoryNote = currentJobsTerritory !== 'all' ? ` in ${currentJobsTerritory === 'original' ? 'Original (KY/TN)' : 'Southern (AL/FL)'} territory` : '';
             const message = searchTerm
-                ? `No jobs matching "${searchTerm}"`
-                : (emptyMessages[tabName] || 'No jobs found');
+                ? `No jobs matching "${searchTerm}"${territoryNote}`
+                : (emptyMessages[tabName] || 'No jobs found') + territoryNote;
             container.innerHTML = `
                 <div style="padding: 40px; text-align: center; color: #6c757d;">
                     <div style="font-size: 48px; margin-bottom: 16px;">${searchTerm ? '🔍' : (tabName === 'shitList' ? '🎉' : '📋')}</div>
@@ -1303,7 +1335,7 @@ async function loadJobsTabContent(tabName, statusFilter = '') {
             return;
         }
 
-        container.innerHTML = renderJobsListHtml(jobs);
+        container.innerHTML = renderJobsListHtml(filteredJobs);
     } catch (err) {
         console.error('Failed to load jobs:', err);
         container.innerHTML = `
