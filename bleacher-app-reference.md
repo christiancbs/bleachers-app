@@ -1,7 +1,7 @@
 # Bleachers & Seats - App Development Reference
 
 **Last Updated:** February 8, 2026
-**Version:** v3.3.1
+**Version:** v3.4.0
 **Branch:** `main`
 
 ---
@@ -20,10 +20,11 @@ python3 -m http.server 8080
 - **Office:** Click "office@bleachers.com" - View "Estimates" for real QB data
 - **Admin:** Click "admin@bleachers.com" - Full access to all features
 
-**Test v3.3.0 Features:**
-1. Login as **Office** → **Estimates** → See real QuickBooks estimates with line items
-2. Click any estimate → View full details with parts/labor breakdown
-3. Filter by status: All, Pending, Accepted
+**Test v3.4.0 Features:**
+1. Login as **Office** → **Estimates** → Click accepted estimate → **Create Work Order**
+2. Go to **Jobs** → See new work order in **All** and **Backlog** tabs
+3. Click **Add to Planning** → Navigate to **Scheduling > Planning** → Place on a day
+4. Click any job → See **Parts Tracking** section with edit capability
 
 ---
 
@@ -39,7 +40,8 @@ python3 -m http.server 8080
 **Version Tags:**
 - `v3.2.1` - Office parts management, image lightbox, paste upload
 - `v3.3.0` - Jobs database, Estimates view wired to QB, EstimatesAPI
-- `v3.3.1` - **Current:** Jobs view mirrors field staff for real-time visibility
+- `v3.3.1` - Jobs view mirrors field staff for real-time visibility
+- `v3.4.0` - **Current:** Create WO from estimate, Jobs tabs, Parts Tracking, Planning workflow
 
 ---
 
@@ -60,14 +62,22 @@ python3 -m http.server 8080
    └── Customer reviews and accepts estimate
        └── Status updates to "Accepted" in QB
 
-4. PROCUREMENT
-   └── Order parts from vendors OR pull from inventory
+4. WORK ORDER CREATED  ← NOW IMPLEMENTED!
+   └── Click "Create Work Order" on accepted estimate
+   └── Labor lines become work instructions
+   └── Parts tracking fields available
 
-5. WORK ORDER CREATED  ← Separate from Estimate!
-   └── Labor lines from estimate become work instructions
-   └── Internal operations document for scheduling
+5. PLANNING & SCHEDULING
+   └── Jobs appear in Backlog tab
+   └── Click "Add to Planning" → place on calendar
+   └── Assign technician when placing
 
-6. PARTS RECEIVED → 7. SCHEDULE → 8. COMPLETE WORK → 9. BILL CUSTOMER
+6. FIELD WORK
+   └── Tech sees job in My Jobs
+   └── Status updates: en route → checked in → complete/unable
+   └── "Unable to Complete" → lands on Shit List
+
+7. PARTS RECEIVED → 8. COMPLETE WORK → 9. BILL CUSTOMER
 ```
 
 **Key Distinction:**
@@ -76,7 +86,7 @@ python3 -m http.server 8080
 
 ---
 
-## What's Built (v3.3.0)
+## What's Built (v3.4.0)
 
 **Core Features:**
 - **Home Page** - Role-specific landing with bulletins, notifications, and action items
@@ -85,17 +95,27 @@ python3 -m http.server 8080
 - **Parts Management** - Admin/Office can add/edit parts, upload images, bulk CSV import
 - **Image Lightbox** - Click any part with image to view full-size with details pill bar
 - **Estimates View** - Real QuickBooks data with All/Pending/Accepted tabs
-- **Estimate Detail** - Full line item breakdown with amounts
-- **Jobs View** - Office sees same format as field staff "My Jobs" (real-time visibility)
+- **Estimate Detail** - Full line item breakdown + **Create Work Order** button
+- **Create Work Order from Estimate** - Converts accepted estimate to work order with labor lines as instructions
+- **Jobs View (Tabbed):**
+  - **All** - All work orders
+  - **Backlog** - Draft status, awaiting scheduling
+  - **This Week** - Weekly grid view with territory tabs
+  - **Completed** - Finished work orders
+  - **Shit List** - Jobs marked "Unable to Complete" by field staff
+- **Jobs Search** - Search by job number, customer, or location
+- **Job Detail Modal** - Full job info with **Parts Tracking** section
+- **Parts Tracking** - PO #, promise date, destination, received status, location
+- **Add to Planning** - Select job from Backlog → place on Planning calendar
 - **Work Orders Database** - Postgres tables for work orders, attachments, inspection banks
 - **Sales Pipeline** - Pre-sale tracking with A/B/C deal grading
 - **Project Tracker** - Post-sale operations with date tracking
 - **Live status tracking** (scheduled → en route → checked in → complete/unable)
-- Scheduling (spreadsheet view with Confirmed column, Equipment badges)
+- Scheduling (This Week + Planning tabs)
 - CRM with customer hierarchy (District → Locations)
 
 **Navigation:**
-- **Office/Admin:** Home | Search | Sales (Sales Pipeline, Accounts) | Procurement (Ops Review, Estimates, Parts Orders) | Logistics (Shipping, Jobs, Scheduling, Project Tracker) | Resources (Parts Catalog) | Settings
+- **Office/Admin:** Home | Search | Sales (Sales Pipeline, Accounts) | Procurement (Ops Review, Estimates) | Logistics (Jobs, Scheduling, Project Tracker) | Resources (Parts Catalog) | Settings
 - **Field:** Home | Search | Inspections & Service (My Jobs, Team Schedule) | Resources (Parts Catalog) | Settings
 
 ---
@@ -134,13 +154,14 @@ python3 -m http.server 8080
 │   │   ├── my-jobs.js         # Field My Jobs, status updates
 │   │   ├── office.js          # Office work order management
 │   │   ├── ops-review.js      # Ops review workflow
-│   │   └── scheduling.js      # Scheduling, Jobs list, QB sync
+│   │   └── scheduling.js      # Scheduling, Jobs list, Planning, Parts Tracking
 │   └── utils/
 │       ├── parts-api.js       # Parts API client
 │       ├── jobs-api.js        # Work Orders API client
 │       ├── estimates-api.js   # QB Estimates API client
 │       ├── parts-catalog.js   # Parts search UI
 │       └── search.js          # Global search utilities
+├── scripts/                   # Local data migration scripts (not deployed)
 ├── bleacher-app-reference.md  # This file
 └── REFERENCE.md               # System architecture docs
 
@@ -197,7 +218,7 @@ jobs  -- Work orders (NOT estimates)
 ├── assigned_to, scheduled_date, estimated_hours
 ├── qb_estimate_id, qb_estimate_total, qb_synced_at
 ├── created_at, updated_at, completed_at
-└── metadata (JSONB)
+└── metadata (JSONB)  -- includes partsTracking object
 
 job_attachments
 ├── id, job_id (FK), type, filename, blob_url
@@ -213,7 +234,15 @@ inspection_banks
 ```
 
 **Work Order Types:** `repair`, `inspection`, `service_call`, `go_see`
-**Work Order Status:** `draft`, `scheduled`, `in_progress`, `completed`, `on_hold`, `cancelled`
+**Work Order Status:** `draft`, `scheduled`, `in_progress`, `completed`, `unable_to_complete`, `cancelled`
+
+**Parts Tracking (in metadata.partsTracking):**
+- `partsOrdered` (boolean)
+- `poNumber` (string)
+- `promiseDate` (date)
+- `destination` (string)
+- `partsReceived` (boolean)
+- `partsLocation` (string)
 
 ---
 
@@ -243,7 +272,7 @@ inspection_banks
 | GET | `/?status=&job_type=&q=` | List/search work orders |
 | POST | `/` | Create work order |
 | GET | `/:id` | Get work order with attachments |
-| PUT | `/:id` | Update work order |
+| PUT | `/:id` | Update work order (status, metadata, etc.) |
 | DELETE | `/:id` | Delete work order |
 | POST | `/attachments` | Upload photo/PDF |
 | POST | `/inspections` | Add inspection bank |
@@ -258,14 +287,18 @@ inspection_banks
 1. ~~Jobs database~~ ✅ DONE
 2. ~~Estimates view wired to QB~~ ✅ DONE
 3. ~~Jobs view mirrors field staff~~ ✅ DONE
-4. **Create Work Order from Accepted Estimate** - Button exists, needs implementation
-5. **Estimate Builder** - Create estimates in app → push to QB
+4. ~~Create Work Order from Accepted Estimate~~ ✅ DONE
+5. ~~Jobs view with tabs (All/Backlog/This Week/Completed/Shit List)~~ ✅ DONE
+6. ~~Parts Tracking on work orders~~ ✅ DONE
+7. ~~Add to Planning workflow~~ ✅ DONE
+8. **Estimate Builder** - Create estimates in app → push to QB
 
 **Short-term:**
-1. Parts tracking on work orders (needed, ordered, received)
-2. Signature capture for work orders
-3. Offline mode for parts catalog
-4. Field Guide / Help Desk
+1. Signature capture for work orders
+2. Offline mode for parts catalog
+3. Field Guide / Help Desk
+4. Drag-and-drop in Planning view
+5. ServicePal data migration (scripts ready locally)
 
 ---
 
@@ -284,6 +317,11 @@ inspection_banks
 1. Check localStorage in DevTools → Application → Local Storage
 2. Clear if corrupted: `localStorage.clear()` in console
 
+**Jobs Not Appearing:**
+1. Hard refresh browser (Cmd+Shift+R)
+2. Test API: `curl https://bleachers-api.vercel.app/api/jobs`
+3. Check that work order was created from accepted estimate
+
 ---
 
 ## Critical Principles
@@ -291,6 +329,8 @@ inspection_banks
 - **"If it didn't happen in QuickBooks, it didn't happen at all"**
 - **Estimates are created IN the app, pushed TO QuickBooks** (not imported from QB)
 - **Work Orders are separate from Estimates** - internal ops documents
+- **Shit List = field-driven** - jobs land there when tech marks "Unable to Complete"
+- **Parts tracking lives on the work order** - not separate views
 - **Inspector after-hours work is the #1 pain point**
 - **Schools have poor WiFi** - offline mode critical
 - **Multi-vendor jobs are common** - search all vendors
@@ -309,8 +349,11 @@ curl "https://bleachers-api.vercel.app/api/qb/estimates?limit=5"
 # Search parts
 curl "https://bleachers-api.vercel.app/api/parts/search?q=seat+board"
 
-# List work orders (currently empty - create from accepted estimates)
+# List work orders
 curl https://bleachers-api.vercel.app/api/jobs
+
+# Get single work order with details
+curl https://bleachers-api.vercel.app/api/jobs/1
 ```
 
 ---
