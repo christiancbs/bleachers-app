@@ -560,7 +560,7 @@ let shitListJobs = [
         school: 'Gallatin HS',
         state: 'TN',
         details: 'BEHIND LOGO: Labor to install flex row handles and replace gear motor',
-        reason: "Can't Access",
+        reason: 'Customer Not Ready',
         reasonDetails: 'Gym was being used for basketball tournament, could not get access. Need to reschedule after Feb 15.',
         tech: 'Alex W & Michael',
         originalDate: '2025-01-28',
@@ -839,10 +839,13 @@ function renderWeeklySchedule() {
                     else if (status === 'complete') rowClass = 'schedule-complete-row';
 
                     var confirmIcon = '';
+                    var confirmTitle = 'Not confirmed';
                     if (job.confirmation === 'XX') {
-                        confirmIcon = '<span style="color: #2e7d32; font-size: 18px;" title="Confirmed">✓✓</span>';
+                        confirmTitle = 'Confirmed' + (job.confirmationDetails?.confirmedWith ? ' with ' + job.confirmationDetails.confirmedWith : '') + (job.confirmationDetails?.method ? ' via ' + job.confirmationDetails.method : '');
+                        confirmIcon = '<span style="color: #2e7d32; font-size: 18px;" title="' + confirmTitle + '">✓✓</span>';
                     } else if (job.confirmation === 'X') {
-                        confirmIcon = '<span style="color: #f57c00; font-size: 16px;" title="Attempted">✓</span>';
+                        confirmTitle = 'Attempted' + (job.confirmationDetails?.method ? ' via ' + job.confirmationDetails.method : '');
+                        confirmIcon = '<span style="color: #f57c00; font-size: 16px;" title="' + confirmTitle + '">✓</span>';
                     } else {
                         confirmIcon = '<span style="color: #bdbdbd; font-size: 16px;" title="Not confirmed">—</span>';
                     }
@@ -1057,6 +1060,8 @@ function saveScheduleEntry() {
     const tech = document.getElementById('entryTech').value;
     const partsLocation = document.getElementById('entryPartsLocation').value;
     const confirmation = document.getElementById('entryConfirmation').value;
+    const confirmedWith = document.getElementById('entryConfirmedWith').value;
+    const confirmationMethod = document.getElementById('entryConfirmationMethod').value;
     const equipmentRental = document.getElementById('entryEquipmentRental').checked;
     const notes = document.getElementById('entryNotes').value;
     const internalNotes = document.getElementById('entryInternalNotes').value;
@@ -1073,6 +1078,12 @@ function saveScheduleEntry() {
         tech: tech,
         partsLocation: partsLocation,
         confirmation: confirmation,
+        confirmationDetails: {
+            confirmedWith: confirmedWith,
+            method: confirmationMethod,
+            confirmedBy: window.currentUser?.name || 'Office',
+            confirmedDate: confirmation === 'XX' ? new Date().toISOString().split('T')[0] : null
+        },
         equipmentRental: equipmentRental,
         notes: notes,
         internalNotes: internalNotes
@@ -1145,15 +1156,25 @@ function loadShitList() {
     if (!container) return;
     const activeList = currentTerritory === 'original' ? shitListJobs : shitListSouthern;
 
-    // Update stats
+    // Update stats - count by category
     const total = activeList.length;
-    const wrongPart = activeList.filter(function(j) { return j.reason === 'Wrong Part'; }).length;
-    const other = total - wrongPart;
+    const reasonCounts = {};
+    activeList.forEach(function(j) {
+        reasonCounts[j.reason] = (reasonCounts[j.reason] || 0) + 1;
+    });
+    const wrongPart = reasonCounts['Wrong Part'] || 0;
+    const cantAccess = (reasonCounts["Can't Access"] || 0) + (reasonCounts['Customer Not Ready'] || 0) + (reasonCounts['Weather/Access'] || 0);
+    const other = total - wrongPart - cantAccess;
 
-    document.getElementById('shitListTotal').textContent = total;
-    document.getElementById('shitListWrongPart').textContent = wrongPart;
-    document.getElementById('shitListOther').textContent = other;
-    document.getElementById('shitListCount').textContent = total;
+    // Update stat elements (backwards compatible with existing HTML)
+    var totalEl = document.getElementById('shitListTotal');
+    var wrongPartEl = document.getElementById('shitListWrongPart');
+    var otherEl = document.getElementById('shitListOther');
+    var countEl = document.getElementById('shitListCount');
+    if (totalEl) totalEl.textContent = total;
+    if (wrongPartEl) wrongPartEl.textContent = wrongPart;
+    if (otherEl) otherEl.textContent = other;
+    if (countEl) countEl.textContent = total;
 
     if (activeList.length === 0) {
         container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No pink jobs - nice work!</div>';
@@ -1167,6 +1188,10 @@ function loadShitList() {
             "Can't Access": { bg: '#e3f2fd', color: '#1565c0', icon: '&#x1F6AA;' },
             'Additional Work': { bg: '#fff3e0', color: '#e65100', icon: '&#x26A0;' },
             'Equipment Issue': { bg: '#fce4ec', color: '#c62828', icon: '&#x1F3D7;' },
+            'Customer Not Ready': { bg: '#e3f2fd', color: '#1565c0', icon: '&#x1F3EB;' },
+            'Safety Concern': { bg: '#fce4ec', color: '#c62828', icon: '&#x1F6D1;' },
+            'Scope Change': { bg: '#e8f5e9', color: '#2e7d32', icon: '&#x1F4CB;' },
+            'Weather/Access': { bg: '#e3f2fd', color: '#1565c0', icon: '&#x26C5;' },
             'Other': { bg: '#f5f5f5', color: '#616161', icon: '&#x1F4DD;' }
         };
         var rc = reasonColors[job.reason] || reasonColors['Other'];

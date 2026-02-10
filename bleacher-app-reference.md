@@ -1,7 +1,7 @@
 # Bleachers & Seats - App Development Reference
 
 **Last Updated:** February 9, 2026
-**Version:** v3.6.0
+**Version:** v3.8.0
 **Branch:** `main`
 
 ---
@@ -20,12 +20,17 @@ python3 -m http.server 8080
 - **Office:** Click "office@bleachers.com" - View "Estimates" for real QB data
 - **Admin:** Click "admin@bleachers.com" - Full access to all features
 
-**Test v3.6.0 Features:**
-1. Login as **Office** → **Create** → Select job type (Inspection, Work Order, Service Call, Go-See, Field Check, Custom)
-2. Type in **Customer/School** field → See **typeahead search** (County first, school second) + Custom entry option
-3. Go to **Ops Review** → Click an inspection → See **three buttons** (Approve | Create Work Order | Build Estimate)
-4. Under Approved tab → Use **sub-filters** (Awaiting WO, Awaiting Estimate, Complete)
-5. Go to **Estimates** → **+ Create Estimate** tab → Use the **Estimate Builder**
+**Test v3.7.0 Features (Procurement Intelligence):**
+1. Login as **Office** → **Estimates** → **+ Create Estimate** tab
+2. Add a part line item with "replace" in description → See **auto-suggested** "Customer responsible for disposal" note appear
+3. Add a labor line for "safety strap install" → See **auto-suggested** "Lift rental required" note
+4. Click **stock?** link on a part line item → Select shop location (TN/FL/AL) → See blue **stock badge**
+5. Click **+ Add Note** → Pick from dropdown or enter custom note
+6. Submit estimate → Check QB PrivateNote contains structured procurement memo
+7. Accept estimate in QB → **Create Work Order** → Verify procurement notes + stock parts carry to work order metadata
+8. Go to **Jobs** → See **red stock warning banner** on jobs with unverified stock parts
+9. Open job detail → See **Procurement Notes** and **Stock Parts** sections
+10. Try to schedule job with unverified stock → See **verification gate** confirm dialog
 
 ---
 
@@ -44,7 +49,9 @@ python3 -m http.server 8080
 - `v3.3.1` - Jobs view mirrors field staff for real-time visibility
 - `v3.4.0` - Create WO from estimate, Jobs tabs, Parts Tracking, Planning workflow
 - `v3.5.0` - Territory View, Site Equipment Profile
-- `v3.6.0` - **Current:** Estimate Builder, streamlined Create Job, Ops Review workflow
+- `v3.6.0` - Estimate Builder, streamlined Create Job, Ops Review workflow
+- `v3.7.0` - Procurement Intelligence — auto-notes, stock part tracking, pre-schedule verification
+- `v3.8.0` - **Current:** Ops Foundation — territory DB column + API filtering, confirmation tracking, expanded pink categories, scraper fixes
 
 ---
 
@@ -65,14 +72,17 @@ python3 -m http.server 8080
    └── Customer reviews and accepts estimate
        └── Status updates to "Accepted" in QB
 
-4. WORK ORDER CREATED  ← NOW IMPLEMENTED!
+4. WORK ORDER CREATED
    └── Click "Create Work Order" on accepted estimate
    └── Labor lines become work instructions
-   └── Parts tracking fields available
+   └── Procurement notes + stock parts auto-transferred from estimate
+   └── Parts tracking pre-filled with shop location
 
 5. PLANNING & SCHEDULING
-   └── Jobs appear in Backlog tab
+   └── Jobs appear in Backlog tab (stock warnings visible)
    └── Click "Add to Planning" → place on calendar
+   └── PRE-SCHEDULE GATE: unverified stock parts must be confirmed
+   └── Procurement notes reminder shown before scheduling
    └── Assign technician when placing
 
 6. FIELD WORK
@@ -89,7 +99,7 @@ python3 -m http.server 8080
 
 ---
 
-## What's Built (v3.6.0)
+## What's Built (v3.8.0)
 
 **Core Features:**
 - **Home Page** - Role-specific landing with bulletins, notifications, and action items
@@ -100,18 +110,40 @@ python3 -m http.server 8080
 - **Estimates View** - Real QuickBooks data with All/Pending/Accepted tabs
 - **Estimate Detail** - Full line item breakdown + **Create Work Order** button
 - **Estimate Builder** - Create estimates with parts, labor, and custom line items → push to QB
+- **Procurement Intelligence (v3.7.0):**
+  - **Auto-Detection Engine** - Scans line items and suggests procurement notes:
+    - Removal/demo work without dumpster → "Customer responsible for disposal"
+    - Goal/strap/ceiling work without lift → "Lift rental required"
+    - Wall pad replacement → "Customer to clear wall area, confirm truck access"
+    - Floor/hardwood work → "Plywood required for floor protection"
+    - Stock keywords (TN Shop, from stock, etc.) → auto-marks stock parts
+  - **Procurement Notes UI** - Card in Estimate Builder with Add/Dismiss on suggestions, dropdown of 9 common notes, custom note entry
+  - **Stock Part Marking** - Click "stock?" on any part/custom line item → pick shop (TN/FL/AL) → blue badge shown
+  - **QB PrivateNote Integration** - Structured memo: `NOTES: ...; | STOCK PARTS: Deck Board (TN Shop), ...`
+  - **Estimate → Work Order Bridge** - Procurement notes + stock parts auto-transferred to work order metadata, partsTracking pre-filled with shop location
+  - **Pre-Schedule Verification Gate** - Unverified stock parts trigger confirm dialog before scheduling. Cancel returns to backlog, OK marks verified.
+  - **Procurement Notes in Job Detail** - Orange section showing notes carried from estimate
+  - **Stock Parts in Job Detail** - Red (unverified) or green (verified) section with verifier name/date
+  - **Stock Warning Banner** - Red warning in jobs list for jobs with unverified stock parts
+  - **Stock Verified Fields** - Added to Parts Tracking edit flow (stockVerified, stockVerifiedBy, stockVerifiedDate)
+- **Ops Foundation (v3.8.0):**
+  - **Territory Column** - `territory` field on jobs table, auto-detected from job_number prefix (TN/KY → Original, AL/FL → Southern). 388 Original + 106 Southern backfilled.
+  - **Territory + Date Range API Filtering** - `GET /api/jobs?territory=Original&scheduled_date_gte=2026-02-03&scheduled_date_lte=2026-02-07` for scheduling queries
+  - **Confirmation Tracking** - Schedule entries now capture `confirmedWith`, `confirmationMethod` (email/phone/in_person), `confirmedBy`, `confirmedDate`. Tooltips show confirmation details on schedule grid.
+  - **Expanded Pink/Shit List Categories** - 9 reason categories: Wrong Part, Can't Access, Additional Work, Equipment Issue, Customer Not Ready, Safety Concern, Scope Change, Weather/Access, Other. `PINK_REASONS` constant in data.js.
+  - **ServicePal Scraper Fixes** - Fixed column alignment (off-by-one in Kendo grid parsing), added KY/GA/MS state detection for territory
 - **Create Work Order from Estimate** - Converts accepted estimate to work order with labor lines as instructions
 - **Jobs View (Tabbed):**
-  - **All** - All work orders
+  - **All** - All work orders (with stock warning banners)
   - **Backlog** - Draft status, awaiting scheduling
   - **This Week** - Weekly grid view with territory tabs
   - **Completed** - Finished work orders
   - **Shit List** - Jobs marked "Unable to Complete" by field staff
 - **Territory View** - Filter jobs by All Territories / Original (KY/TN) / Southern (AL/FL)
 - **Jobs Search** - Search by job number, customer, or location
-- **Job Detail Modal** - Full job info with **Parts Tracking** section
-- **Parts Tracking** - PO #, promise date, destination, received status, location
-- **Add to Planning** - Select job from Backlog → place on Planning calendar
+- **Job Detail Modal** - Full job info with Parts Tracking, Procurement Notes, and Stock Parts sections
+- **Parts Tracking** - PO #, promise date, destination, received status, location, stock verified, verified by
+- **Add to Planning** - Select job from Backlog → place on Planning calendar (with verification gate)
 - **Work Orders Database** - Postgres tables for work orders, attachments, inspection banks
 - **Sales Pipeline** - Pre-sale tracking with A/B/C deal grading
 - **Project Tracker** - Post-sale operations with date tracking
@@ -153,18 +185,18 @@ python3 -m http.server 8080
 ├── css/app.css                # All styles
 ├── js/
 │   ├── app.js                 # Core: init, login, routing, nav
-│   ├── data.js                # Constants, sample data
+│   ├── data.js                # Constants, sample data, STOCK_LOCATIONS, COMMON_PROCUREMENT_NOTES
 │   ├── views/
 │   │   ├── admin.js           # Employee, settings, parts management
 │   │   ├── create.js          # Office/field unified create forms with typeahead
-│   │   ├── dashboard.js       # Home, Estimates, Sales Pipeline, CRM
-│   │   ├── estimate-builder.js # Estimate Builder with line items
+│   │   ├── dashboard.js       # Home, Estimates, Sales Pipeline, CRM, WO-from-estimate bridge
+│   │   ├── estimate-builder.js # Estimate Builder with line items + procurement intelligence
 │   │   ├── field.js           # Field staff utilities
 │   │   ├── inspection.js      # Multi-bank inspection flow
 │   │   ├── my-jobs.js         # Field My Jobs, status updates
 │   │   ├── office.js          # Office work order management
 │   │   ├── ops-review.js      # Ops review workflow with 3-button actions
-│   │   └── scheduling.js      # Scheduling, Jobs list, Planning, Parts Tracking
+│   │   └── scheduling.js      # Scheduling, Jobs list, Planning, Parts Tracking, pre-schedule verification
 │   └── utils/
 │       ├── parts-api.js       # Parts API client
 │       ├── jobs-api.js        # Work Orders API client
@@ -194,7 +226,7 @@ python3 -m http.server 8080
 │   │   ├── callback.js        # GET - Handles OAuth callback
 │   │   └── status.js          # GET/DELETE - Check/disconnect
 │   ├── qb/                    # QuickBooks API
-│   │   ├── estimates.js       # GET/POST estimates
+│   │   ├── estimates.js       # GET/POST estimates (includes privateNote, customerMemo)
 │   │   ├── customers.js       # GET customers
 │   │   └── company-info.js    # GET company info
 │   ├── parts/                 # Parts catalog API
@@ -234,6 +266,7 @@ jobs  -- Work orders (NOT estimates)
 ├── contact_name, contact_phone, contact_email
 ├── title, description, special_instructions
 ├── assigned_to, scheduled_date, estimated_hours
+├── territory                           -- Original (TN/KY) or Southern (AL/FL), auto-detected from job_number prefix
 ├── qb_estimate_id, qb_estimate_total, qb_synced_at
 ├── created_at, updated_at, completed_at
 └── metadata (JSONB)  -- includes partsTracking object
@@ -260,7 +293,21 @@ inspection_banks
 - `promiseDate` (date)
 - `destination` (string)
 - `partsReceived` (boolean)
-- `partsLocation` (string)
+- `partsLocation` (string) - auto-filled from stock location when WO created from estimate
+- `stockVerified` (boolean) - has someone confirmed stock is available at shop?
+- `stockVerifiedBy` (string) - who verified (Admin/Office)
+- `stockVerifiedDate` (date) - when verified
+
+**Procurement Notes (in metadata.procurementNotes):**
+- Array of `{ text, source }` — source is 'estimate' (parsed from QB PrivateNote) or 'auto'/'manual'
+
+**Stock Parts (in metadata.stockParts):**
+- Array of `{ itemName, quantity, stockLocation, verified }` — stock location is TN Shop / FL Shop / AL Shop / Stock
+
+**Procurement Data Flow:**
+```
+Estimate Builder → QB PrivateNote (structured memo) → Work Order metadata → Scheduling gate
+```
 
 ---
 
@@ -269,8 +316,8 @@ inspection_banks
 ### QuickBooks (`/api/qb/`)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/estimates?limit=N&status=X` | List estimates |
-| POST | `/estimates` | Create estimate in QB |
+| GET | `/estimates?limit=N&status=X` | List estimates (includes privateNote, customerMemo) |
+| POST | `/estimates` | Create estimate in QB (memo → PrivateNote with procurement data) |
 | GET | `/customers?search=X` | Search customers |
 | GET | `/company-info` | Test connection |
 
@@ -287,7 +334,7 @@ inspection_banks
 ### Work Orders (`/api/jobs/`)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/?status=&job_type=&q=` | List/search work orders |
+| GET | `/?status=&job_type=&q=&territory=&scheduled_date_gte=&scheduled_date_lte=` | List/search work orders (territory + date range filtering) |
 | POST | `/` | Create work order |
 | GET | `/:id` | Get work order with attachments |
 | PUT | `/:id` | Update work order (status, metadata, etc.) |
@@ -311,13 +358,22 @@ inspection_banks
 7. ~~Add to Planning workflow~~ ✅ DONE
 8. ~~Estimate Builder~~ ✅ DONE - Create estimates with parts, labor, custom items → push to QB
 9. ~~Streamlined Create Job form~~ ✅ DONE - Typeahead customer search, job types
+10. ~~Procurement Intelligence~~ ✅ DONE - Auto-notes, stock tracking, pre-schedule verification
+
+**Next (Persistent Scheduling):**
+1. Wire scheduling UI to jobs API (replace localStorage with DB-backed schedule)
+2. Weekly grid queries `GET /api/jobs?territory=Original&scheduled_date_gte=X&scheduled_date_lte=Y`
+3. "Add to Planning" writes `scheduled_date` + `assigned_to` via `PUT /api/jobs/:id`
+4. Status updates (en_route, checked_in) flow through same API
+5. $2.67M in draft work orders waiting to be scheduled — this is the bottleneck
 
 **Short-term:**
-1. Signature capture for work orders
-2. Offline mode for parts catalog
-3. Field Guide / Help Desk
-4. Drag-and-drop in Planning view
-5. ~~ServicePal data migration~~ **IN PROGRESS** - scraper running
+1. Sales/Estimate Analytics Dashboard (pipeline health, territory win rates, deal size intelligence)
+2. ServicePal Import Pipeline (data cleaning + batch import to Postgres)
+3. Customer Database Migration (QB 1,000 customers → Postgres, replace hardcoded 7)
+4. Signature capture for work orders
+5. Offline mode for field staff
+6. ~~ServicePal data migration~~ **IN PROGRESS** - scraper running (column alignment fixed)
 
 ---
 
@@ -418,6 +474,7 @@ npm run scrape
 - **Work Orders are separate from Estimates** - internal ops documents
 - **Shit List = field-driven** - jobs land there when tech marks "Unable to Complete"
 - **Parts tracking lives on the work order** - not separate views
+- **Procurement info must survive the journey** - estimate → QB PrivateNote → work order metadata → scheduling gate. If it's known at estimate time, it should be enforced at schedule time.
 - **Inspector after-hours work is the #1 pain point**
 - **Schools have poor WiFi** - offline mode critical
 - **Multi-vendor jobs are common** - search all vendors

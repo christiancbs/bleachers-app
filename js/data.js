@@ -259,6 +259,19 @@ const STOCK_LOCATIONS = [
     { id: 'al-shop', label: 'AL Shop', territory: 'Southern' }
 ];
 
+// Pink/Shit List reason categories
+const PINK_REASONS = [
+    { value: 'Wrong Part', label: 'Wrong/Missing Part', icon: '🔧', color: '#e65100', bg: '#fff3e0' },
+    { value: "Can't Access", label: "Can't Access / Gym In Use", icon: '🚪', color: '#1565c0', bg: '#e3f2fd' },
+    { value: 'Additional Work', label: 'Additional Work Needed', icon: '⚠', color: '#e65100', bg: '#fff3e0' },
+    { value: 'Equipment Issue', label: 'Equipment Issue (Lift, etc.)', icon: '🏗', color: '#c62828', bg: '#fce4ec' },
+    { value: 'Customer Not Ready', label: 'Customer Not Ready', icon: '🏫', color: '#1565c0', bg: '#e3f2fd' },
+    { value: 'Safety Concern', label: 'Safety Concern', icon: '🛑', color: '#c62828', bg: '#fce4ec' },
+    { value: 'Scope Change', label: 'Scope Change / New Estimate', icon: '📋', color: '#2e7d32', bg: '#e8f5e9' },
+    { value: 'Weather/Access', label: 'Weather / Site Access', icon: '⛅', color: '#1565c0', bg: '#e3f2fd' },
+    { value: 'Other', label: 'Other', icon: '📝', color: '#616161', bg: '#f5f5f5' }
+];
+
 // Common procurement notes for estimate builder dropdown
 const COMMON_PROCUREMENT_NOTES = [
     { text: 'Customer responsible for disposal of removed materials', category: 'disposal' },
