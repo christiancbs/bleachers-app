@@ -50,553 +50,118 @@ let myJobsWeekOffset = 0;
 let teamScheduleWeekOffset = 0;
 let currentTeamTerritory = 'original';
 
-// Schedule data per territory
+// Schedule data per territory (kept as globals for backward compat with my-jobs.js, search.js)
 let scheduleDataOriginal = {};
 let scheduleDataSouthern = {};
 
-// Active schedule data reference (points to current territory)
+// Active schedule data (populated from API)
 let scheduleData = {};
 
+// Cached backlog jobs from last API fetch (for modal dropdowns + addJobToSchedule)
+let cachedBacklogJobs = [];
+
 // ==========================================
-// SAMPLE DATA INITIALIZATION
-// Week of Feb 3, 2025 - Original & Southern territories
+// API DATA TRANSFORMATION
+// Convert API job objects to schedule grid format
 // ==========================================
 
-// Initialize with sample data from the Excel trackers
-function initializeSampleScheduleData() {
-    // Week of Feb 3, 2025 - ORIGINAL TERRITORY (KY/TN)
-    scheduleDataOriginal = {
-        '2025-02-03': [
-            {
-                id: 's1', type: 'job',
-                school: 'Montgomery Co HS, KY',
-                details: 'FACING: Labor to install seat back hardware and a RH end cap FACING UPPER: Labor to install LH and RH end caps BEHIND: Labor to replace a LH tier catch BEHIND UPPER: Labor to install aisle step hardware and clean/prep/install safety tape END: Labor to install aisle step hardware and skirt board bracket hardware. FOOTBALL HOME: Labor to install curved bullnose. BASEBALL: Labor to install riser board hardware SOCCER: Labor to replace an end cap',
-                tech: 'Sam (overnight)',
-                partsLocation: 'Sams Truck',
-                isPink: false,
-                status: 'complete',
-                completedAt: '2025-02-03T14:30:00'
-            },
-            {
-                id: 's1a', type: 'job',
-                school: 'Ripley High School, Lauderdale Co, TN',
-                details: 'Install safety strap on Goal 5. Lift rental required - 40\' lift will be on site.',
-                tech: 'Field Tech',
-                partsLocation: 'TN Shop',
-                specialInstructions: 'Customer will have gym cleared by 8am. Enter through back door - front office doesn\'t open until 9.',
-                confirmation: 'XX',
-                equipmentRental: true,
-                isPink: false,
-                status: 'complete',
-                completedAt: '2025-02-03T11:15:00'
-            },
-            {
-                id: 's1b', type: 'job',
-                school: 'Wilson Central High School, Wilson Co, TN',
-                details: 'Replace deck boards (6), install end caps, replace skirt board hardware',
-                tech: 'Field Tech',
-                partsLocation: 'TN Shop',
-                isPink: false,
-                status: 'scheduled'
-            },
-            {
-                id: 's2', type: 'job',
-                school: 'Menifee Co, KY',
-                details: 'Indoor Bleacher Inspections: Menifee Central K-8 and Menifee HS',
-                tech: 'Sam (overnight)',
-                partsLocation: '',
-                isPink: false,
-                status: 'scheduled'
-            },
-            {
-                id: 's3', type: 'job',
-                school: 'Fairview ES, Blount Co, TN',
-                details: 'Labor to raise wall buck to new height, march bleachers back and attach bleacher to wall. Reinstall seats if removed',
-                tech: 'Troy & Alex M (overnight)',
-                partsLocation: 'UPS: 1Z66W7040311645722 estimated delivery 2/2 end of day - shipping to school',
-                confirmation: 'X',
-                internalNotes: 'Customer called yesterday - wants this done before basketball game on Thursday. Principal is checking on gym availability.',
-                isPink: false,
-                status: 'checked_in',
-                checkedInAt: '2025-02-03T08:45:00'
-            },
-            {
-                id: 's4', type: 'job',
-                school: 'Motlow State Community College - Tullahoma Campus, TN',
-                details: 'FACING UPPER: Labor to install step end caps',
-                tech: 'Chris & Owen (overnight)',
-                partsLocation: 'TN Shop- pick up 1/30',
-                isPink: false,
-                status: 'en_route'
-            },
-            {
-                id: 's5', type: 'job',
-                school: 'East MS, Tullahoma City, TN',
-                details: 'Labor to replace 4 damaged seats *Customer provided seats*',
-                tech: 'Chris & Owen (overnight)',
-                partsLocation: 'School',
-                isPink: false,
-                status: 'scheduled'
-            },
-            {
-                id: 's6', type: 'job',
-                school: 'Tullahoma HS, Tullahoma, TN',
-                details: 'Go-see, possible bleacher warranty issue, school contact is John Olive (AD)',
-                tech: 'Chris & Owen (overnight)',
-                partsLocation: '',
-                isPink: false
-            },
-            {
-                id: 's7', type: 'job',
-                school: 'Forrest HS, Marshall Co, TN',
-                details: 'LOWER FACING: Labor to replace a gear motor',
-                tech: 'Chris & Owen (overnight)',
-                partsLocation: 'TN Shop- pick up 1/30',
-                isPink: false
-            },
-            {
-                id: 's8', type: 'note',
-                school: '',
-                details: 'Stop at shop to pick up parts',
-                tech: 'Alex W & Michael (overnight)',
-                partsLocation: '',
-                isPink: false
-            },
-            {
-                id: 's9', type: 'job',
-                school: 'Ravenwood HS, Williamson Co, TN',
-                details: '*Grab leftover NRS parts for Centennial HS* FACING: Labor to replace deck stabilizers and casterhorn guides, clean/prep/install safety tape, secure loose anchors, and slide deck boards into place BEHIND: Labor to install tier catch and replace a flex row rod assembly AUX: Labor to install seats, skirt board hardware, install concrete anchors in wall buck, clean/prep/install safety tape, install seat end caps, secure outrigger hardware (2), and secure skirt panel bracket hardware FOOTBALL HOME: Labor to install seat boards, splices, footboards, fence ties, end caps, clip sets, stair handrail hardware, realign and secure aisle steps (16), and reattach front surround pipe FOOTBALL VISITOR: Labor to install fence ties, splices, seat boards, end caps, clip sets, fence support hardware, install pipe straps, and secure a footboard BASEBALL HOME: Labor to secure handrail hardware, clip sets and secure seat hardware (2) BASKETBALL 3rd: Labor to install end caps and fence ties SOCCER: Labor to straighten rear surround pipe spindles (2) SOFTBALL 1st: Labor to adjust footboard clips',
-                tech: 'Alex W & Michael (overnight)',
-                partsLocation: 'TN Shop/ School',
-                isPink: false
-            },
-            {
-                id: 's10', type: 'job',
-                school: 'Dyersburg State Community College, Dyersburg, TN',
-                details: 'FACING LEFT: Labor to adjust motor tension FACING RIGHT: Labor to install floor step feet BEHIND LEFT: Labor to install floor mount hardware and replace L brackets BEHIND RIGHT: Labor to install floor mount hardware and skirt board hardware, and replace L brackets',
-                tech: 'Floyd (overnight)',
-                partsLocation: 'TN Shop- Ship to Floyd UPS: 1Z66W7040304500696',
-                isPink: false
-            },
-            {
-                id: 's11', type: 'note',
-                school: '',
-                details: 'Blake & Seth to Southern Territory',
-                tech: '',
-                partsLocation: '',
-                isPink: false
-            }
-        ],
-        '2025-02-04': [
-            {
-                id: 's11a', type: 'job',
-                school: 'Franklin High School, Williamson Co, TN',
-                details: 'Annual bleacher inspection - Main Gym and Auxiliary Gym',
-                tech: 'Field Tech',
-                partsLocation: '',
-                isPink: false,
-                status: 'checked_in',
-                checkedInAt: '2025-02-04T08:30:00'
-            },
-            {
-                id: 's11b', type: 'job',
-                school: 'Brentwood High School, Williamson Co, TN',
-                details: 'Replace 2 gear motors, install safety tape on all aisles',
-                tech: 'Field Tech',
-                partsLocation: 'TN Shop',
-                specialInstructions: 'School in session. Work during gym class break 1:30-3:00 PM only. Check in with front office first.',
-                equipmentRental: true,
-                isPink: false,
-                status: 'en_route'
-            },
-            {
-                id: 's12', type: 'job',
-                school: 'EKU, Richmond, KY',
-                details: 'Additional measurements needed for end rails, call Lisa for details + Pick up seats that Alex W left at the school and bring back to TN Shop',
-                tech: 'Sam (overnight)',
-                partsLocation: '',
-                isPink: false,
-                status: 'scheduled'
-            },
-            {
-                id: 's13', type: 'job',
-                school: 'Fentress Co, TN',
-                details: 'Indoor Bleacher Inspections: Clarkrange HS, Allardt ES, Pine Haven ES, South Fentress ES, and York ES',
-                tech: 'Sam (overnight)',
-                partsLocation: '',
-                isPink: false
-            },
-            {
-                id: 's14', type: 'job',
-                school: 'Rhea Co, TN',
-                details: 'Indoor/Outdoor Bleacher Inspections: Rhea MS, Spring City MS (Gym, Baseball, and Football) and Rhea County HS (Gym, Baseball, Softball, and Football)',
-                tech: 'Matt (overnight)',
-                partsLocation: '',
-                isPink: false
-            },
-            {
-                id: 's15', type: 'job',
-                school: 'Meade Co, KY',
-                details: 'Indoor Bleacher Inspections w/ PM: DT Wilson ES, Ekron ES, Flaherty ES, Stuart Pepper MS, Flaherty PS, Payneville ES, Barry Hahn ES, Indoor/Outdoor & Basketball Inspections w/PM- Meade Co HS (Freshman Academy Gym, Main Gym and Football *Customer to provide lift*) Stuart Pepper MS (Soccer and Football)',
-                tech: 'Danny (overnight)',
-                partsLocation: '',
-                isPink: false
-            },
-            {
-                id: 's16', type: 'continued',
-                school: 'Fairview ES, Blount Co, TN',
-                details: 'Continued',
-                tech: 'Troy & Alex M (overnight)',
-                partsLocation: '',
-                isPink: false
-            },
-            {
-                id: 's17', type: 'job',
-                school: 'Spencer ES, Spencer, TN',
-                details: '**Truck to arrive 9:30am, Removal of exiting pads and dumpster for dunnage is customer responsibility** Labor to replace wall pads',
-                tech: 'Chris & Owen (overnight)',
-                partsLocation: 'School',
-                isPink: true
-            },
-            {
-                id: 's18', type: 'continued',
-                school: 'Ravenwood HS, Williamson Co, TN',
-                details: 'Continued',
-                tech: 'Alex W & Michael (overnight)',
-                partsLocation: '',
-                isPink: false
-            },
-            {
-                id: 's19', type: 'job',
-                school: 'Trousdale Co HS, TN',
-                details: 'FACING: Labor to replace RH and LH tier catches, replace an aisle rail socket, grease deck supports, elevate wiring harness, and put a power frame back on track BEHIND: Labor to grease deck supports AUDITORIUM: Labor to replace a gearbox, install flex row handles and flex row rods FOOTBALL HOME: Labor to install an end cap and secure loose frame hardware, surround support hardware and ADA ramp hardware',
-                tech: 'Floyd (overnight)',
-                partsLocation: 'School/ TN Shop',
-                isPink: false
-            }
-        ],
-        '2025-02-05': [
-            {
-                id: 's20a', type: 'job',
-                school: 'Ripley Middle School, Lauderdale Co, TN',
-                details: 'Service call - bleacher making grinding noise during retraction',
-                tech: 'Field Tech',
-                partsLocation: '',
-                isPink: false,
-                status: 'scheduled'
-            },
-            {
-                id: 's20b', type: 'job',
-                school: 'Independence High School, Williamson Co, TN',
-                details: 'Replace flex row rod assembly, install tier catch hardware',
-                tech: 'Field Tech',
-                partsLocation: 'TN Shop',
-                isPink: false,
-                status: 'scheduled'
-            }
-        ],
-        '2025-02-06': [],
-        '2025-02-07': []
+// Transform an API job into the shape the schedule grid renderers expect
+function apiJobToScheduleEntry(job) {
+    const meta = job.metadata || {};
+    return {
+        id: job.id,
+        jobId: job.id,
+        type: 'job',
+        school: formatJobLocation(job),
+        details: job.description || '',
+        tech: job.assignedTo || '',
+        partsLocation: meta.partsTracking?.partsLocation || meta.partsLocation || '',
+        isPink: job.status === 'unable_to_complete',
+        status: job.status === 'completed' ? 'complete' : job.status,
+        completedAt: job.completedAt || null,
+        checkedInAt: meta.checkedInAt || null,
+        equipmentRental: meta.equipmentRental || false,
+        confirmation: meta.confirmation || '',
+        confirmationDetails: meta.confirmationDetails || null,
+        specialInstructions: job.specialInstructions || '',
+        internalNotes: meta.internalNotes || '',
+        notes: meta.notes || '',
+        estimateNumber: job.jobNumber,
+        qbEstimateTotal: job.qbEstimateTotal
     };
-
-    // Week of Feb 3, 2025 - SOUTHERN TERRITORY (AL/FL)
-    scheduleDataSouthern = {
-        '2025-02-03': [
-            {
-                id: 'ss1',
-                type: 'job',
-                school: 'Dauphin JHS, Enterprise City Schools, AL',
-                details: '*Have customer get parts over to install area, Bring FL Shop lift?, Customer to provide lift & Dumpster* Labor to demo 2 goals and install 2 new goals',
-                tech: 'Floyd, Anthony, Blake & Seth (overnight)',
-                partsLocation: 'School',
-                isPink: false
-            },
-            {
-                id: 'ss2',
-                type: 'job',
-                school: 'Dale Co HS, Dale Co, AL',
-                details: 'MAIN GYM: Labor to replace motor/gearmotor and install safety skid tape (18). AUX GYM: Labor to install pendant clasp.',
-                tech: 'Jon (overnight)',
-                partsLocation: 'FL Shop',
-                isPink: false
-            }
-        ],
-        '2025-02-04': [
-            {
-                id: 'ss3',
-                type: 'continued',
-                school: 'Dauphin JHS, Enterprise City Schools, AL',
-                details: 'Continued',
-                tech: 'Floyd, Anthony, Blake & Seth (overnight)',
-                partsLocation: '',
-                isPink: false
-            },
-            {
-                id: 'ss4',
-                type: 'job',
-                school: 'Houston Co HS, Houston Co, AL',
-                details: 'Indoor Bleacher Inspections: Houston Co HS (Main & Aux), Houston Co MS, Wicksburg HS',
-                tech: 'Danny (overnight)',
-                partsLocation: '',
-                isPink: false
-            }
-        ],
-        '2025-02-05': [
-            {
-                id: 'ss5',
-                type: 'continued',
-                school: 'Houston Co, AL',
-                details: 'Continued',
-                tech: 'Danny (overnight)',
-                partsLocation: '',
-                isPink: false
-            },
-            {
-                id: 'ss6',
-                type: 'job',
-                school: 'Dothan City Schools, AL',
-                details: 'Indoor Bleacher Inspections: Dothan HS, Northview HS, Carver HS, Girard MS, Honeysuckle MS',
-                tech: 'Jon (overnight)',
-                partsLocation: '',
-                isPink: false
-            }
-        ]
-    };
-
-    // Set active schedule based on current territory
-    scheduleData = currentTerritory === 'original' ? scheduleDataOriginal : scheduleDataSouthern;
 }
 
-// ==========================================
-// BACKLOG DATA
-// Ready-to-schedule jobs per territory
-// ==========================================
+// Build display location from API job fields
+function formatJobLocation(job) {
+    const parts = [job.locationName || job.customerName, job.title].filter(Boolean);
+    return parts.join(', ') || job.jobNumber;
+}
 
-// Backlog jobs per territory
-let readyToScheduleJobs = [
-    {
-        id: 'r1',
-        jobNumber: '17215',
-        type: 'Repair',
-        county: 'Williamson Co',
-        school: 'Brentwood HS',
-        state: 'TN',
-        details: '*Lift required, need to take bungee for safety strap* Go-see, find out why safety strap retractors are not installed correctly on goals 2, 3, & 5 in main gym',
-        laborAmount: 850,
-        partsLocation: 'TN Shop',
-        estimateDate: '2024-12-15',
-        acceptedDate: '2024-12-20'
-    },
-    {
-        id: 'r2',
-        jobNumber: '17220',
-        type: 'Repair',
-        county: 'Robertson Co',
-        school: 'Springfield HS',
-        state: 'TN',
-        details: 'MAIN GYM: Labor to replace motor/gearmotor and install safety skid tape (24). Labor to install pendant clasp and tension drive frame hardware.',
-        laborAmount: 2450,
-        partsLocation: 'TN Shop',
-        estimateDate: '2024-12-18',
-        acceptedDate: '2024-12-22'
-    },
-    {
-        id: 'r3',
-        jobNumber: '17225',
-        type: 'Inspection',
-        county: 'Davidson Co',
-        school: 'Metro Nashville Schools - Multiple',
-        state: 'TN',
-        details: 'Indoor Bleacher Inspections: Hillsboro HS, Hillwood HS, Hunters Lane HS, Maplewood HS, McGavock HS (Main & Aux), Pearl-Cohn HS, Stratford HS',
-        laborAmount: 4200,
-        partsLocation: '',
-        estimateDate: '2024-12-10',
-        acceptedDate: '2024-12-12'
-    },
-    {
-        id: 'r4',
-        jobNumber: '17230',
-        type: 'Service Call',
-        county: 'Rutherford Co',
-        school: 'Siegel HS',
-        state: 'TN',
-        details: 'Service call - Bleacher will not retract, possible motor issue. Customer says it makes grinding noise.',
-        laborAmount: 650,
-        partsLocation: '',
-        estimateDate: '2024-12-28',
-        acceptedDate: '2024-12-30'
-    },
-    {
-        id: 'r5',
-        jobNumber: '17235',
-        type: 'Repair',
-        county: 'Sumner Co',
-        school: 'Hendersonville HS',
-        state: 'TN',
-        details: 'FACING LOGO: Labor to install flex row roller bracket with hardware and nose cap. BEHIND LOGO: Labor to replace pendant clasp and install tier catch hardware.',
-        laborAmount: 1875,
-        partsLocation: 'TN Shop. Picked up by Rick 1.2.25',
-        estimateDate: '2024-12-05',
-        acceptedDate: '2024-12-08'
-    },
-    {
-        id: 'r6',
-        jobNumber: '17240',
-        type: 'Go See',
-        county: 'Warren Co',
-        school: 'Warren Co HS',
-        state: 'KY',
-        details: 'Go-see, customer reporting bleacher alignment issues and squeaking during operation',
-        laborAmount: 350,
-        partsLocation: '',
-        estimateDate: '2025-01-02',
-        acceptedDate: '2025-01-03'
+// Fetch schedule data from API for current territory + week
+async function loadScheduleData() {
+    const territory = currentTerritory === 'original' ? 'Original' : 'Southern';
+    const weekStart = getWeekStart(scheduleWeekOffset);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 4); // Mon-Fri
+
+    try {
+        const data = await JobsAPI.list({
+            territory: territory,
+            scheduledDateGte: formatDateKey(weekStart),
+            scheduledDateLte: formatDateKey(weekEnd),
+            limit: 100
+        });
+
+        // Group jobs by scheduled_date into the grid format
+        scheduleData = {};
+        (data.jobs || []).forEach(job => {
+            const dateKey = job.scheduledDate ? job.scheduledDate.split('T')[0] : null;
+            if (dateKey) {
+                if (!scheduleData[dateKey]) scheduleData[dateKey] = [];
+                scheduleData[dateKey].push(apiJobToScheduleEntry(job));
+            }
+        });
+
+        // Update territory globals for backward compat (my-jobs.js, search.js)
+        if (currentTerritory === 'original') {
+            scheduleDataOriginal = scheduleData;
+        } else {
+            scheduleDataSouthern = scheduleData;
+        }
+    } catch (err) {
+        console.error('Failed to load schedule:', err);
+        scheduleData = {};
     }
-];
+}
 
-// Southern territory backlog
-let backlogSouthern = [
-    {
-        id: 'rs1',
-        jobNumber: 'AL515920',
-        type: 'Repair',
-        county: 'Houston Co',
-        school: 'Houston Co HS',
-        state: 'AL',
-        details: 'MAIN GYM: Labor to replace 2 motors and install safety skid tape (12). AUX: Labor to install pendant clasp and tier catch hardware.',
-        laborAmount: 3200,
-        partsLocation: 'FL Shop',
-        estimateDate: '2025-11-15',
-        acceptedDate: '2025-11-20'
-    },
-    {
-        id: 'rs2',
-        jobNumber: 'AL515925',
-        type: 'Inspection',
-        county: 'Baldwin Co',
-        school: 'Baldwin Co Schools - Multiple',
-        state: 'AL',
-        details: 'Indoor Bleacher Inspections: Baldwin Co HS, Robertsdale HS, Foley HS (Main & Aux), Daphne HS, Spanish Fort HS',
-        laborAmount: 5600,
-        partsLocation: '',
-        estimateDate: '2025-11-20',
-        acceptedDate: '2025-11-22'
-    },
-    {
-        id: 'rs3',
-        jobNumber: 'AL515930',
-        type: 'Service Call',
-        county: 'Escambia Co',
-        school: 'Escambia Co HS',
-        state: 'AL',
-        details: 'Service call - Bleacher binding up during retraction, customer reports loud pop noise',
-        laborAmount: 450,
-        partsLocation: '',
-        estimateDate: '2025-12-01',
-        acceptedDate: '2025-12-02'
+// Update job status through API
+async function updateJobStatus(jobId, newStatus) {
+    try {
+        const updateData = { status: newStatus === 'complete' ? 'completed' : newStatus };
+        if (newStatus === 'checked_in') {
+            updateData.metadata = { checkedInAt: new Date().toISOString() };
+        }
+        await JobsAPI.update(jobId, updateData);
+        await loadScheduleData();
+        renderWeeklySchedule();
+    } catch (err) {
+        console.error('Failed to update status:', err);
+        alert('Failed to update: ' + err.message);
     }
-];
+}
 
-// ==========================================
-// SHIT LIST DATA
-// Pink jobs - incomplete/return visits per territory
-// ==========================================
-
-// Shit List - Pink Jobs (incomplete/return visits)
-let shitListJobs = [
-    {
-        id: 'sl1',
-        jobNumber: '17180',
-        type: 'Repair',
-        county: 'Coffee Co',
-        school: 'Spencer ES',
-        state: 'TN',
-        details: 'Labor to replace wall pads. **Truck to arrive 9:30am, Removal of exiting pads and dumpster for dunnage is customer responsibility**',
-        reason: 'Wrong Part',
-        reasonDetails: 'Wrong size wall pads shipped - need to reorder correct dimensions',
-        tech: 'Chris & Owen',
-        originalDate: '2025-01-20',
-        laborAmount: 1200,
-        partsLocation: 'School',
-        measurements: '8ft x 6ft panels, 2" thick'
-    },
-    {
-        id: 'sl2',
-        jobNumber: '17195',
-        type: 'Repair',
-        county: 'Rutherford Co',
-        school: 'Riverdale HS',
-        state: 'TN',
-        details: 'MAIN GYM: Labor to replace motor/gearmotor and install new pendant control',
-        reason: 'Wrong Part',
-        reasonDetails: 'Motor sent was 1/2 HP, needs 3/4 HP motor for this bank size',
-        tech: 'Floyd',
-        originalDate: '2025-01-22',
-        laborAmount: 1850,
-        partsLocation: 'TN Shop',
-        measurements: ''
-    },
-    {
-        id: 'sl3',
-        jobNumber: '17202',
-        type: 'Service Call',
-        county: 'Wilson Co',
-        school: 'Mt Juliet HS',
-        state: 'TN',
-        details: 'Service call - Bleacher making grinding noise, discovered additional frame damage during visit',
-        reason: 'Additional Work',
-        reasonDetails: 'Found 3 additional damaged frames that need replacement. New estimate needed.',
-        tech: 'Sam',
-        originalDate: '2025-01-25',
-        laborAmount: 650,
-        partsLocation: '',
-        measurements: ''
-    },
-    {
-        id: 'sl4',
-        jobNumber: '17210',
-        type: 'Repair',
-        county: 'Sumner Co',
-        school: 'Gallatin HS',
-        state: 'TN',
-        details: 'BEHIND LOGO: Labor to install flex row handles and replace gear motor',
-        reason: 'Customer Not Ready',
-        reasonDetails: 'Gym was being used for basketball tournament, could not get access. Need to reschedule after Feb 15.',
-        tech: 'Alex W & Michael',
-        originalDate: '2025-01-28',
-        laborAmount: 2100,
-        partsLocation: 'TN Shop',
-        measurements: ''
-    }
-];
-
-let shitListSouthern = [
-    {
-        id: 'sls1',
-        jobNumber: 'AL515910',
-        type: 'Repair',
-        county: 'Lee Co',
-        school: 'Beauregard HS',
-        state: 'AL',
-        details: 'MAIN GYM: Labor to replace 2 tier catches and install safety skid tape',
-        reason: 'Equipment Issue',
-        reasonDetails: 'Lift broke down on site. Need to bring replacement lift.',
-        tech: 'Jon',
-        originalDate: '2025-01-15',
-        laborAmount: 1450,
-        partsLocation: 'FL Shop',
-        measurements: ''
-    }
-];
-
+// Backward-compat stub: my-jobs.js still calls this. No-op now that data comes from API.
+function initializeSampleScheduleData() {
+    // Data now loaded from API via loadScheduleData()
+}
 // ==========================================
 // UTILITY FUNCTIONS
 // Date helpers and data access
 // ==========================================
 
-// Get active backlog based on territory
-function getActiveBacklog() {
-    return currentTerritory === 'original' ? readyToScheduleJobs : backlogSouthern;
+// Get territory string for API calls
+function getApiTerritory() {
+    return currentTerritory === 'original' ? 'Original' : 'Southern';
 }
 
 // Get week start date (Monday)
@@ -633,13 +198,10 @@ function getWeekLabel(offset = 0) {
 // ==========================================
 
 // Load schedule view
-function loadSchedule() {
-    initializeSampleScheduleData();
-    // Set offset to show the week containing sample data
-    const sampleDate = new Date('2025-02-03');
-    const currentMonday = getWeekStart(0);
-    scheduleWeekOffset = Math.round((sampleDate - currentMonday) / (7 * 24 * 60 * 60 * 1000));
+async function loadSchedule() {
+    scheduleWeekOffset = 0;
     updateWeekLabel();
+    await loadScheduleData();
     renderWeeklySchedule();
     loadBacklog();
     loadShitList();
@@ -649,14 +211,14 @@ function loadSchedule() {
 }
 
 // Switch territory (Office view)
-function switchTerritory(territory) {
+async function switchTerritory(territory) {
     currentTerritory = territory;
-    scheduleData = territory === 'original' ? scheduleDataOriginal : scheduleDataSouthern;
 
     // Update territory tab styles
     document.getElementById('officeOriginalTab').classList.toggle('active', territory === 'original');
     document.getElementById('officeSouthernTab').classList.toggle('active', territory === 'southern');
 
+    await loadScheduleData();
     renderWeeklySchedule();
     loadBacklog();
     loadShitList();
@@ -668,15 +230,17 @@ function updateWeekLabel() {
 }
 
 // Navigate weeks
-function previousWeek() {
+async function previousWeek() {
     scheduleWeekOffset--;
     updateWeekLabel();
+    await loadScheduleData();
     renderWeeklySchedule();
 }
 
-function nextWeek() {
+async function nextWeek() {
     scheduleWeekOffset++;
     updateWeekLabel();
+    await loadScheduleData();
     renderWeeklySchedule();
 }
 
@@ -872,11 +436,36 @@ function renderWeeklySchedule() {
 // Next week planning grid with add functionality
 // ==========================================
 
-// Render planning schedule (table-based layout, editable)
-function renderPlanningSchedule() {
+// Render planning schedule (table-based layout, editable) — fetches next week from API
+async function renderPlanningSchedule() {
     const container = document.getElementById('planningScheduleGrid');
     // Use next week for planning
     const weekStart = getWeekStart(scheduleWeekOffset + 1);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 4);
+
+    // Show loading state
+    container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading planning data...</div>';
+
+    // Fetch next week's scheduled jobs from API
+    let planningData = {};
+    try {
+        const data = await JobsAPI.list({
+            territory: getApiTerritory(),
+            scheduledDateGte: formatDateKey(weekStart),
+            scheduledDateLte: formatDateKey(weekEnd),
+            limit: 100
+        });
+        (data.jobs || []).forEach(job => {
+            const dateKey = job.scheduledDate ? job.scheduledDate.split('T')[0] : null;
+            if (dateKey) {
+                if (!planningData[dateKey]) planningData[dateKey] = [];
+                planningData[dateKey].push(apiJobToScheduleEntry(job));
+            }
+        });
+    } catch (err) {
+        console.error('Failed to load planning data:', err);
+    }
 
     let html = '';
 
@@ -910,7 +499,7 @@ function renderPlanningSchedule() {
     html += '</div>';
 
     if (isMobileSchedule()) {
-        html += renderScheduleMobileCards({}, weekStart, { planning: true });
+        html += renderScheduleMobileCards(planningData, weekStart, { planning: true });
         container.innerHTML = html;
         return;
     }
@@ -926,13 +515,14 @@ function renderPlanningSchedule() {
         dayDate.setDate(weekStart.getDate() + i);
         const dateKey = formatDateKey(dayDate);
         const dayLabel = days[i] + ' ' + (dayDate.getMonth() + 1) + '/' + dayDate.getDate();
+        const dayJobs = planningData[dateKey] || [];
 
         // Highlight row if job is selected
         const rowStyle = selectedPlanningJob ? 'cursor: pointer; transition: background 0.15s;' : '';
         const rowClick = selectedPlanningJob ? `onclick="placeJobOnDay('${dateKey}')" onmouseover="this.style.background='#fff3e0'" onmouseout="this.style.background=''"` : '';
 
         html += `<tr class="schedule-day-row" style="${rowStyle}" ${rowClick}>`;
-        html += '<td colspan="3">' + dayLabel + '</td>';
+        html += '<td colspan="3">' + dayLabel + (dayJobs.length > 0 ? ` <span style="color: #6c757d; font-weight: 400;">(${dayJobs.length} job${dayJobs.length > 1 ? 's' : ''})</span>` : '') + '</td>';
         html += `<td style="text-align: right; background: inherit;">
             ${selectedPlanningJob
                 ? `<span style="color: #ff9800; font-size: 12px;">Click to place here →</span>`
@@ -940,9 +530,22 @@ function renderPlanningSchedule() {
             }
         </td>`;
         html += '</tr>';
-        html += '<tr><td colspan="4" style="padding: 12px; text-align: center; color: #adb5bd; font-size: 12px;">' +
-            (selectedPlanningJob ? 'Click the day header above to place the job' : 'Drag jobs here or click + Add') +
-            '</td></tr>';
+
+        // Show already-scheduled jobs for this day
+        if (dayJobs.length > 0) {
+            dayJobs.forEach(function(job) {
+                html += '<tr>';
+                html += '<td style="font-weight: 500; padding-left: 24px;">' + job.school + '</td>';
+                html += '<td style="font-size: 13px; color: #495057;">' + truncateText(job.details, 100) + '</td>';
+                html += '<td>' + (job.tech || '<span style="color: #adb5bd;">Unassigned</span>') + '</td>';
+                html += '<td style="color: #e65100;">' + (job.partsLocation || '') + '</td>';
+                html += '</tr>';
+            });
+        } else {
+            html += '<tr><td colspan="4" style="padding: 12px; text-align: center; color: #adb5bd; font-size: 12px;">' +
+                (selectedPlanningJob ? 'Click the day header above to place the job' : 'No jobs yet — click + Add') +
+                '</td></tr>';
+        }
     }
 
     html += '</tbody></table>';
@@ -954,52 +557,98 @@ function renderPlanningSchedule() {
 // Ready-to-schedule jobs view with filtering
 // ==========================================
 
-// Load backlog
-function loadBacklog() {
+// Load backlog from API (draft jobs)
+async function loadBacklog() {
     const container = document.getElementById('readyJobsList');
-    const activeBacklog = getActiveBacklog();
+    if (!container) return;
+
+    container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading backlog...</div>';
+
+    try {
+        const data = await JobsAPI.list({
+            status: 'draft',
+            territory: getApiTerritory(),
+            limit: 100
+        });
+
+        const jobs = data.jobs || [];
+        cachedBacklogJobs = jobs;
+        renderBacklogJobs(jobs);
+        populateTechDropdowns();
+    } catch (err) {
+        console.error('Failed to load backlog:', err);
+        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #c62828;">Failed to load backlog</div>';
+    }
+}
+
+// Render backlog job cards
+function renderBacklogJobs(jobs) {
+    const container = document.getElementById('readyJobsList');
+
+    // Extract county/state from address
+    function extractLocation(job) {
+        const addr = job.address || '';
+        const match = addr.match(/,\s*([^,]+),\s*([A-Z]{2})\s+\d{5}/);
+        const county = match ? match[1].trim() : '';
+        const state = match ? match[2] : (job.territory === 'Original' ? 'TN' : 'AL');
+        return { county, state };
+    }
 
     // Update stats
-    const partsReceivedCount = activeBacklog.filter(j => j.partsLocation).length;
-    const inspectionsCount = activeBacklog.filter(j => j.type === 'Inspection').length;
-    const totalLabor = activeBacklog.reduce((sum, j) => sum + j.laborAmount, 0);
+    const partsReceivedCount = jobs.filter(j => j.metadata?.partsTracking?.partsLocation).length;
+    const inspectionsCount = jobs.filter(j => j.jobType === 'inspection').length;
+    const totalLabor = jobs.reduce((sum, j) => sum + (parseFloat(j.qbEstimateTotal) || 0), 0);
 
-    document.getElementById('readyPartsReceived').textContent = partsReceivedCount;
-    document.getElementById('readyInspectionsOnly').textContent = inspectionsCount;
-    document.getElementById('readyTotalLabor').textContent = '$' + totalLabor.toLocaleString();
-    document.getElementById('backlogCount').textContent = activeBacklog.length;
+    const partsEl = document.getElementById('readyPartsReceived');
+    const inspEl = document.getElementById('readyInspectionsOnly');
+    const laborEl = document.getElementById('readyTotalLabor');
+    const countEl = document.getElementById('backlogCount');
+    if (partsEl) partsEl.textContent = partsReceivedCount;
+    if (inspEl) inspEl.textContent = inspectionsCount;
+    if (laborEl) laborEl.textContent = '$' + totalLabor.toLocaleString();
+    if (countEl) countEl.textContent = jobs.length;
 
     // Populate county filter
-    const counties = [...new Set(activeBacklog.map(j => j.county))].sort();
+    const counties = [...new Set(jobs.map(j => extractLocation(j).county).filter(Boolean))].sort();
     const countyFilter = document.getElementById('readyFilterCounty');
-    countyFilter.innerHTML = '<option value="">All Counties</option>' +
-        counties.map(c => `<option value="${c}">${c}</option>`).join('');
+    if (countyFilter) {
+        countyFilter.innerHTML = '<option value="">All Counties</option>' +
+            counties.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
 
     // Render jobs
-    if (activeBacklog.length === 0) {
+    if (jobs.length === 0) {
         container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No jobs in backlog</div>';
         return;
     }
 
     let html = '';
-    activeBacklog.forEach(job => {
+    jobs.forEach(job => {
+        const loc = extractLocation(job);
+        const typeLabel = JobsAPI.jobTypeLabels[job.jobType] || job.jobType;
+        const typeBadge = job.jobType === 'repair' ? 'badge-warning' : job.jobType === 'inspection' ? 'badge-info' : 'badge-secondary';
+        const partsLocation = job.metadata?.partsTracking?.partsLocation || '';
+        const amount = parseFloat(job.qbEstimateTotal) || 0;
+        const createdDate = job.createdAt ? new Date(job.createdAt).toLocaleDateString() : '';
+        const displayName = job.locationName || job.customerName || job.jobNumber;
+
         html += `
-            <div class="ready-job-item" onclick="addJobToSchedule('${job.id}')">
+            <div class="ready-job-item" onclick="addJobToSchedule(${job.id})">
                 <div style="flex: 1;">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
                         <span class="part-number" style="color: #0066cc;">${job.jobNumber}</span>
-                        <span class="badge ${job.type === 'Repair' ? 'badge-warning' : job.type === 'Inspection' ? 'badge-info' : 'badge-secondary'}">${job.type}</span>
-                        ${job.partsLocation ? '<span class="badge badge-success">Parts Ready</span>' : ''}
+                        <span class="badge ${typeBadge}">${typeLabel}</span>
+                        ${partsLocation ? '<span class="badge badge-success">Parts Ready</span>' : ''}
                     </div>
-                    <div style="font-weight: 600; margin-bottom: 4px;">${job.school}, ${job.state}</div>
-                    <div style="font-size: 12px; color: #6c757d; margin-bottom: 6px;">${job.county}</div>
-                    <div style="font-size: 13px; color: #495057; line-height: 1.4;">${truncateText(job.details, 150)}</div>
-                    ${job.partsLocation ? `<div style="margin-top: 8px; font-size: 12px; color: #e65100;"><strong>Parts:</strong> ${job.partsLocation}</div>` : ''}
+                    <div style="font-weight: 600; margin-bottom: 4px;">${displayName}${loc.state ? ', ' + loc.state : ''}</div>
+                    ${loc.county ? `<div style="font-size: 12px; color: #6c757d; margin-bottom: 6px;">${loc.county}</div>` : ''}
+                    <div style="font-size: 13px; color: #495057; line-height: 1.4;">${truncateText(job.description || '', 150)}</div>
+                    ${partsLocation ? `<div style="margin-top: 8px; font-size: 12px; color: #e65100;"><strong>Parts:</strong> ${partsLocation}</div>` : ''}
                 </div>
                 <div style="text-align: right; min-width: 100px;">
-                    <div style="font-weight: 600; font-size: 16px; color: #2e7d32;">$${job.laborAmount.toLocaleString()}</div>
-                    <div style="font-size: 11px; color: #6c757d; margin-top: 4px;">Accepted ${new Date(job.acceptedDate).toLocaleDateString()}</div>
-                    <button class="btn btn-sm btn-primary" style="margin-top: 12px;" onclick="event.stopPropagation(); addJobToSchedule('${job.id}')">Add to Planning</button>
+                    ${amount > 0 ? `<div style="font-weight: 600; font-size: 16px; color: #2e7d32;">$${amount.toLocaleString()}</div>` : ''}
+                    ${createdDate ? `<div style="font-size: 11px; color: #6c757d; margin-top: 4px;">Created ${createdDate}</div>` : ''}
+                    <button class="btn btn-sm btn-primary" style="margin-top: 12px;" onclick="event.stopPropagation(); addJobToSchedule(${job.id})">Add to Planning</button>
                 </div>
             </div>
         `;
@@ -1010,11 +659,7 @@ function loadBacklog() {
 
 // Filter ready jobs
 function filterReadyJobs() {
-    const countyFilter = document.getElementById('readyFilterCounty').value;
-    const typeFilter = document.getElementById('readyFilterType').value;
-
-    // For now just reload - in production would filter the list
-    loadReadyPool();
+    loadBacklog();
 }
 
 // Populate tech dropdowns
@@ -1022,11 +667,17 @@ function populateTechDropdowns() {
     const techSelect = document.getElementById('entryTech');
     const jobSelect = document.getElementById('entryJobSelect');
 
-    techSelect.innerHTML = '<option value="">-- Select tech(s) --</option>' +
-        TECHS.map(t => `<option value="${t}">${t}</option>`).join('');
+    if (techSelect) {
+        techSelect.innerHTML = '<option value="">-- Select tech(s) --</option>' +
+            TECHS.map(t => `<option value="${t}">${t}</option>`).join('');
+    }
 
-    jobSelect.innerHTML = '<option value="">-- Select a job --</option>' +
-        getActiveBacklog().map(j => `<option value="${j.id}">${j.jobNumber} - ${j.school} (${j.type})</option>`).join('');
+    if (jobSelect) {
+        jobSelect.innerHTML = '<option value="">-- Select a job --</option>' +
+            cachedBacklogJobs.map(j =>
+                `<option value="${j.id}">${j.jobNumber} - ${j.customerName || j.locationName || 'Unknown'} (${JobsAPI.jobTypeLabels[j.jobType] || j.jobType})</option>`
+            ).join('');
+    }
 }
 
 // Add Entry Modal
@@ -1054,7 +705,7 @@ function toggleEntryFields() {
     }
 }
 
-function saveScheduleEntry() {
+async function saveScheduleEntry() {
     const entryType = document.getElementById('entryType').value;
     const day = document.getElementById('entryDay').value;
     const tech = document.getElementById('entryTech').value;
@@ -1073,62 +724,89 @@ function saveScheduleEntry() {
     targetDate.setDate(weekStart.getDate() + dayIndex);
     const dateKey = formatDateKey(targetDate);
 
-    let newEntry = {
-        id: 's' + Date.now(),
-        tech: tech,
-        partsLocation: partsLocation,
-        confirmation: confirmation,
-        confirmationDetails: {
-            confirmedWith: confirmedWith,
-            method: confirmationMethod,
-            confirmedBy: window.currentUser?.name || 'Office',
-            confirmedDate: confirmation === 'XX' ? new Date().toISOString().split('T')[0] : null
-        },
-        equipmentRental: equipmentRental,
-        notes: notes,
-        internalNotes: internalNotes
-    };
-
     if (entryType === 'job') {
         const jobId = document.getElementById('entryJobSelect').value;
-        const job = getActiveBacklog().find(j => j.id === jobId);
-        if (job) {
-            newEntry.type = 'job';
-            newEntry.school = job.school + ', ' + job.county + ', ' + job.state;
-            newEntry.details = job.details;
-            newEntry.estimateNumber = job.jobNumber;
+        if (!jobId) { alert('Please select a job'); return; }
+
+        try {
+            // Build metadata with scheduling details
+            const job = cachedBacklogJobs.find(j => j.id === parseInt(jobId));
+            const existingMeta = job?.metadata || {};
+            const updatedMeta = {
+                ...existingMeta,
+                confirmation: confirmation,
+                confirmationDetails: confirmation ? {
+                    confirmedWith: confirmedWith,
+                    method: confirmationMethod,
+                    confirmedBy: window.currentUser?.name || 'Office',
+                    confirmedDate: confirmation === 'XX' ? formatDateKey(new Date()) : null
+                } : null,
+                equipmentRental: equipmentRental,
+                notes: notes,
+                internalNotes: internalNotes,
+                partsLocation: partsLocation
+            };
+
+            await JobsAPI.update(parseInt(jobId), {
+                status: 'scheduled',
+                scheduledDate: dateKey,
+                assignedTo: tech || null,
+                metadata: updatedMeta
+            });
+
+            await loadScheduleData();
+            renderWeeklySchedule();
+            loadBacklog(); // Refresh backlog (job moves out of draft)
+            closeAddEntryModal();
+            alert('Job scheduled!');
+        } catch (err) {
+            console.error('Failed to schedule job:', err);
+            alert('Failed to schedule: ' + err.message);
         }
-    } else if (entryType === 'note') {
-        newEntry.type = 'note';
-        newEntry.school = '';
-        newEntry.details = document.getElementById('entryNote').value;
-    } else if (entryType === 'custom') {
-        newEntry.type = 'job';
-        newEntry.school = document.getElementById('entrySchool').value;
-        newEntry.details = document.getElementById('entryDescription').value;
+    } else if (entryType === 'note' || entryType === 'custom') {
+        // Keep note/custom entries in-memory (no DB model for schedule notes)
+        let newEntry = {
+            id: 's' + Date.now(),
+            tech: tech,
+            partsLocation: partsLocation,
+            confirmation: confirmation,
+            confirmationDetails: {
+                confirmedWith: confirmedWith,
+                method: confirmationMethod,
+                confirmedBy: window.currentUser?.name || 'Office',
+                confirmedDate: confirmation === 'XX' ? new Date().toISOString().split('T')[0] : null
+            },
+            equipmentRental: equipmentRental,
+            notes: notes,
+            internalNotes: internalNotes
+        };
+
+        if (entryType === 'note') {
+            newEntry.type = 'note';
+            newEntry.school = '';
+            newEntry.details = document.getElementById('entryNote').value;
+        } else {
+            newEntry.type = 'job';
+            newEntry.school = document.getElementById('entrySchool').value;
+            newEntry.details = document.getElementById('entryDescription').value;
+        }
+
+        if (!scheduleData[dateKey]) scheduleData[dateKey] = [];
+        scheduleData[dateKey].push(newEntry);
+        renderWeeklySchedule();
+        closeAddEntryModal();
     }
-
-    // Add to schedule data
-    if (!scheduleData[dateKey]) {
-        scheduleData[dateKey] = [];
-    }
-    scheduleData[dateKey].push(newEntry);
-
-    // Refresh view
-    renderWeeklySchedule();
-    closeAddEntryModal();
-
-    alert('Entry added to schedule!');
 }
 
 function addJobToSchedule(jobId) {
-    const job = getActiveBacklog().find(j => j.id === jobId);
+    const job = cachedBacklogJobs.find(j => j.id === parseInt(jobId));
     if (job) {
         document.getElementById('entryType').value = 'job';
         toggleEntryFields();
         openAddEntryModal();
-        document.getElementById('entryJobSelect').value = jobId;
-        document.getElementById('entryPartsLocation').value = job.partsLocation || '';
+        document.getElementById('entryJobSelect').value = job.id;
+        document.getElementById('entryPartsLocation').value =
+            job.metadata?.partsTracking?.partsLocation || '';
     }
 }
 
@@ -1150,23 +828,43 @@ function publishSchedule() {
 // Pink jobs view with reason tracking
 // ==========================================
 
-// Load Shit List
-function loadShitList() {
+// Load Shit List from API (unable_to_complete jobs)
+async function loadShitList() {
     const container = document.getElementById('shitListJobsList');
     if (!container) return;
-    const activeList = currentTerritory === 'original' ? shitListJobs : shitListSouthern;
 
-    // Update stats - count by category
-    const total = activeList.length;
+    container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading...</div>';
+
+    try {
+        const data = await JobsAPI.list({
+            status: 'unable_to_complete',
+            territory: getApiTerritory(),
+            limit: 100
+        });
+
+        const jobs = data.jobs || [];
+        renderShitListJobs(jobs);
+    } catch (err) {
+        console.error('Failed to load shit list:', err);
+        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #c62828;">Failed to load</div>';
+    }
+}
+
+// Render shit list job cards
+function renderShitListJobs(jobs) {
+    const container = document.getElementById('shitListJobsList');
+
+    // Update stats - count by reason from metadata
+    const total = jobs.length;
     const reasonCounts = {};
-    activeList.forEach(function(j) {
-        reasonCounts[j.reason] = (reasonCounts[j.reason] || 0) + 1;
+    jobs.forEach(function(j) {
+        const reason = (j.metadata?.reason) || 'Other';
+        reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
     });
     const wrongPart = reasonCounts['Wrong Part'] || 0;
     const cantAccess = (reasonCounts["Can't Access"] || 0) + (reasonCounts['Customer Not Ready'] || 0) + (reasonCounts['Weather/Access'] || 0);
     const other = total - wrongPart - cantAccess;
 
-    // Update stat elements (backwards compatible with existing HTML)
     var totalEl = document.getElementById('shitListTotal');
     var wrongPartEl = document.getElementById('shitListWrongPart');
     var otherEl = document.getElementById('shitListOther');
@@ -1176,52 +874,61 @@ function loadShitList() {
     if (otherEl) otherEl.textContent = other;
     if (countEl) countEl.textContent = total;
 
-    if (activeList.length === 0) {
+    if (jobs.length === 0) {
         container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No pink jobs - nice work!</div>';
         return;
     }
 
+    var reasonColors = {
+        'Wrong Part': { bg: '#fff3e0', color: '#e65100', icon: '&#x1F527;' },
+        "Can't Access": { bg: '#e3f2fd', color: '#1565c0', icon: '&#x1F6AA;' },
+        'Additional Work': { bg: '#fff3e0', color: '#e65100', icon: '&#x26A0;' },
+        'Equipment Issue': { bg: '#fce4ec', color: '#c62828', icon: '&#x1F3D7;' },
+        'Customer Not Ready': { bg: '#e3f2fd', color: '#1565c0', icon: '&#x1F3EB;' },
+        'Safety Concern': { bg: '#fce4ec', color: '#c62828', icon: '&#x1F6D1;' },
+        'Scope Change': { bg: '#e8f5e9', color: '#2e7d32', icon: '&#x1F4CB;' },
+        'Weather/Access': { bg: '#e3f2fd', color: '#1565c0', icon: '&#x26C5;' },
+        'Other': { bg: '#f5f5f5', color: '#616161', icon: '&#x1F4DD;' }
+    };
+
     var html = '';
-    activeList.forEach(function(job) {
-        var reasonColors = {
-            'Wrong Part': { bg: '#fff3e0', color: '#e65100', icon: '&#x1F527;' },
-            "Can't Access": { bg: '#e3f2fd', color: '#1565c0', icon: '&#x1F6AA;' },
-            'Additional Work': { bg: '#fff3e0', color: '#e65100', icon: '&#x26A0;' },
-            'Equipment Issue': { bg: '#fce4ec', color: '#c62828', icon: '&#x1F3D7;' },
-            'Customer Not Ready': { bg: '#e3f2fd', color: '#1565c0', icon: '&#x1F3EB;' },
-            'Safety Concern': { bg: '#fce4ec', color: '#c62828', icon: '&#x1F6D1;' },
-            'Scope Change': { bg: '#e8f5e9', color: '#2e7d32', icon: '&#x1F4CB;' },
-            'Weather/Access': { bg: '#e3f2fd', color: '#1565c0', icon: '&#x26C5;' },
-            'Other': { bg: '#f5f5f5', color: '#616161', icon: '&#x1F4DD;' }
-        };
-        var rc = reasonColors[job.reason] || reasonColors['Other'];
+    jobs.forEach(function(job) {
+        var meta = job.metadata || {};
+        var reason = meta.reason || 'Other';
+        var reasonDetails = meta.reasonDetails || '';
+        var originalDate = meta.originalDate || job.scheduledDate || '';
+        var measurements = meta.measurements || '';
+        var partsLocation = meta.partsTracking?.partsLocation || meta.partsLocation || '';
+        var tech = job.assignedTo || '';
+        var amount = parseFloat(job.qbEstimateTotal) || 0;
+        var typeLabel = JobsAPI.jobTypeLabels[job.jobType] || job.jobType;
+        var displayName = formatJobLocation(job);
+        var rc = reasonColors[reason] || reasonColors['Other'];
 
         html += '<div style="display: flex; justify-content: space-between; align-items: flex-start; padding: 16px; border-bottom: 1px solid #f0f0f0; border-left: 4px solid #c62828;">';
         html += '<div style="flex: 1;">';
         html += '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">';
         html += '<span class="part-number" style="color: #c62828; font-weight: 700;">#' + job.jobNumber + '</span>';
-        html += '<span class="badge" style="background: ' + rc.bg + '; color: ' + rc.color + ';">' + rc.icon + ' ' + job.reason + '</span>';
-        html += '<span class="badge badge-secondary">' + job.type + '</span>';
+        html += '<span class="badge" style="background: ' + rc.bg + '; color: ' + rc.color + ';">' + rc.icon + ' ' + reason + '</span>';
+        html += '<span class="badge badge-secondary">' + typeLabel + '</span>';
         html += '</div>';
-        html += '<div style="font-weight: 600; margin-bottom: 4px;">' + job.school + ', ' + job.county + ', ' + job.state + '</div>';
-        html += '<div style="font-size: 13px; color: #495057; line-height: 1.4; margin-bottom: 8px;">' + job.details + '</div>';
-        html += '<div style="font-size: 13px; color: #c62828; background: #fff0f0; padding: 8px 12px; border-radius: 6px; margin-bottom: 8px;">';
-        html += '<strong>Why:</strong> ' + job.reasonDetails;
-        html += '</div>';
+        html += '<div style="font-weight: 600; margin-bottom: 4px;">' + displayName + '</div>';
+        html += '<div style="font-size: 13px; color: #495057; line-height: 1.4; margin-bottom: 8px;">' + (job.description || '') + '</div>';
+        if (reasonDetails) {
+            html += '<div style="font-size: 13px; color: #c62828; background: #fff0f0; padding: 8px 12px; border-radius: 6px; margin-bottom: 8px;">';
+            html += '<strong>Why:</strong> ' + reasonDetails;
+            html += '</div>';
+        }
         html += '<div style="display: flex; gap: 16px; font-size: 12px; color: #6c757d; flex-wrap: wrap;">';
-        html += '<span><strong>Tech:</strong> ' + job.tech + '</span>';
-        html += '<span><strong>Original Date:</strong> ' + new Date(job.originalDate).toLocaleDateString() + '</span>';
-        if (job.measurements) {
-            html += '<span><strong>Measurements:</strong> ' + job.measurements + '</span>';
-        }
-        if (job.partsLocation) {
-            html += '<span style="color: #e65100;"><strong>Parts:</strong> ' + job.partsLocation + '</span>';
-        }
+        if (tech) html += '<span><strong>Tech:</strong> ' + tech + '</span>';
+        if (originalDate) html += '<span><strong>Original Date:</strong> ' + new Date(originalDate).toLocaleDateString() + '</span>';
+        if (measurements) html += '<span><strong>Measurements:</strong> ' + measurements + '</span>';
+        if (partsLocation) html += '<span style="color: #e65100;"><strong>Parts:</strong> ' + partsLocation + '</span>';
         html += '</div>';
         html += '</div>';
         html += '<div style="text-align: right; min-width: 100px;">';
-        html += '<div style="font-weight: 600; font-size: 16px; color: #c62828;">$' + job.laborAmount.toLocaleString() + '</div>';
-        html += '<button class="btn btn-sm btn-primary" style="margin-top: 12px;" onclick="event.stopPropagation(); addJobToSchedule(\'' + job.id + '\')">Reschedule</button>';
+        if (amount > 0) html += '<div style="font-weight: 600; font-size: 16px; color: #c62828;">$' + amount.toLocaleString() + '</div>';
+        html += '<button class="btn btn-sm btn-primary" style="margin-top: 12px;" onclick="event.stopPropagation(); addJobToSchedule(' + job.id + ')">Reschedule</button>';
         html += '</div>';
         html += '</div>';
     });
@@ -1230,7 +937,6 @@ function loadShitList() {
 }
 
 function filterShitList() {
-    // For now just reload
     loadShitList();
 }
 
@@ -1532,22 +1238,51 @@ function clearPlanningSelection() {
     renderPlanningSchedule();
 }
 
-// Load This Week tab (original weekly grid view)
-function loadThisWeekJobs() {
-    initializeSampleScheduleData();
-    // Set offset to show sample data week
-    const sampleDate = new Date('2025-02-03');
-    const currentMonday = getWeekStart(0);
-    officeJobsWeekOffset = Math.round((sampleDate - currentMonday) / (7 * 24 * 60 * 60 * 1000));
+// Office jobs grid data (fetched from API)
+let officeJobsGridData = {};
+
+// Load This Week tab from API
+async function loadThisWeekJobs() {
+    officeJobsWeekOffset = 0;
     const label = document.getElementById('officeJobsWeekLabel');
-    label.textContent = getWeekLabel(officeJobsWeekOffset);
+    if (label) label.textContent = getWeekLabel(officeJobsWeekOffset);
+    await loadOfficeJobsData();
     renderOfficeJobsGrid();
+}
+
+// Fetch office jobs data from API
+async function loadOfficeJobsData() {
+    const territory = currentOfficeJobsTerritory === 'original' ? 'Original' : 'Southern';
+    const weekStart = getWeekStart(officeJobsWeekOffset);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 4);
+
+    try {
+        const data = await JobsAPI.list({
+            territory: territory,
+            scheduledDateGte: formatDateKey(weekStart),
+            scheduledDateLte: formatDateKey(weekEnd),
+            limit: 100
+        });
+
+        officeJobsGridData = {};
+        (data.jobs || []).forEach(job => {
+            const dateKey = job.scheduledDate ? job.scheduledDate.split('T')[0] : null;
+            if (dateKey) {
+                if (!officeJobsGridData[dateKey]) officeJobsGridData[dateKey] = [];
+                officeJobsGridData[dateKey].push(apiJobToScheduleEntry(job));
+            }
+        });
+    } catch (err) {
+        console.error('Failed to load office jobs:', err);
+        officeJobsGridData = {};
+    }
 }
 
 function renderOfficeJobsGrid() {
     const container = document.getElementById('officeJobsGrid');
     const weekStart = getWeekStart(officeJobsWeekOffset);
-    const activeData = currentOfficeJobsTerritory === 'original' ? scheduleDataOriginal : scheduleDataSouthern;
+    const activeData = officeJobsGridData;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -1697,24 +1432,27 @@ function renderOfficeJobsGrid() {
     container.innerHTML = html;
 }
 
-function switchOfficeJobsTerritory(territory) {
+async function switchOfficeJobsTerritory(territory) {
     currentOfficeJobsTerritory = territory;
     document.getElementById('officeJobsOriginalTab').classList.toggle('active', territory === 'original');
     document.getElementById('officeJobsSouthernTab').classList.toggle('active', territory === 'southern');
+    await loadOfficeJobsData();
     renderOfficeJobsGrid();
 }
 
-function prevOfficeJobsWeek() {
+async function prevOfficeJobsWeek() {
     officeJobsWeekOffset--;
     const label = document.getElementById('officeJobsWeekLabel');
     label.textContent = getWeekLabel(officeJobsWeekOffset);
+    await loadOfficeJobsData();
     renderOfficeJobsGrid();
 }
 
-function nextOfficeJobsWeek() {
+async function nextOfficeJobsWeek() {
     officeJobsWeekOffset++;
     const label = document.getElementById('officeJobsWeekLabel');
     label.textContent = getWeekLabel(officeJobsWeekOffset);
+    await loadOfficeJobsData();
     renderOfficeJobsGrid();
 }
 

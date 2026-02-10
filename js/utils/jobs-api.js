@@ -23,6 +23,9 @@ const JobsAPI = {
         if (options.jobType) params.set('job_type', options.jobType);
         if (options.customerId) params.set('customer_id', options.customerId);
         if (options.assignedTo) params.set('assigned_to', options.assignedTo);
+        if (options.territory) params.set('territory', options.territory);
+        if (options.scheduledDateGte) params.set('scheduled_date_gte', options.scheduledDateGte);
+        if (options.scheduledDateLte) params.set('scheduled_date_lte', options.scheduledDateLte);
         if (options.limit) params.set('limit', options.limit);
         if (options.offset) params.set('offset', options.offset);
 
@@ -240,8 +243,11 @@ const JobsAPI = {
 JobsAPI.statusColors = {
     draft: '#6c757d',
     scheduled: '#007bff',
+    en_route: '#0066cc',
+    checked_in: '#1976d2',
     in_progress: '#fd7e14',
     completed: '#28a745',
+    unable_to_complete: '#c62828',
     cancelled: '#dc3545',
     on_hold: '#ffc107'
 };
