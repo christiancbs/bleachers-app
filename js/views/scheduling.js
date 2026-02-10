@@ -203,8 +203,6 @@ async function loadSchedule() {
     updateWeekLabel();
     await loadScheduleData();
     renderWeeklySchedule();
-    loadBacklog();
-    loadShitList();
     populateTechDropdowns();
     // Re-show the active tab (showView hides all elements ending with "View")
     switchScheduleTab(currentScheduleTab);
@@ -220,8 +218,6 @@ async function switchTerritory(territory) {
 
     await loadScheduleData();
     renderWeeklySchedule();
-    loadBacklog();
-    loadShitList();
 }
 
 // Update week label
@@ -244,34 +240,33 @@ async function nextWeek() {
     renderWeeklySchedule();
 }
 
-// Switch schedule tabs
+// Switch schedule tabs (This Week + Planning only — Backlog/Shit List are in Jobs view)
 function switchScheduleTab(tab) {
     currentScheduleTab = tab;
 
-    // Update tab styles - only the sub-tabs, not territory tabs
-    document.getElementById('thisWeekTab').classList.remove('active');
-    document.getElementById('planningTab').classList.remove('active');
-    document.getElementById('backlogTab').classList.remove('active');
-    document.getElementById('shitListTab').classList.remove('active');
-    document.getElementById(tab + 'Tab').classList.add('active');
+    // Update tab styles
+    const tabIds = ['thisWeekTab', 'planningTab'];
+    tabIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+    });
+    const activeTab = document.getElementById(tab + 'Tab');
+    if (activeTab) activeTab.classList.add('active');
 
     // Show/hide views
-    document.getElementById('thisWeekView').classList.add('hidden');
-    document.getElementById('planningView').classList.add('hidden');
-    document.getElementById('backlogView').classList.add('hidden');
-    document.getElementById('shitListView').classList.add('hidden');
+    const viewIds = ['thisWeekView', 'planningView'];
+    viewIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
 
     if (tab === 'thisWeek') {
-        document.getElementById('thisWeekView').classList.remove('hidden');
+        const el = document.getElementById('thisWeekView');
+        if (el) el.classList.remove('hidden');
     } else if (tab === 'planning') {
-        document.getElementById('planningView').classList.remove('hidden');
+        const el = document.getElementById('planningView');
+        if (el) el.classList.remove('hidden');
         renderPlanningSchedule();
-    } else if (tab === 'backlog') {
-        document.getElementById('backlogView').classList.remove('hidden');
-        loadBacklog();
-    } else if (tab === 'shitList') {
-        document.getElementById('shitListView').classList.remove('hidden');
-        loadShitList();
     }
 }
 
@@ -552,118 +547,8 @@ async function renderPlanningSchedule() {
     container.innerHTML = html;
 }
 
-// ==========================================
-// BACKLOG FUNCTIONS
-// Ready-to-schedule jobs view with filtering
-// ==========================================
-
-// Load backlog from API (draft jobs)
-async function loadBacklog() {
-    const container = document.getElementById('readyJobsList');
-    if (!container) return;
-
-    container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading backlog...</div>';
-
-    try {
-        const data = await JobsAPI.list({
-            status: 'draft',
-            territory: getApiTerritory(),
-            limit: 100
-        });
-
-        const jobs = data.jobs || [];
-        cachedBacklogJobs = jobs;
-        renderBacklogJobs(jobs);
-        populateTechDropdowns();
-    } catch (err) {
-        console.error('Failed to load backlog:', err);
-        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #c62828;">Failed to load backlog</div>';
-    }
-}
-
-// Render backlog job cards
-function renderBacklogJobs(jobs) {
-    const container = document.getElementById('readyJobsList');
-
-    // Extract county/state from address
-    function extractLocation(job) {
-        const addr = job.address || '';
-        const match = addr.match(/,\s*([^,]+),\s*([A-Z]{2})\s+\d{5}/);
-        const county = match ? match[1].trim() : '';
-        const state = match ? match[2] : (job.territory === 'Original' ? 'TN' : 'AL');
-        return { county, state };
-    }
-
-    // Update stats
-    const partsReceivedCount = jobs.filter(j => j.metadata?.partsTracking?.partsLocation).length;
-    const inspectionsCount = jobs.filter(j => j.jobType === 'inspection').length;
-    const totalLabor = jobs.reduce((sum, j) => sum + (parseFloat(j.qbEstimateTotal) || 0), 0);
-
-    const partsEl = document.getElementById('readyPartsReceived');
-    const inspEl = document.getElementById('readyInspectionsOnly');
-    const laborEl = document.getElementById('readyTotalLabor');
-    const countEl = document.getElementById('backlogCount');
-    if (partsEl) partsEl.textContent = partsReceivedCount;
-    if (inspEl) inspEl.textContent = inspectionsCount;
-    if (laborEl) laborEl.textContent = '$' + totalLabor.toLocaleString();
-    if (countEl) countEl.textContent = jobs.length;
-
-    // Populate county filter
-    const counties = [...new Set(jobs.map(j => extractLocation(j).county).filter(Boolean))].sort();
-    const countyFilter = document.getElementById('readyFilterCounty');
-    if (countyFilter) {
-        countyFilter.innerHTML = '<option value="">All Counties</option>' +
-            counties.map(c => `<option value="${c}">${c}</option>`).join('');
-    }
-
-    // Render jobs
-    if (jobs.length === 0) {
-        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No jobs in backlog</div>';
-        return;
-    }
-
-    let html = '';
-    jobs.forEach(job => {
-        const loc = extractLocation(job);
-        const typeLabel = JobsAPI.jobTypeLabels[job.jobType] || job.jobType;
-        const typeBadge = job.jobType === 'repair' ? 'badge-warning' : job.jobType === 'inspection' ? 'badge-info' : 'badge-secondary';
-        const partsLocation = job.metadata?.partsTracking?.partsLocation || '';
-        const amount = parseFloat(job.qbEstimateTotal) || 0;
-        const createdDate = job.createdAt ? new Date(job.createdAt).toLocaleDateString() : '';
-        const displayName = job.locationName || job.customerName || job.jobNumber;
-
-        html += `
-            <div class="ready-job-item" onclick="addJobToSchedule(${job.id})">
-                <div style="flex: 1;">
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                        <span class="part-number" style="color: #0066cc;">${job.jobNumber}</span>
-                        <span class="badge ${typeBadge}">${typeLabel}</span>
-                        ${partsLocation ? '<span class="badge badge-success">Parts Ready</span>' : ''}
-                    </div>
-                    <div style="font-weight: 600; margin-bottom: 4px;">${displayName}${loc.state ? ', ' + loc.state : ''}</div>
-                    ${loc.county ? `<div style="font-size: 12px; color: #6c757d; margin-bottom: 6px;">${loc.county}</div>` : ''}
-                    <div style="font-size: 13px; color: #495057; line-height: 1.4;">${truncateText(job.description || '', 150)}</div>
-                    ${partsLocation ? `<div style="margin-top: 8px; font-size: 12px; color: #e65100;"><strong>Parts:</strong> ${partsLocation}</div>` : ''}
-                </div>
-                <div style="text-align: right; min-width: 100px;">
-                    ${amount > 0 ? `<div style="font-weight: 600; font-size: 16px; color: #2e7d32;">$${amount.toLocaleString()}</div>` : ''}
-                    ${createdDate ? `<div style="font-size: 11px; color: #6c757d; margin-top: 4px;">Created ${createdDate}</div>` : ''}
-                    <button class="btn btn-sm btn-primary" style="margin-top: 12px;" onclick="event.stopPropagation(); addJobToSchedule(${job.id})">Add to Planning</button>
-                </div>
-            </div>
-        `;
-    });
-
-    container.innerHTML = html;
-}
-
-// Filter ready jobs
-function filterReadyJobs() {
-    loadBacklog();
-}
-
-// Populate tech dropdowns
-function populateTechDropdowns() {
+// Populate tech dropdowns + fetch draft jobs for job select
+async function populateTechDropdowns() {
     const techSelect = document.getElementById('entryTech');
     const jobSelect = document.getElementById('entryJobSelect');
 
@@ -673,17 +558,29 @@ function populateTechDropdowns() {
     }
 
     if (jobSelect) {
-        jobSelect.innerHTML = '<option value="">-- Select a job --</option>' +
-            cachedBacklogJobs.map(j =>
-                `<option value="${j.id}">${j.jobNumber} - ${j.customerName || j.locationName || 'Unknown'} (${JobsAPI.jobTypeLabels[j.jobType] || j.jobType})</option>`
-            ).join('');
+        jobSelect.innerHTML = '<option value="">Loading jobs...</option>';
+        try {
+            const data = await JobsAPI.list({
+                status: 'draft',
+                territory: getApiTerritory(),
+                limit: 100
+            });
+            cachedBacklogJobs = data.jobs || [];
+            jobSelect.innerHTML = '<option value="">-- Select a job --</option>' +
+                cachedBacklogJobs.map(j =>
+                    `<option value="${j.id}">${j.jobNumber} - ${j.customerName || j.locationName || 'Unknown'} (${JobsAPI.jobTypeLabels[j.jobType] || j.jobType})</option>`
+                ).join('');
+        } catch (err) {
+            console.error('Failed to load draft jobs:', err);
+            jobSelect.innerHTML = '<option value="">Failed to load jobs</option>';
+        }
     }
 }
 
 // Add Entry Modal
-function openAddEntryModal() {
+async function openAddEntryModal() {
     document.getElementById('addEntryModal').classList.remove('hidden');
-    populateTechDropdowns();
+    await populateTechDropdowns();
 }
 
 function closeAddEntryModal() {
@@ -756,7 +653,6 @@ async function saveScheduleEntry() {
 
             await loadScheduleData();
             renderWeeklySchedule();
-            loadBacklog(); // Refresh backlog (job moves out of draft)
             closeAddEntryModal();
             alert('Job scheduled!');
         } catch (err) {
@@ -798,12 +694,14 @@ async function saveScheduleEntry() {
     }
 }
 
-function addJobToSchedule(jobId) {
+async function addJobToSchedule(jobId) {
+    document.getElementById('entryType').value = 'job';
+    toggleEntryFields();
+    // openAddEntryModal calls populateTechDropdowns which fetches draft jobs into cachedBacklogJobs
+    await openAddEntryModal();
+
     const job = cachedBacklogJobs.find(j => j.id === parseInt(jobId));
     if (job) {
-        document.getElementById('entryType').value = 'job';
-        toggleEntryFields();
-        openAddEntryModal();
         document.getElementById('entryJobSelect').value = job.id;
         document.getElementById('entryPartsLocation').value =
             job.metadata?.partsTracking?.partsLocation || '';
@@ -823,122 +721,6 @@ function publishSchedule() {
     }
 }
 
-// ==========================================
-// SHIT LIST FUNCTIONS
-// Pink jobs view with reason tracking
-// ==========================================
-
-// Load Shit List from API (unable_to_complete jobs)
-async function loadShitList() {
-    const container = document.getElementById('shitListJobsList');
-    if (!container) return;
-
-    container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading...</div>';
-
-    try {
-        const data = await JobsAPI.list({
-            status: 'unable_to_complete',
-            territory: getApiTerritory(),
-            limit: 100
-        });
-
-        const jobs = data.jobs || [];
-        renderShitListJobs(jobs);
-    } catch (err) {
-        console.error('Failed to load shit list:', err);
-        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #c62828;">Failed to load</div>';
-    }
-}
-
-// Render shit list job cards
-function renderShitListJobs(jobs) {
-    const container = document.getElementById('shitListJobsList');
-
-    // Update stats - count by reason from metadata
-    const total = jobs.length;
-    const reasonCounts = {};
-    jobs.forEach(function(j) {
-        const reason = (j.metadata?.reason) || 'Other';
-        reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
-    });
-    const wrongPart = reasonCounts['Wrong Part'] || 0;
-    const cantAccess = (reasonCounts["Can't Access"] || 0) + (reasonCounts['Customer Not Ready'] || 0) + (reasonCounts['Weather/Access'] || 0);
-    const other = total - wrongPart - cantAccess;
-
-    var totalEl = document.getElementById('shitListTotal');
-    var wrongPartEl = document.getElementById('shitListWrongPart');
-    var otherEl = document.getElementById('shitListOther');
-    var countEl = document.getElementById('shitListCount');
-    if (totalEl) totalEl.textContent = total;
-    if (wrongPartEl) wrongPartEl.textContent = wrongPart;
-    if (otherEl) otherEl.textContent = other;
-    if (countEl) countEl.textContent = total;
-
-    if (jobs.length === 0) {
-        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No pink jobs - nice work!</div>';
-        return;
-    }
-
-    var reasonColors = {
-        'Wrong Part': { bg: '#fff3e0', color: '#e65100', icon: '&#x1F527;' },
-        "Can't Access": { bg: '#e3f2fd', color: '#1565c0', icon: '&#x1F6AA;' },
-        'Additional Work': { bg: '#fff3e0', color: '#e65100', icon: '&#x26A0;' },
-        'Equipment Issue': { bg: '#fce4ec', color: '#c62828', icon: '&#x1F3D7;' },
-        'Customer Not Ready': { bg: '#e3f2fd', color: '#1565c0', icon: '&#x1F3EB;' },
-        'Safety Concern': { bg: '#fce4ec', color: '#c62828', icon: '&#x1F6D1;' },
-        'Scope Change': { bg: '#e8f5e9', color: '#2e7d32', icon: '&#x1F4CB;' },
-        'Weather/Access': { bg: '#e3f2fd', color: '#1565c0', icon: '&#x26C5;' },
-        'Other': { bg: '#f5f5f5', color: '#616161', icon: '&#x1F4DD;' }
-    };
-
-    var html = '';
-    jobs.forEach(function(job) {
-        var meta = job.metadata || {};
-        var reason = meta.reason || 'Other';
-        var reasonDetails = meta.reasonDetails || '';
-        var originalDate = meta.originalDate || job.scheduledDate || '';
-        var measurements = meta.measurements || '';
-        var partsLocation = meta.partsTracking?.partsLocation || meta.partsLocation || '';
-        var tech = job.assignedTo || '';
-        var amount = parseFloat(job.qbEstimateTotal) || 0;
-        var typeLabel = JobsAPI.jobTypeLabels[job.jobType] || job.jobType;
-        var displayName = formatJobLocation(job);
-        var rc = reasonColors[reason] || reasonColors['Other'];
-
-        html += '<div style="display: flex; justify-content: space-between; align-items: flex-start; padding: 16px; border-bottom: 1px solid #f0f0f0; border-left: 4px solid #c62828;">';
-        html += '<div style="flex: 1;">';
-        html += '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">';
-        html += '<span class="part-number" style="color: #c62828; font-weight: 700;">#' + job.jobNumber + '</span>';
-        html += '<span class="badge" style="background: ' + rc.bg + '; color: ' + rc.color + ';">' + rc.icon + ' ' + reason + '</span>';
-        html += '<span class="badge badge-secondary">' + typeLabel + '</span>';
-        html += '</div>';
-        html += '<div style="font-weight: 600; margin-bottom: 4px;">' + displayName + '</div>';
-        html += '<div style="font-size: 13px; color: #495057; line-height: 1.4; margin-bottom: 8px;">' + (job.description || '') + '</div>';
-        if (reasonDetails) {
-            html += '<div style="font-size: 13px; color: #c62828; background: #fff0f0; padding: 8px 12px; border-radius: 6px; margin-bottom: 8px;">';
-            html += '<strong>Why:</strong> ' + reasonDetails;
-            html += '</div>';
-        }
-        html += '<div style="display: flex; gap: 16px; font-size: 12px; color: #6c757d; flex-wrap: wrap;">';
-        if (tech) html += '<span><strong>Tech:</strong> ' + tech + '</span>';
-        if (originalDate) html += '<span><strong>Original Date:</strong> ' + new Date(originalDate).toLocaleDateString() + '</span>';
-        if (measurements) html += '<span><strong>Measurements:</strong> ' + measurements + '</span>';
-        if (partsLocation) html += '<span style="color: #e65100;"><strong>Parts:</strong> ' + partsLocation + '</span>';
-        html += '</div>';
-        html += '</div>';
-        html += '<div style="text-align: right; min-width: 100px;">';
-        if (amount > 0) html += '<div style="font-weight: 600; font-size: 16px; color: #c62828;">$' + amount.toLocaleString() + '</div>';
-        html += '<button class="btn btn-sm btn-primary" style="margin-top: 12px;" onclick="event.stopPropagation(); addJobToSchedule(' + job.id + ')">Reschedule</button>';
-        html += '</div>';
-        html += '</div>';
-    });
-
-    container.innerHTML = html;
-}
-
-function filterShitList() {
-    loadShitList();
-}
 
 // Truncate text helper
 function truncateText(text, maxLength) {
