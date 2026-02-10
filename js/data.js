@@ -6,6 +6,17 @@
 // Parts catalog now uses Vercel Postgres via PartsAPI
 // See js/utils/parts-api.js for API client
 
+// Customer types - used for badges and filtering in Accounts
+const CUSTOMER_TYPES = {
+    county:      { label: 'County Schools',  icon: '🏛️', badge: 'badge-info' },
+    collegiate:  { label: 'Collegiate',      icon: '🎓', badge: 'badge-purple' },
+    private:     { label: 'Private School',  icon: '🏫', badge: 'badge-warning' },
+    contractor:  { label: 'Contractor',      icon: '🏗️', badge: 'badge-secondary' },
+    government:  { label: 'Government',      icon: '⚖️', badge: 'badge-info' },
+    worship:     { label: 'Worship',         icon: '⛪', badge: 'badge-purple' },
+    other:       { label: 'Other',           icon: '📋', badge: 'badge-secondary' }
+};
+
 // Contact roles - used for badges and filtering
 const CONTACT_ROLES = {
     scheduling: { label: 'Scheduling', icon: '📅', color: '#2196F3' },
@@ -258,6 +269,10 @@ const STOCK_LOCATIONS = [
     { id: 'fl-shop', label: 'FL Shop', territory: 'Southern' },
     { id: 'al-shop', label: 'AL Shop', territory: 'Southern' }
 ];
+
+// Local shop inventory — parts available in regional shops
+// Data to be imported later. Format: { partNumber, productName, quantity, location, lastVerified }
+const LOCAL_INVENTORY = [];
 
 // Pink/Shit List reason categories
 const PINK_REASONS = [

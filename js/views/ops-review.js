@@ -3,7 +3,7 @@
 // List view, detail view, status flow
 // ==========================================
 
-let currentApprovedSubFilter = 'all'; // 'all', 'awaiting_wo', 'awaiting_estimate', 'complete'
+let currentApprovedSubFilter = 'all'; // 'all', 'awaiting_estimate', 'complete'
 
 function loadOpsReview() {
     const reviewJobs = inspectionJobs.filter(j => j.status === 'submitted' || j.status === 'under_review' || j.status === 'approved');
@@ -12,9 +12,8 @@ function loadOpsReview() {
     const approved = reviewJobs.filter(j => j.status === 'approved');
 
     // Count approved sub-categories
-    const awaitingWO = approved.filter(j => !j.hasWorkOrder);
-    const awaitingEstimate = approved.filter(j => j.hasWorkOrder && !j.hasEstimate);
-    const complete = approved.filter(j => j.hasWorkOrder && j.hasEstimate);
+    const awaitingEstimate = approved.filter(j => !j.hasEstimate);
+    const complete = approved.filter(j => j.hasEstimate);
 
     // Update stat cards
     document.getElementById('opsNeedsReviewCount').textContent = submitted.length;
@@ -36,12 +35,10 @@ function loadOpsReview() {
 
     // Apply approved sub-filter
     if (currentOpsFilter === 'approved' && currentApprovedSubFilter !== 'all') {
-        if (currentApprovedSubFilter === 'awaiting_wo') {
-            filteredJobs = filteredJobs.filter(j => !j.hasWorkOrder);
-        } else if (currentApprovedSubFilter === 'awaiting_estimate') {
-            filteredJobs = filteredJobs.filter(j => j.hasWorkOrder && !j.hasEstimate);
+        if (currentApprovedSubFilter === 'awaiting_estimate') {
+            filteredJobs = filteredJobs.filter(j => !j.hasEstimate);
         } else if (currentApprovedSubFilter === 'complete') {
-            filteredJobs = filteredJobs.filter(j => j.hasWorkOrder && j.hasEstimate);
+            filteredJobs = filteredJobs.filter(j => j.hasEstimate);
         }
     }
 
@@ -58,10 +55,8 @@ function loadOpsReview() {
             subFiltersContainer.classList.remove('hidden');
             // Update sub-filter counts and active states
             document.getElementById('subFilterAll').classList.toggle('active', currentApprovedSubFilter === 'all');
-            document.getElementById('subFilterAwaitingWO').classList.toggle('active', currentApprovedSubFilter === 'awaiting_wo');
             document.getElementById('subFilterAwaitingEst').classList.toggle('active', currentApprovedSubFilter === 'awaiting_estimate');
             document.getElementById('subFilterComplete').classList.toggle('active', currentApprovedSubFilter === 'complete');
-            document.getElementById('subAwaitingWOCount').textContent = awaitingWO.length;
             document.getElementById('subAwaitingEstCount').textContent = awaitingEstimate.length;
             document.getElementById('subCompleteCount').textContent = complete.length;
         } else {
@@ -74,8 +69,7 @@ function loadOpsReview() {
         const emptyMsg = currentOpsFilter === 'all' ? 'No inspections to review yet' :
             currentOpsFilter === 'submitted' ? 'No inspections awaiting review' :
             currentOpsFilter === 'under_review' ? 'No inspections currently under review' :
-            currentApprovedSubFilter === 'awaiting_wo' ? 'All approved inspections have work orders' :
-            currentApprovedSubFilter === 'awaiting_estimate' ? 'All work orders have estimates' :
+            currentApprovedSubFilter === 'awaiting_estimate' ? 'All approved inspections have estimates' :
             currentApprovedSubFilter === 'complete' ? 'No fully processed inspections yet' :
             'No approved inspections';
         list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>${emptyMsg}</p></div>`;
@@ -290,23 +284,18 @@ function renderOpsReviewDetail(job) {
     const hasWorkOrder = job.workOrderId || job.hasWorkOrder;
     const hasEstimate = job.estimateId || job.hasEstimate;
 
-    // Action buttons - three separate actions
+    // Action buttons - approve and build estimate
     const actionsCard = job.status !== 'approved' ? `
         <div class="card" style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white;">
             <div class="card-body">
                 <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">Inspection Actions</h3>
                 <p style="margin-bottom: 16px; opacity: 0.9; font-size: 14px;">
-                    Review and approve this inspection, then create work order and/or estimate.
+                    Review and approve this inspection, then build an estimate.
                 </p>
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                     <button class="btn btn-lg" onclick="approveInspectionOnly()"
                         style="background: white; color: #4CAF50; font-weight: 700; flex: 1; min-width: 150px;">
                         Approve
-                    </button>
-                    <button class="btn btn-lg" onclick="openCreateWorkOrderModal()" disabled
-                        style="background: rgba(255,255,255,0.3); color: white; font-weight: 700; flex: 1; min-width: 150px; cursor: not-allowed;"
-                        title="Approve inspection first">
-                        Create Work Order
                     </button>
                     <button class="btn btn-lg" onclick="buildEstimateFromInspection()" disabled
                         style="background: rgba(255,255,255,0.3); color: white; font-weight: 700; flex: 1; min-width: 150px; cursor: not-allowed;"
@@ -329,12 +318,8 @@ function renderOpsReviewDetail(job) {
                     </p>
                 </div>
 
-                <!-- Status indicators -->
+                <!-- Status indicator -->
                 <div style="display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="font-size: 16px;">${hasWorkOrder ? '✓' : '○'}</span>
-                        <span style="color: ${hasWorkOrder ? '#2e7d32' : '#6c757d'};">Work Order ${hasWorkOrder ? 'Created' : 'Pending'}</span>
-                    </div>
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="font-size: 16px;">${hasEstimate ? '✓' : '○'}</span>
                         <span style="color: ${hasEstimate ? '#2e7d32' : '#6c757d'};">Estimate ${hasEstimate ? 'Created' : 'Pending'}</span>
@@ -343,17 +328,6 @@ function renderOpsReviewDetail(job) {
 
                 <!-- Action buttons -->
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                    ${!hasWorkOrder ? `
-                        <button class="btn" onclick="openCreateWorkOrderModal()"
-                            style="background: #ff9800; color: white; font-weight: 600; flex: 1; min-width: 150px;">
-                            Create Work Order
-                        </button>
-                    ` : `
-                        <button class="btn btn-outline" onclick="viewWorkOrder('${job.workOrderId}')"
-                            style="flex: 1; min-width: 150px;">
-                            View Work Order
-                        </button>
-                    `}
                     ${!hasEstimate ? `
                         <button class="btn" onclick="buildEstimateFromInspection()"
                             style="background: #1565c0; color: white; font-weight: 600; flex: 1; min-width: 150px;">

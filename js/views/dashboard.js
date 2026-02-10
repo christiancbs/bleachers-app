@@ -985,6 +985,19 @@ function loadSalesPipeline() {
     // For now, use same data but will filter/adapt for sales context
     var allJobs = PIPELINE_JOBS.slice();
 
+    // Apply territory filter
+    if (currentPipelineTerritory === 'Original') {
+        allJobs = allJobs.filter(function(j) { return j.territory === 'Original'; });
+    } else if (currentPipelineTerritory === 'Southern') {
+        allJobs = allJobs.filter(function(j) { return j.territory === 'Southern'; });
+    } else if (currentPipelineTerritory === 'new') {
+        allJobs = allJobs.filter(function(j) {
+            var desc = (j.description || '').toLowerCase();
+            var type = (j.jobType || '').toLowerCase();
+            return desc.includes('install') || desc.includes('new install') || type.includes('install');
+        });
+    }
+
     // Map current statuses to sales stages
     allJobs = allJobs.map(function(j) {
         var salesStatus = j.status;
@@ -1072,6 +1085,23 @@ function loadSalesPipeline() {
     html += '</div></div>';
 
     container.innerHTML = html;
+}
+
+let currentPipelineTerritory = 'all';
+
+function filterPipelineTerritory(territory) {
+    currentPipelineTerritory = territory;
+    // Update tab active states
+    ['pipelineTerritoryAll', 'pipelineTerritoryOriginal', 'pipelineTerritorySouthern', 'pipelineTerritoryNew'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+    });
+    const activeId = territory === 'all' ? 'pipelineTerritoryAll' :
+                     territory === 'Original' ? 'pipelineTerritoryOriginal' :
+                     territory === 'Southern' ? 'pipelineTerritorySouthern' : 'pipelineTerritoryNew';
+    const activeEl = document.getElementById(activeId);
+    if (activeEl) activeEl.classList.add('active');
+    loadSalesPipeline();
 }
 
 function filterSalesPipeline(status) {
@@ -1266,7 +1296,7 @@ function sortPipelineBy(sortType) {
 // Customer hierarchy, locations, contacts
 // ==========================================
 
-function loadAccounts(filter = '', territory = '') {
+function loadAccounts(filter = '', territory = '', typeFilter = '') {
     const list = document.getElementById('accountsList');
     const countEl = document.getElementById('accountCount');
     const searchTerm = filter.toLowerCase();
@@ -1274,6 +1304,8 @@ function loadAccounts(filter = '', territory = '') {
     const filteredCustomers = CUSTOMERS.filter(c => {
         // Territory filter
         if (territory && c.territory !== territory) return false;
+        // Type filter
+        if (typeFilter && c.type !== typeFilter) return false;
         // Search filter
         if (!searchTerm) return true;
         if (c.name.toLowerCase().includes(searchTerm)) return true;
@@ -1284,9 +1316,10 @@ function loadAccounts(filter = '', territory = '') {
     countEl.textContent = `${filteredCustomers.length} customers`;
 
     list.innerHTML = filteredCustomers.map(customer => {
-        const typeIcon = customer.type === 'county' ? '🏛️' : '🏫';
-        const typeLabel = customer.type === 'county' ? 'District' : 'Private';
-        const typeBadgeClass = customer.type === 'county' ? 'badge-info' : 'badge-warning';
+        const typeInfo = CUSTOMER_TYPES[customer.type] || CUSTOMER_TYPES.other;
+        const typeIcon = typeInfo.icon;
+        const typeLabel = typeInfo.label;
+        const typeBadgeClass = typeInfo.badge;
         const primaryContact = getPrimaryContact(customer.contacts);
 
         return `
@@ -1318,7 +1351,8 @@ function loadAccounts(filter = '', territory = '') {
 function filterAccounts() {
     const searchTerm = document.getElementById('accountSearch').value;
     const territory = document.getElementById('accountTerritoryFilter').value;
-    loadAccounts(searchTerm, territory);
+    const typeFilter = document.getElementById('accountTypeFilter')?.value || '';
+    loadAccounts(searchTerm, territory, typeFilter);
 }
 
 // Store current customer ID for CRUD operations
@@ -1331,10 +1365,10 @@ function viewCustomerDetail(customerId) {
     currentCustomerId = customerId;
 
     // Populate header
-    const typeIcon = customer.type === 'county' ? '🏛️' : '🏫';
-    document.getElementById('custDetailName').textContent = `${typeIcon} ${customer.name}`;
-    document.getElementById('custDetailType').textContent = customer.type === 'county' ? 'District' : 'Private';
-    document.getElementById('custDetailType').className = `badge ${customer.type === 'county' ? 'badge-info' : 'badge-warning'}`;
+    const typeInfo = CUSTOMER_TYPES[customer.type] || CUSTOMER_TYPES.other;
+    document.getElementById('custDetailName').textContent = `${typeInfo.icon} ${customer.name}`;
+    document.getElementById('custDetailType').textContent = typeInfo.label;
+    document.getElementById('custDetailType').className = `badge ${typeInfo.badge}`;
 
     // Populate info
     const primaryContact = getPrimaryContact(customer.contacts);

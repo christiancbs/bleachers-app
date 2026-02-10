@@ -550,18 +550,34 @@ async function searchPartsForEstimate() {
                 return;
             }
 
-            resultsDiv.innerHTML = result.parts.map(part => `
+            // Check local inventory for matching parts
+            const parts = result.parts.map(part => {
+                const inventoryMatch = LOCAL_INVENTORY.find(inv =>
+                    inv.partNumber && part.partNumber && inv.partNumber.toLowerCase() === part.partNumber.toLowerCase()
+                );
+                return Object.assign({}, part, { inventoryMatch });
+            });
+
+            // Sort: in-stock parts first
+            parts.sort((a, b) => (b.inventoryMatch ? 1 : 0) - (a.inventoryMatch ? 1 : 0));
+
+            resultsDiv.innerHTML = parts.map(part => {
+                const stockBadge = part.inventoryMatch
+                    ? `<div style="font-size: 12px; color: #2e7d32; background: #e8f5e9; padding: 2px 8px; border-radius: 4px; margin-top: 4px; display: inline-block;">🏪 In Stock — ${part.inventoryMatch.location} (qty: ${part.inventoryMatch.quantity})</div>`
+                    : '';
+                return `
                 <div class="part-result-item" onclick="promptPartQuantity('${part.id}', ${JSON.stringify(part).replace(/'/g, "\\'").replace(/"/g, '&quot;')})">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div>
                             <div style="font-weight: 600;">${part.partNumber || 'N/A'}</div>
                             <div style="font-size: 13px; color: #495057;">${part.productName || part.description || ''}</div>
                             <div style="font-size: 12px; color: #6c757d;">${part.vendor || ''} ${part.category ? '• ' + part.category : ''}</div>
+                            ${stockBadge}
                         </div>
                         <div style="font-weight: 600; color: #2e7d32;">$${(parseFloat(part.price) || 0).toFixed(2)}</div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         } catch (err) {
             resultsDiv.innerHTML = `<div style="padding: 12px; color: #dc3545;">Error: ${err.message}</div>`;
         }

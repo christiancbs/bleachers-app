@@ -246,12 +246,10 @@ async function searchTechParts() {
             results.innerHTML = `
                 <p style="font-size: 12px; color: #6c757d; margin: 12px 0;">Found ${data.parts.length} parts</p>
                 ${data.parts.map(part => {
-                    const price = parseFloat(part.price) || 0;
-                    const priceDisplay = part.priceNote || (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
                     const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'");
                     const safeProductName = (part.productName || '').replace(/'/g, "\\'");
                     const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'");
-                    const clickHandler = part.imageUrl ? `onclick="showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${price}', '${safeVendor}')"` : '';
+                    const clickHandler = part.imageUrl ? `onclick="showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${safeVendor}')"` : '';
                     const imageHtml = part.imageUrl
                         ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px;">`
                         : '';
@@ -267,7 +265,6 @@ async function searchTechParts() {
                                 <div class="part-description">${part.productName || 'Unknown Part'}</div>
                                 <div class="part-meta">
                                     <span class="part-category">${part.category || ''}</span>
-                                    <span class="part-price">${priceDisplay}</span>
                                 </div>
                                 ${part.productLine ? `<div style="font-size: 11px; color: #888; margin-top: 4px;">${part.productLine}</div>` : ''}
                             </div>

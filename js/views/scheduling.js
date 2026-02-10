@@ -240,12 +240,12 @@ async function nextWeek() {
     renderWeeklySchedule();
 }
 
-// Switch schedule tabs (This Week + Planning only — Backlog/Shit List are in Jobs view)
+// Switch schedule tabs (Team Schedule + This Week + Planning)
 function switchScheduleTab(tab) {
     currentScheduleTab = tab;
 
     // Update tab styles
-    const tabIds = ['thisWeekTab', 'planningTab'];
+    const tabIds = ['thisWeekTab', 'officeThisWeekTab', 'planningTab'];
     tabIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.remove('active');
@@ -254,7 +254,7 @@ function switchScheduleTab(tab) {
     if (activeTab) activeTab.classList.add('active');
 
     // Show/hide views
-    const viewIds = ['thisWeekView', 'planningView'];
+    const viewIds = ['thisWeekView', 'officeThisWeekView', 'planningView'];
     viewIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
@@ -263,6 +263,10 @@ function switchScheduleTab(tab) {
     if (tab === 'thisWeek') {
         const el = document.getElementById('thisWeekView');
         if (el) el.classList.remove('hidden');
+    } else if (tab === 'officeThisWeek') {
+        const el = document.getElementById('officeThisWeekView');
+        if (el) el.classList.remove('hidden');
+        loadThisWeekJobs();
     } else if (tab === 'planning') {
         const el = document.getElementById('planningView');
         if (el) el.classList.remove('hidden');
@@ -773,7 +777,7 @@ function switchJobsTab(tab) {
     currentJobsTab = tab;
 
     // Update tab buttons
-    const tabs = ['all', 'backlog', 'thisWeek', 'completed', 'shitList'];
+    const tabs = ['all', 'backlog', 'completed', 'shitList'];
     tabs.forEach(t => {
         const btn = document.getElementById(`jobsTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
         const content = document.getElementById(`jobsContent${t.charAt(0).toUpperCase() + t.slice(1)}`);
@@ -782,9 +786,7 @@ function switchJobsTab(tab) {
     });
 
     // Load content for the selected tab
-    if (tab === 'thisWeek') {
-        loadThisWeekJobs();
-    } else if (tab === 'all') {
+    if (tab === 'all') {
         loadJobsTabContent('all');
     } else if (tab === 'backlog') {
         loadJobsTabContent('backlog', 'draft');

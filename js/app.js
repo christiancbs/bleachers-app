@@ -28,7 +28,8 @@ function populateCustomers() {
         // Group locations by customer (county/private entity)
         CUSTOMERS.forEach(customer => {
             const optgroup = document.createElement('optgroup');
-            const typeLabel = customer.type === 'county' ? '🏛️' : '🏫';
+            const typeInfo = CUSTOMER_TYPES[customer.type] || CUSTOMER_TYPES.other;
+            const typeLabel = typeInfo.icon;
             optgroup.label = `${typeLabel} ${customer.name}`;
 
             customer.locations.forEach(location => {
@@ -261,6 +262,9 @@ function showView(view) {
         document.getElementById('employeesView').classList.remove('hidden');
         setActiveNav('employees');
         loadEmployees();
+    } else if (view === 'resources') {
+        document.getElementById('resourcesView').classList.remove('hidden');
+        setActiveNav('resources');
     } else if (view === 'settings') {
         document.getElementById('settingsView').classList.remove('hidden');
         setActiveNav('settings');
@@ -321,6 +325,9 @@ function showTechView(view) {
     } else if (view === 'parts') {
         document.getElementById('techPartsView').classList.remove('hidden');
         setActiveNav('parts');
+    } else if (view === 'resources') {
+        document.getElementById('techResourcesView').classList.remove('hidden');
+        setActiveNav('resources');
     } else if (view === 'workorders') {
         document.getElementById('techWorkOrdersView').classList.remove('hidden');
         setActiveNav('create');
