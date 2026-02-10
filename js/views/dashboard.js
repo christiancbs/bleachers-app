@@ -789,6 +789,49 @@ function viewQbEstimate(estimateId) {
     showView('estimateDetail');
 }
 
+// Parse procurement notes from QB PrivateNote
+function parseProcurementNotes(privateNote) {
+    if (!privateNote) return [];
+    const notes = [];
+    const notesMatch = privateNote.match(/NOTES:\s*(.+?)(?:\s*\||$)/);
+    if (notesMatch) {
+        notesMatch[1].split(';').forEach(note => {
+            const text = note.trim();
+            if (text) notes.push({ text, source: 'estimate' });
+        });
+    }
+    return notes;
+}
+
+// Detect stock parts from estimate line items (fallback for non-builder estimates)
+function detectStockPartsFromEstimate(lineItems) {
+    const stockParts = [];
+    const shopPatterns = [
+        { pattern: /tn\s*shop/i, location: 'TN Shop' },
+        { pattern: /fl\s*shop/i, location: 'FL Shop' },
+        { pattern: /al\s*shop/i, location: 'AL Shop' },
+        { pattern: /from\s*stock/i, location: 'Stock' },
+        { pattern: /in\s*stock/i, location: 'Stock' },
+        { pattern: /on\s*hand/i, location: 'Stock' }
+    ];
+
+    (lineItems || []).forEach(item => {
+        const text = ((item.itemName || '') + ' ' + (item.description || '')).toLowerCase();
+        for (const sp of shopPatterns) {
+            if (sp.pattern.test(text)) {
+                stockParts.push({
+                    itemName: item.itemName || item.description || 'Part',
+                    quantity: item.quantity || 1,
+                    stockLocation: sp.location,
+                    verified: false
+                });
+                break;
+            }
+        }
+    });
+    return stockParts;
+}
+
 // Create work order from accepted estimate
 async function createWorkOrderFromEstimate(evt, estimateId) {
     // Get estimate from cache
@@ -848,6 +891,19 @@ async function createWorkOrderFromEstimate(evt, estimateId) {
 
     const description = instructions.join('\n');
 
+    // Extract procurement intelligence from estimate
+    const procurementNotes = parseProcurementNotes(est.privateNote);
+    const stockParts = detectStockPartsFromEstimate(est.lineItems);
+
+    // Determine primary parts location from stock parts
+    const primaryLocation = stockParts.length > 0
+        ? stockParts.reduce((acc, sp) => {
+            acc[sp.stockLocation] = (acc[sp.stockLocation] || 0) + 1;
+            return acc;
+        }, {})
+        : {};
+    const topLocation = Object.entries(primaryLocation).sort((a, b) => b[1] - a[1])[0];
+
     // Create the work order
     const jobData = {
         jobNumber,
@@ -866,7 +922,20 @@ async function createWorkOrderFromEstimate(evt, estimateId) {
                 txnDate: est.txnDate,
                 lineItems: est.lineItems
             },
-            partsNeeded: partsLines
+            partsNeeded: partsLines,
+            procurementNotes: procurementNotes,
+            stockParts: stockParts,
+            partsTracking: {
+                partsOrdered: false,
+                poNumber: '',
+                promiseDate: null,
+                destination: '',
+                partsReceived: false,
+                partsLocation: topLocation ? topLocation[0] : '',
+                stockVerified: false,
+                stockVerifiedBy: '',
+                stockVerifiedDate: null
+            }
         }
     };
 

@@ -1438,6 +1438,45 @@ async function placeJobOnDay(dateKey) {
     }
 
     const job = selectedPlanningJob;
+    const metadata = job.metadata || {};
+
+    // Pre-schedule check: unverified stock parts
+    const unverifiedStock = (metadata.stockParts || []).filter(sp => !sp.verified);
+    if (unverifiedStock.length > 0) {
+        const stockList = unverifiedStock.map(sp =>
+            `  - ${sp.itemName} (${sp.stockLocation})`
+        ).join('\n');
+
+        const proceed = confirm(
+            `STOCK PARTS NOT VERIFIED\n\n` +
+            `The following parts are listed as "from stock" but haven't been verified:\n\n` +
+            `${stockList}\n\n` +
+            `OK = Verify now and schedule\n` +
+            `Cancel = Go back and verify first`
+        );
+
+        if (!proceed) return;
+
+        // Mark as verified
+        metadata.stockParts = metadata.stockParts.map(sp => ({
+            ...sp,
+            verified: true
+        }));
+        metadata.partsTracking = {
+            ...(metadata.partsTracking || {}),
+            stockVerified: true,
+            stockVerifiedBy: currentRole === 'admin' ? 'Admin' : 'Office',
+            stockVerifiedDate: new Date().toISOString()
+        };
+    }
+
+    // Pre-schedule reminder: procurement notes
+    const procNotes = metadata.procurementNotes || [];
+    if (procNotes.length > 0) {
+        const notesList = procNotes.map(n => `  - ${n.text}`).join('\n');
+        alert(`Procurement Notes for this job:\n\n${notesList}`);
+    }
+
     const tech = prompt(`Assign ${job.jobNumber} to which technician?\n\n(Leave blank to assign later)`);
 
     try {
@@ -1447,7 +1486,8 @@ async function placeJobOnDay(dateKey) {
         await JobsAPI.update(job.id, {
             status: 'scheduled',
             scheduledDate: dateKey,
-            assignedTo: tech || null
+            assignedTo: tech || null,
+            metadata: metadata
         });
 
         alert(`${job.jobNumber} scheduled for ${scheduledDate.toLocaleDateString()}${tech ? ' - Assigned to ' + tech : ''}`);
@@ -1790,6 +1830,7 @@ function renderJobsList() {
                     <div style="font-size: 13px; color: #6c757d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                         ${job.locationName || job.address || ''}
                     </div>
+                    ${renderStockPartWarning(job.metadata)}
                 </div>
                 <div style="text-align: right; flex-shrink: 0;">
                     ${amount ? `<div style="font-weight: 600; color: #28a745;">${amount}</div>` : ''}
@@ -1894,6 +1935,9 @@ function showJobDetailModal(job) {
                         </div>
                     </div>
 
+                    ${renderProcurementNotesSection(job.metadata)}
+                    ${renderStockPartsSection(job.metadata)}
+
                     ${job.attachments && job.attachments.length > 0 ? `
                         <div style="margin-bottom: 20px;">
                             <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Attachments (${job.attachments.length})</label>
@@ -1950,6 +1994,73 @@ function editJob(jobId) {
     alert('Edit functionality coming soon. Job ID: ' + jobId);
 }
 
+// Render stock part warning badge in jobs list
+function renderStockPartWarning(metadata) {
+    if (!metadata?.stockParts || metadata.stockParts.length === 0) return '';
+    const unverified = metadata.stockParts.filter(sp => !sp.verified);
+    if (unverified.length === 0) return '';
+
+    return `
+        <div class="stock-unverified-warning" style="margin-top: 6px;">
+            <strong>Stock Parts Need Verification:</strong>
+            ${unverified.map(sp => `${sp.itemName || 'Part'} (${sp.stockLocation})`).join(', ')}
+        </div>
+    `;
+}
+
+// Render procurement notes section in job detail
+function renderProcurementNotesSection(metadata) {
+    const notes = metadata?.procurementNotes || [];
+    if (notes.length === 0) return '';
+
+    return `
+        <div style="margin-bottom: 20px; border: 1px solid #fff3e0; border-radius: 8px; overflow: hidden;">
+            <div style="background: #fff3e0; padding: 12px 16px; border-bottom: 1px solid #ffe0b2;">
+                <label style="font-size: 12px; color: #e65100; text-transform: uppercase; margin: 0; font-weight: 600;">Procurement Notes (from Estimate)</label>
+            </div>
+            <div style="padding: 12px 16px;">
+                ${notes.map(n => `
+                    <div style="padding: 6px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px;">
+                        ${n.text}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+// Render stock parts section in job detail
+function renderStockPartsSection(metadata) {
+    const stockParts = metadata?.stockParts || [];
+    if (stockParts.length === 0) return '';
+
+    const isVerified = metadata?.partsTracking?.stockVerified;
+    const borderColor = isVerified ? '#c8e6c9' : '#ffcdd2';
+    const headerBg = isVerified ? '#e8f5e9' : '#fff0f0';
+    const headerColor = isVerified ? '#2e7d32' : '#c62828';
+    const verifiedBy = metadata?.partsTracking?.stockVerifiedBy;
+    const verifiedDate = metadata?.partsTracking?.stockVerifiedDate;
+
+    return `
+        <div style="margin-bottom: 20px; border: 1px solid ${borderColor}; border-radius: 8px; overflow: hidden;">
+            <div style="background: ${headerBg}; padding: 12px 16px;">
+                <label style="font-size: 12px; color: ${headerColor}; text-transform: uppercase; font-weight: 600;">
+                    Stock Parts ${isVerified ? '(Verified)' : '(NOT VERIFIED)'}
+                </label>
+                ${isVerified && verifiedBy ? `<span style="font-size: 11px; color: #6c757d; margin-left: 8px;">by ${verifiedBy}${verifiedDate ? ' on ' + new Date(verifiedDate).toLocaleDateString() : ''}</span>` : ''}
+            </div>
+            <div style="padding: 12px 16px;">
+                ${stockParts.map(sp => `
+                    <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px;">
+                        <span>${sp.itemName || 'Part'} ${sp.quantity ? '(qty: ' + sp.quantity + ')' : ''}</span>
+                        <span style="color: #e65100; font-weight: 500;">${sp.stockLocation}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
 // Render parts tracking fields
 function renderPartsTrackingFields(partsData) {
     const fields = [
@@ -1958,7 +2069,9 @@ function renderPartsTrackingFields(partsData) {
         { key: 'promiseDate', label: 'Promise/Ship Date', type: 'date' },
         { key: 'destination', label: 'Destination', type: 'text' },
         { key: 'partsReceived', label: 'Parts Received', type: 'boolean' },
-        { key: 'partsLocation', label: 'Parts Location', type: 'text' }
+        { key: 'partsLocation', label: 'Parts Location', type: 'text' },
+        { key: 'stockVerified', label: 'Stock Verified', type: 'boolean' },
+        { key: 'stockVerifiedBy', label: 'Verified By', type: 'text' }
     ];
 
     return `
@@ -2003,6 +2116,19 @@ async function editPartsTracking(jobId) {
     const partsOrdered = confirm('Have parts been ordered?');
     const partsReceived = confirm('Have parts been received?');
 
+    // Stock verification prompt (only if job has stock parts)
+    const hasStockParts = (job.metadata?.stockParts || []).length > 0;
+    let stockVerified = partsData.stockVerified || false;
+    let stockVerifiedBy = partsData.stockVerifiedBy || '';
+    let stockVerifiedDate = partsData.stockVerifiedDate || null;
+    if (hasStockParts) {
+        stockVerified = confirm('Have stock parts been verified as available at the shop?');
+        if (stockVerified) {
+            stockVerifiedBy = currentRole === 'admin' ? 'Admin' : 'Office';
+            stockVerifiedDate = new Date().toISOString();
+        }
+    }
+
     try {
         const updatedMetadata = {
             ...job.metadata,
@@ -2012,7 +2138,10 @@ async function editPartsTracking(jobId) {
                 promiseDate: promiseDate ? new Date(promiseDate).toISOString() : null,
                 destination,
                 partsReceived,
-                partsLocation
+                partsLocation,
+                stockVerified,
+                stockVerifiedBy,
+                stockVerifiedDate
             }
         };
 

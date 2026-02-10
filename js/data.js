@@ -252,6 +252,26 @@ const JOB_TYPES = ['Go See', 'Service Call', 'Repair', 'Inspection'];
 // Job statuses
 const JOB_STATUSES = ['New', 'In Progress', 'Parts Ordered', 'Parts Received', 'Scheduled', 'Completed', 'Pink'];
 
+// Stock shop locations (regional)
+const STOCK_LOCATIONS = [
+    { id: 'tn-shop', label: 'TN Shop', territory: 'Original' },
+    { id: 'fl-shop', label: 'FL Shop', territory: 'Southern' },
+    { id: 'al-shop', label: 'AL Shop', territory: 'Southern' }
+];
+
+// Common procurement notes for estimate builder dropdown
+const COMMON_PROCUREMENT_NOTES = [
+    { text: 'Customer responsible for disposal of removed materials', category: 'disposal' },
+    { text: 'Customer to provide dumpster/roll-off', category: 'disposal' },
+    { text: 'Lift rental required - confirm provider', category: 'equipment' },
+    { text: 'Customer to provide lift', category: 'equipment' },
+    { text: 'Plywood required for floor protection', category: 'equipment' },
+    { text: 'Customer to clear gym before arrival', category: 'access' },
+    { text: 'Overnight work - gym cleared by end of school day', category: 'access' },
+    { text: 'Truck delivery - confirm site access', category: 'access' },
+    { text: 'Enter through back/loading dock', category: 'access' }
+];
+
 // Helper to get primary contact from contacts array
 function getPrimaryContact(contacts) {
     if (!contacts || contacts.length === 0) return { name: '', phone: '', email: '' };

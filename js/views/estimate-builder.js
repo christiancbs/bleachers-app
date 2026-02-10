@@ -9,7 +9,10 @@ let estimateBuilderState = {
     lineItems: [],           // Array of line items
     sourceInspection: null,  // If pre-filled from inspection
     shippingCost: 0,
-    isSubmitting: false
+    isSubmitting: false,
+    procurementNotes: [],    // { id, text, source: 'auto'|'manual', category, dismissed }
+    stockParts: [],          // { lineItemIndex, stockLocation, verified: false }
+    dismissedSuggestions: new Set()  // IDs of dismissed auto-suggestions
 };
 
 // Default labor rate (editable per estimate)
@@ -23,7 +26,10 @@ function initEstimateBuilder(prefillData = null) {
         lineItems: [],
         sourceInspection: prefillData,
         shippingCost: 0,
-        isSubmitting: false
+        isSubmitting: false,
+        procurementNotes: [],
+        stockParts: [],
+        dismissedSuggestions: new Set()
     };
 
     // If pre-filling from inspection, load that data
@@ -190,7 +196,15 @@ function addCustomToEstimate(name, description, quantity, unitPrice) {
 // Remove line item
 function removeLineItem(index) {
     estimateBuilderState.lineItems.splice(index, 1);
+    // Update stockParts indices — remove entries for deleted item, shift others down
+    estimateBuilderState.stockParts = estimateBuilderState.stockParts
+        .filter(sp => sp.lineItemIndex !== index)
+        .map(sp => ({
+            ...sp,
+            lineItemIndex: sp.lineItemIndex > index ? sp.lineItemIndex - 1 : sp.lineItemIndex
+        }));
     renderLineItems();
+    renderProcurementNotes();
     updateSubmitButton();
 }
 
@@ -218,6 +232,283 @@ function updateShipping() {
     const input = document.getElementById('estShipping');
     estimateBuilderState.shippingCost = parseFloat(input.value) || 0;
     renderTotals();
+}
+
+// ==========================================
+// PROCUREMENT INTELLIGENCE
+// ==========================================
+
+// Auto-detect procurement issues from line items
+function runProcurementDetection() {
+    const suggestions = [];
+    const items = estimateBuilderState.lineItems;
+    const itemTexts = items.map(i => ((i.itemName || '') + ' ' + (i.description || '')).toLowerCase());
+    const allText = itemTexts.join(' ');
+
+    // RULE 1: Removal/demo work without dumpster → disposal note
+    const hasRemoval = allText.includes('demo') || allText.includes('remov') ||
+                       allText.includes('replace') || allText.includes('tear out') ||
+                       allText.includes('haul off');
+    const hasDumpster = itemTexts.some(t =>
+        t.includes('dumpster') || t.includes('roll-off') || t.includes('roll off') || t.includes('disposal')
+    );
+    if (hasRemoval && !hasDumpster) {
+        suggestions.push({
+            id: 'auto-disposal',
+            text: 'Customer responsible for disposal of removed materials',
+            source: 'auto',
+            category: 'disposal'
+        });
+    }
+
+    // RULE 2: Goal/ceiling/upper work without lift rental
+    const needsLift = allText.includes('goal') || allText.includes('safety strap') ||
+                      allText.includes('ceiling') || allText.includes('upper') ||
+                      allText.includes('winch') || allText.includes('hoist');
+    const hasLiftRental = itemTexts.some(t =>
+        t.includes('lift') || t.includes('rental') || t.includes('equipment rental')
+    );
+    if (needsLift && !hasLiftRental) {
+        suggestions.push({
+            id: 'auto-lift',
+            text: 'Lift rental required - confirm who provides',
+            source: 'auto',
+            category: 'equipment'
+        });
+    }
+
+    // RULE 3: Wall pad work → access/delivery note
+    const hasWallPad = allText.includes('wall pad') && (allText.includes('replace') || allText.includes('install'));
+    if (hasWallPad) {
+        suggestions.push({
+            id: 'auto-wallpad',
+            text: 'Customer to clear wall area before arrival. Truck delivery - confirm access.',
+            source: 'auto',
+            category: 'access'
+        });
+    }
+
+    // RULE 4: Floor/hardwood work → plywood protection
+    const hasFloorWork = (allText.includes('floor') || allText.includes('hardwood')) &&
+                         (allText.includes('install') || allText.includes('replace') || allText.includes('anchor'));
+    const hasPlywood = itemTexts.some(t => t.includes('plywood'));
+    if (hasFloorWork && !hasPlywood) {
+        suggestions.push({
+            id: 'auto-plywood',
+            text: 'Plywood required for floor protection',
+            source: 'auto',
+            category: 'equipment'
+        });
+    }
+
+    // RULE 5: Auto-detect stock parts from descriptions
+    const shopPatterns = [
+        { pattern: /tn\s*shop/i, location: 'TN Shop' },
+        { pattern: /fl\s*shop/i, location: 'FL Shop' },
+        { pattern: /al\s*shop/i, location: 'AL Shop' },
+        { pattern: /from\s*stock/i, location: 'Stock' },
+        { pattern: /in\s*stock/i, location: 'Stock' },
+        { pattern: /on\s*hand/i, location: 'Stock' }
+    ];
+    items.forEach((item, index) => {
+        if (item.type === 'part' || item.type === 'custom') {
+            const text = ((item.itemName || '') + ' ' + (item.description || '')).toLowerCase();
+            for (const sp of shopPatterns) {
+                if (sp.pattern.test(text)) {
+                    const existing = estimateBuilderState.stockParts.find(s => s.lineItemIndex === index);
+                    if (!existing) {
+                        estimateBuilderState.stockParts.push({
+                            lineItemIndex: index,
+                            stockLocation: sp.location,
+                            verified: false
+                        });
+                    }
+                    break;
+                }
+            }
+        }
+    });
+
+    // Filter out already-confirmed and dismissed suggestions
+    const confirmedIds = new Set(estimateBuilderState.procurementNotes.map(n => n.id));
+    return suggestions.filter(s =>
+        !confirmedIds.has(s.id) && !estimateBuilderState.dismissedSuggestions.has(s.id)
+    );
+}
+
+// Confirm an auto-suggestion → add to procurement notes
+function confirmSuggestion(id, text, category) {
+    estimateBuilderState.procurementNotes.push({
+        id: id,
+        text: text,
+        source: 'auto',
+        category: category
+    });
+    renderProcurementNotes();
+}
+
+// Dismiss an auto-suggestion
+function dismissSuggestion(id) {
+    estimateBuilderState.dismissedSuggestions.add(id);
+    renderProcurementNotes();
+}
+
+// Add a manual procurement note from dropdown
+function addProcurementNote(text, category) {
+    estimateBuilderState.procurementNotes.push({
+        id: 'manual-' + Date.now(),
+        text: text,
+        source: 'manual',
+        category: category
+    });
+    renderProcurementNotes();
+}
+
+// Add a custom procurement note
+function addCustomProcurementNote() {
+    const text = prompt('Enter procurement note:');
+    if (text && text.trim()) {
+        addProcurementNote(text.trim(), 'custom');
+    }
+}
+
+// Remove a procurement note
+function removeProcurementNote(id) {
+    estimateBuilderState.procurementNotes = estimateBuilderState.procurementNotes.filter(n => n.id !== id);
+    // If it was auto-detected, don't re-dismiss — allow it to come back as suggestion
+    renderProcurementNotes();
+}
+
+// Mark a line item as stock part
+function markAsStockPart(lineItemIndex) {
+    const locations = (typeof STOCK_LOCATIONS !== 'undefined' ? STOCK_LOCATIONS : [])
+        .map((loc, i) => `${i + 1}. ${loc.label}`).join('\n');
+    const choice = prompt(`Which shop location?\n${locations}\n\nEnter number (or type a custom location):`);
+    if (!choice) return;
+
+    const locIndex = parseInt(choice) - 1;
+    let location;
+    if (typeof STOCK_LOCATIONS !== 'undefined' && locIndex >= 0 && locIndex < STOCK_LOCATIONS.length) {
+        location = STOCK_LOCATIONS[locIndex].label;
+    } else {
+        location = choice.trim();
+    }
+
+    // Remove existing entry for this index if any
+    estimateBuilderState.stockParts = estimateBuilderState.stockParts.filter(sp => sp.lineItemIndex !== lineItemIndex);
+    estimateBuilderState.stockParts.push({
+        lineItemIndex: lineItemIndex,
+        stockLocation: location,
+        verified: false
+    });
+
+    renderLineItems();
+    renderProcurementNotes();
+}
+
+// Remove stock part marking
+function removeStockMark(lineItemIndex) {
+    estimateBuilderState.stockParts = estimateBuilderState.stockParts.filter(sp => sp.lineItemIndex !== lineItemIndex);
+    renderLineItems();
+    renderProcurementNotes();
+}
+
+// Toggle procurement notes dropdown
+function toggleProcurementDropdown() {
+    const dropdown = document.getElementById('procurementNoteDropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('hidden');
+    }
+}
+
+// Render procurement notes section
+function renderProcurementNotes() {
+    const container = document.getElementById('procurementNotesContainer');
+    if (!container) return;
+
+    const suggestions = runProcurementDetection();
+    const notes = estimateBuilderState.procurementNotes;
+    const stockParts = estimateBuilderState.stockParts;
+
+    const categoryColors = {
+        disposal: { bg: '#fff3e0', color: '#e65100', label: 'Disposal' },
+        equipment: { bg: '#e3f2fd', color: '#1565c0', label: 'Equipment' },
+        access: { bg: '#f3e5f5', color: '#7b1fa2', label: 'Access' },
+        stock: { bg: '#e8f5e9', color: '#2e7d32', label: 'Stock' },
+        custom: { bg: '#f5f5f5', color: '#616161', label: 'Note' }
+    };
+
+    let html = '';
+
+    // Auto-detected suggestions
+    if (suggestions.length > 0) {
+        html += suggestions.map(s => `
+            <div class="procurement-suggestion">
+                <div class="suggestion-text">
+                    <span style="font-weight: 600; margin-right: 4px;">Suggested:</span> ${s.text}
+                </div>
+                <div class="suggestion-actions">
+                    <button class="btn btn-outline" style="padding: 3px 10px; font-size: 11px; color: #2e7d32; border-color: #2e7d32;" onclick="confirmSuggestion('${s.id}', '${s.text.replace(/'/g, "\\'")}', '${s.category}')">Add</button>
+                    <button class="btn btn-outline" style="padding: 3px 10px; font-size: 11px; color: #6c757d;" onclick="dismissSuggestion('${s.id}')">Dismiss</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Confirmed notes
+    if (notes.length > 0) {
+        html += notes.map(n => {
+            const cat = categoryColors[n.category] || categoryColors.custom;
+            return `
+                <div class="procurement-note-item">
+                    <span class="note-category" style="background: ${cat.bg}; color: ${cat.color};">${cat.label}</span>
+                    <span style="flex: 1;">${n.text}</span>
+                    <button class="btn btn-outline" style="padding: 2px 8px; font-size: 11px; color: #dc3545; border-color: #dc3545;" onclick="removeProcurementNote('${n.id}')">×</button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Stock parts summary
+    if (stockParts.length > 0) {
+        html += `<div style="margin-top: 8px; padding: 10px 14px; background: #e8f5e9; border-radius: 6px; font-size: 13px;">
+            <strong style="color: #2e7d32;">Stock Parts:</strong>
+            ${stockParts.map(sp => {
+                const item = estimateBuilderState.lineItems[sp.lineItemIndex];
+                return `<span style="margin-left: 8px; padding: 2px 8px; background: #c8e6c9; border-radius: 4px;">${item ? item.itemName : 'Part'} <strong>(${sp.stockLocation})</strong>
+                    <button style="background: none; border: none; color: #c62828; cursor: pointer; font-size: 12px; padding: 0 2px;" onclick="removeStockMark(${sp.lineItemIndex})">×</button>
+                </span>`;
+            }).join('')}
+        </div>`;
+    }
+
+    // Empty state
+    if (!html && suggestions.length === 0) {
+        html = '<div style="padding: 12px; color: #6c757d; font-size: 13px; text-align: center;">No procurement notes. Notes will be auto-suggested based on line items, or add manually.</div>';
+    }
+
+    container.innerHTML = html;
+}
+
+// Compose structured memo for QB PrivateNote
+function composeProcurementMemo() {
+    const parts = [];
+    parts.push('Generated from Bleachers & Seats App');
+
+    const activeNotes = estimateBuilderState.procurementNotes;
+    if (activeNotes.length > 0) {
+        parts.push('NOTES: ' + activeNotes.map(n => n.text).join('; '));
+    }
+
+    if (estimateBuilderState.stockParts.length > 0) {
+        const stockSummary = estimateBuilderState.stockParts.map(sp => {
+            const item = estimateBuilderState.lineItems[sp.lineItemIndex];
+            return `${item ? item.itemName : 'Part'} (${sp.stockLocation})`;
+        }).join(', ');
+        parts.push('STOCK PARTS: ' + stockSummary);
+    }
+
+    return parts.join(' | ');
 }
 
 // ==========================================
@@ -395,6 +686,27 @@ function renderEstimateBuilder() {
             </div>
         </div>
 
+        <!-- Procurement Notes -->
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;">Procurement Notes</h3>
+                <div style="position: relative;">
+                    <button class="btn btn-outline" onclick="toggleProcurementDropdown()">+ Add Note</button>
+                    <div id="procurementNoteDropdown" class="hidden" style="position: absolute; right: 0; top: 100%; margin-top: 4px; background: white; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 320px; z-index: 100; max-height: 300px; overflow-y: auto;">
+                        ${(typeof COMMON_PROCUREMENT_NOTES !== 'undefined' ? COMMON_PROCUREMENT_NOTES : []).map(note => `
+                            <div style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f5f5f5; font-size: 13px;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'" onclick="addProcurementNote('${note.text.replace(/'/g, "\\'")}', '${note.category}'); toggleProcurementDropdown();">
+                                ${note.text}
+                            </div>
+                        `).join('')}
+                        <div style="padding: 10px 14px; cursor: pointer; font-size: 13px; color: #1565c0; font-weight: 600;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'" onclick="addCustomProcurementNote(); toggleProcurementDropdown();">
+                            Custom note...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body" id="procurementNotesContainer"></div>
+        </div>
+
         <!-- Totals -->
         <div class="card" style="margin-bottom: 20px;">
             <div class="card-body" id="estimateTotalsContainer"></div>
@@ -410,6 +722,7 @@ function renderEstimateBuilder() {
     `;
 
     renderLineItems();
+    renderProcurementNotes();
     renderTotals();
     updateSubmitButton();
 }
@@ -440,13 +753,21 @@ function renderLineItems() {
                 </tr>
             </thead>
             <tbody>
-                ${estimateBuilderState.lineItems.map((item, index) => `
+                ${estimateBuilderState.lineItems.map((item, index) => {
+                    const stockEntry = estimateBuilderState.stockParts.find(sp => sp.lineItemIndex === index);
+                    const stockBadge = stockEntry
+                        ? `<span class="stock-badge" onclick="removeStockMark(${index})" title="Click to remove">${stockEntry.stockLocation} ×</span>`
+                        : (item.type === 'part' || item.type === 'custom'
+                            ? `<span style="font-size: 11px; color: #1565c0; cursor: pointer; text-decoration: underline;" onclick="markAsStockPart(${index})">stock?</span>`
+                            : '');
+                    return `
                     <tr>
                         <td>
                             <span class="badge" style="background: ${item.type === 'part' ? '#e3f2fd' : item.type === 'labor' ? '#fff3e0' : '#f3e5f5'}; color: ${item.type === 'part' ? '#1565c0' : item.type === 'labor' ? '#e65100' : '#7b1fa2'}; font-size: 10px; margin-right: 6px;">
                                 ${item.type.toUpperCase()}
                             </span>
                             ${item.itemName}
+                            ${stockBadge ? `<span style="margin-left: 6px;">${stockBadge}</span>` : ''}
                         </td>
                         <td style="font-size: 13px; color: #6c757d;">${item.description || '-'}</td>
                         <td style="text-align: right;">${item.quantity}</td>
@@ -456,7 +777,7 @@ function renderLineItems() {
                             <button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px; color: #dc3545; border-color: #dc3545;" onclick="removeLineItem(${index})">×</button>
                         </td>
                     </tr>
-                `).join('')}
+                `}).join('')}
             </tbody>
         </table>
     `;
@@ -538,7 +859,8 @@ async function submitEstimateToQb() {
             })),
             shippingCost: estimateBuilderState.shippingCost,
             total: total,
-            sourceInspectionId: estimateBuilderState.sourceInspection?.jobNumber || null
+            sourceInspectionId: estimateBuilderState.sourceInspection?.jobNumber || null,
+            memo: composeProcurementMemo()
         };
 
         const result = await EstimatesAPI.create(estimateData);
@@ -608,3 +930,11 @@ window.updateShipping = updateShipping;
 window.submitEstimateToQb = submitEstimateToQb;
 window.cancelEstimateBuilder = cancelEstimateBuilder;
 window.openEstimateBuilderFromInspection = openEstimateBuilderFromInspection;
+window.confirmSuggestion = confirmSuggestion;
+window.dismissSuggestion = dismissSuggestion;
+window.addProcurementNote = addProcurementNote;
+window.addCustomProcurementNote = addCustomProcurementNote;
+window.removeProcurementNote = removeProcurementNote;
+window.markAsStockPart = markAsStockPart;
+window.removeStockMark = removeStockMark;
+window.toggleProcurementDropdown = toggleProcurementDropdown;
