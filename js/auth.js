@@ -3,11 +3,16 @@
 // Handles sign-in, session management, token retrieval
 // ==========================================
 
+const CLERK_PUBLISHABLE_KEY = 'pk_test_bGlrZWQtcmF5LTIxLmNsZXJrLmFjY291bnRzLmRldiQ';
+
+// Clerk instance — set after initialization
+let clerkInstance = null;
+
 // Get JWT token for API calls
 async function getAuthToken() {
-    if (window.Clerk && window.Clerk.session) {
+    if (clerkInstance && clerkInstance.session) {
         try {
-            return await window.Clerk.session.getToken();
+            return await clerkInstance.session.getToken();
         } catch (e) {
             console.error('Failed to get auth token:', e);
             return null;
@@ -18,9 +23,9 @@ async function getAuthToken() {
 
 // Sign out and return to login screen
 async function clerkLogout() {
-    if (window.Clerk) {
+    if (clerkInstance) {
         try {
-            await window.Clerk.signOut();
+            await clerkInstance.signOut();
         } catch (e) {
             console.error('Clerk signOut error:', e);
         }
@@ -43,7 +48,7 @@ function handleSignedIn(user) {
     // Unmount sign-in form if mounted
     const signInEl = document.getElementById('clerk-sign-in');
     if (signInEl) {
-        try { window.Clerk.unmountSignIn(signInEl); } catch (e) { /* ignore */ }
+        try { clerkInstance.unmountSignIn(signInEl); } catch (e) { /* ignore */ }
     }
 
     // Call existing login() which handles dashboard routing
@@ -63,24 +68,25 @@ function handleSignedIn(user) {
     }
 }
 
-// Initialize Clerk auth — called when SDK is loaded
+// Initialize Clerk auth
 async function initAuth() {
     try {
-        await window.Clerk.load();
+        clerkInstance = new window.Clerk(CLERK_PUBLISHABLE_KEY);
+        await clerkInstance.load();
 
-        if (window.Clerk.user) {
+        if (clerkInstance.user) {
             // Already signed in (session persisted)
-            handleSignedIn(window.Clerk.user);
+            handleSignedIn(clerkInstance.user);
         } else {
             // Not signed in — mount sign-in form
             const signInEl = document.getElementById('clerk-sign-in');
             if (signInEl) {
-                window.Clerk.mountSignIn(signInEl);
+                clerkInstance.mountSignIn(signInEl);
             }
         }
 
         // Listen for auth state changes
-        window.Clerk.addListener(({ user, session }) => {
+        clerkInstance.addListener(({ user, session }) => {
             if (user && session && !currentRole) {
                 handleSignedIn(user);
             }
@@ -88,6 +94,11 @@ async function initAuth() {
 
     } catch (e) {
         console.error('Clerk init error:', e);
+        // Show fallback message if Clerk fails to load
+        const signInEl = document.getElementById('clerk-sign-in');
+        if (signInEl) {
+            signInEl.innerHTML = '<p style="color: #c62828; text-align: center; padding: 20px;">Unable to load sign-in. Please refresh the page.</p>';
+        }
     }
 }
 
@@ -96,7 +107,6 @@ function waitForClerk() {
     if (window.Clerk) {
         initAuth();
     } else {
-        // Clerk script is async — poll until available
         const interval = setInterval(() => {
             if (window.Clerk) {
                 clearInterval(interval);
