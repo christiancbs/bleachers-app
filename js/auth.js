@@ -70,7 +70,13 @@ function handleSignedIn(user) {
 // https://clerk.com/docs/quickstarts/javascript
 window.addEventListener('load', async function () {
     try {
-        await window.Clerk.load();
+        const appUrl = '/bleachers-app/';
+        await window.Clerk.load({
+            afterSignInUrl: appUrl,
+            afterSignUpUrl: appUrl,
+            signInForceRedirectUrl: appUrl,
+            signUpForceRedirectUrl: appUrl
+        });
         clerkInstance = window.Clerk;
 
         if (window.Clerk.user) {
@@ -80,7 +86,10 @@ window.addEventListener('load', async function () {
             // Not signed in — mount sign-in form
             const signInEl = document.getElementById('clerk-sign-in');
             if (signInEl) {
-                window.Clerk.mountSignIn(signInEl);
+                window.Clerk.mountSignIn(signInEl, {
+                    afterSignInUrl: appUrl,
+                    signInForceRedirectUrl: appUrl
+                });
             }
         }
 
