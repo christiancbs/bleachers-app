@@ -284,6 +284,19 @@ function updateDashboardStats() {
 var currentEstimatesFilter = 'all';
 
 async function loadEstimates() {
+    // Show loading state in visible tab containers
+    const loadingHtml = '<div style="padding: 40px; text-align: center; color: #6c757d;"><div style="margin-bottom: 12px; font-size: 24px;">Loading estimates from QuickBooks...</div><div style="width: 200px; height: 4px; background: #e9ecef; border-radius: 2px; margin: 0 auto; overflow: hidden;"><div style="width: 40%; height: 100%; background: #007bff; border-radius: 2px; animation: loadingBar 1.5s ease-in-out infinite;"></div></div></div>';
+    const style = document.getElementById('estimatesLoadingStyle') || document.createElement('style');
+    if (!style.id) {
+        style.id = 'estimatesLoadingStyle';
+        style.textContent = '@keyframes loadingBar { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }';
+        document.head.appendChild(style);
+    }
+    ['allEstimatesList', 'estimatesList', 'acceptedEstimatesList'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el.innerHTML.trim()) el.innerHTML = loadingHtml;
+    });
+
     // Fetch from QB API and update badge counts
     try {
         const data = await EstimatesAPI.list({ limit: 500 });

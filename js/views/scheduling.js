@@ -93,7 +93,10 @@ function apiJobToScheduleEntry(job) {
 
 // Build display location from API job fields
 function formatJobLocation(job) {
-    const parts = [job.locationName || job.customerName, job.title].filter(Boolean);
+    const name = job.locationName || job.customerName;
+    // Only append title if it's distinct from description (avoid duplication)
+    const title = job.title && job.title !== job.description ? job.title : null;
+    const parts = [name, title].filter(Boolean);
     return parts.join(', ') || job.jobNumber;
 }
 
@@ -937,7 +940,7 @@ function renderJobsListHtml(jobs) {
         const createdDate = job.createdAt ? new Date(job.createdAt).toLocaleDateString() : '';
 
         html += `
-            <div class="job-list-item" style="
+            <div class="job-list-item" onclick="openJobDetail(${job.id})" style="
                 padding: 16px 20px;
                 border-bottom: 1px solid #e9ecef;
                 cursor: pointer;
