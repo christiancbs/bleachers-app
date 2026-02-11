@@ -3,9 +3,7 @@
 // Handles sign-in, session management, token retrieval
 // ==========================================
 
-const CLERK_PUBLISHABLE_KEY = 'pk_test_bGlrZWQtcmF5LTIxLmNsZXJrLmFjY291bnRzLmRldiQ';
-
-// Clerk instance — set after initialization
+// Clerk instance — set after auto-init completes
 let clerkInstance = null;
 
 // Get JWT token for API calls
@@ -68,10 +66,12 @@ function handleSignedIn(user) {
     }
 }
 
-// Initialize Clerk auth
+// Initialize Clerk auth — uses the auto-init instance from the script tag
 async function initAuth() {
     try {
-        clerkInstance = new window.Clerk(CLERK_PUBLISHABLE_KEY);
+        // window.Clerk is set by the auto-init script tag
+        // .load() is idempotent — resolves immediately if already loaded
+        clerkInstance = window.Clerk;
         await clerkInstance.load();
 
         if (clerkInstance.user) {
@@ -102,7 +102,7 @@ async function initAuth() {
     }
 }
 
-// Wait for Clerk SDK script to load, then initialize
+// Wait for Clerk auto-init to set window.Clerk, then initialize
 function waitForClerk() {
     if (window.Clerk) {
         initAuth();

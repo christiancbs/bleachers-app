@@ -4163,8 +4163,13 @@
         </div>
     </div>
 
-    <!-- Clerk Auth SDK (manual init in auth.js) -->
-    <script src="https://liked-ray-21.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
+    <!-- Clerk Auth SDK (auto-init sets window.Clerk as instance) -->
+    <script
+      async crossorigin="anonymous"
+      data-clerk-publishable-key="pk_test_bGlrZWQtcmF5LTIxLmNsZXJrLmFjY291bnRzLmRldiQ"
+      src="https://liked-ray-21.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+      type="text/javascript">
+    </script>
 
     <!-- Data & Constants -->
     <script src="js/data.js"></script>
