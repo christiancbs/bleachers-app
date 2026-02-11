@@ -567,7 +567,7 @@ async function populateTechDropdowns() {
             const data = await JobsAPI.list({
                 status: 'draft',
                 territory: getApiTerritory(),
-                limit: 100
+                limit: 500
             });
             cachedBacklogJobs = data.jobs || [];
             jobSelect.innerHTML = '<option value="">-- Select a job --</option>' +
@@ -806,6 +806,11 @@ function searchJobs() {
     }, 300);
 }
 
+// Track loaded jobs per tab for pagination
+const TAB_PAGE_SIZE = 100;
+let tabJobsData = {};
+let tabJobsOffsets = {};
+
 // Load jobs for a specific tab from API
 async function loadJobsTabContent(tabName, statusFilter = '') {
     const container = document.getElementById(`jobsList${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`);
@@ -813,44 +818,24 @@ async function loadJobsTabContent(tabName, statusFilter = '') {
 
     const searchTerm = document.getElementById('jobsSearchInput')?.value || '';
 
+    // Reset pagination state for fresh load
+    tabJobsData[tabName] = [];
+    tabJobsOffsets[tabName] = 0;
+
     container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading...</div>';
 
     try {
         const data = await JobsAPI.list({
             q: searchTerm,
             status: statusFilter,
-            limit: 100
+            limit: TAB_PAGE_SIZE
         });
 
         const jobs = data.jobs || [];
+        tabJobsData[tabName] = jobs;
+        tabJobsOffsets[tabName] = jobs.length;
 
-        // Apply territory filter (client-side)
-        let filteredJobs = jobs;
-        if (currentJobsTerritory !== 'all') {
-            filteredJobs = jobs.filter(job => getJobTerritory(job) === currentJobsTerritory);
-        }
-
-        if (filteredJobs.length === 0) {
-            const emptyMessages = {
-                all: 'No jobs found. Create a work order from an accepted estimate.',
-                backlog: 'No jobs in backlog. All work orders are scheduled!',
-                completed: 'No completed jobs yet.',
-                shitList: 'No problem jobs. Everything is running smoothly!'
-            };
-            const territoryNote = currentJobsTerritory !== 'all' ? ` in ${currentJobsTerritory === 'original' ? 'Original (KY/TN)' : 'Southern (AL/FL)'} territory` : '';
-            const message = searchTerm
-                ? `No jobs matching "${searchTerm}"${territoryNote}`
-                : (emptyMessages[tabName] || 'No jobs found') + territoryNote;
-            container.innerHTML = `
-                <div style="padding: 40px; text-align: center; color: #6c757d;">
-                    <div style="font-size: 48px; margin-bottom: 16px;">${searchTerm ? '🔍' : (tabName === 'shitList' ? '🎉' : '📋')}</div>
-                    <p>${message}</p>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = renderJobsListHtml(filteredJobs);
+        renderTabContent(tabName, statusFilter, searchTerm, data.count);
     } catch (err) {
         console.error('Failed to load jobs:', err);
         container.innerHTML = `
@@ -861,6 +846,82 @@ async function loadJobsTabContent(tabName, statusFilter = '') {
             </div>
         `;
     }
+}
+
+// Load more jobs for a tab
+async function loadMoreTabJobs(tabName, statusFilter = '') {
+    const searchTerm = document.getElementById('jobsSearchInput')?.value || '';
+
+    try {
+        const data = await JobsAPI.list({
+            q: searchTerm,
+            status: statusFilter,
+            limit: TAB_PAGE_SIZE,
+            offset: tabJobsOffsets[tabName]
+        });
+
+        const newJobs = data.jobs || [];
+        tabJobsData[tabName] = [...tabJobsData[tabName], ...newJobs];
+        tabJobsOffsets[tabName] += newJobs.length;
+
+        renderTabContent(tabName, statusFilter, searchTerm, data.count);
+    } catch (err) {
+        console.error('Failed to load more jobs:', err);
+    }
+}
+
+// Render tab content with count header and optional Load More
+function renderTabContent(tabName, statusFilter, searchTerm, totalCount) {
+    const container = document.getElementById(`jobsList${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`);
+    if (!container) return;
+
+    const jobs = tabJobsData[tabName] || [];
+
+    // Apply territory filter (client-side)
+    let filteredJobs = jobs;
+    if (currentJobsTerritory !== 'all') {
+        filteredJobs = jobs.filter(job => getJobTerritory(job) === currentJobsTerritory);
+    }
+
+    if (filteredJobs.length === 0) {
+        const emptyMessages = {
+            all: 'No jobs found. Create a work order from an accepted estimate.',
+            backlog: 'No jobs in backlog. All work orders are scheduled!',
+            completed: 'No completed jobs yet.',
+            shitList: 'No problem jobs. Everything is running smoothly!'
+        };
+        const territoryNote = currentJobsTerritory !== 'all' ? ` in ${currentJobsTerritory === 'original' ? 'Original (KY/TN)' : 'Southern (AL/FL)'} territory` : '';
+        const message = searchTerm
+            ? `No jobs matching "${searchTerm}"${territoryNote}`
+            : (emptyMessages[tabName] || 'No jobs found') + territoryNote;
+        container.innerHTML = `
+            <div style="padding: 40px; text-align: center; color: #6c757d;">
+                <div style="font-size: 48px; margin-bottom: 16px;">${searchTerm ? '🔍' : (tabName === 'shitList' ? '🎉' : '📋')}</div>
+                <p>${message}</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Count header
+    const showing = filteredJobs.length;
+    const total = totalCount || showing;
+    const countHtml = total > showing
+        ? `<div style="padding: 8px 20px; font-size: 13px; color: #6c757d; border-bottom: 1px solid #e9ecef;">Showing ${showing} of ${total.toLocaleString()} jobs</div>`
+        : `<div style="padding: 8px 20px; font-size: 13px; color: #6c757d; border-bottom: 1px solid #e9ecef;">${total.toLocaleString()} jobs</div>`;
+
+    // Load More button
+    const hasMore = tabJobsOffsets[tabName] < total;
+    const statusArg = statusFilter ? `'${statusFilter}'` : "''";
+    const loadMoreHtml = hasMore
+        ? `<div style="padding: 16px; text-align: center;">
+            <button class="btn btn-outline" onclick="loadMoreTabJobs('${tabName}', ${statusArg})" style="width: 100%;">
+                Load More (${(total - tabJobsOffsets[tabName]).toLocaleString()} remaining)
+            </button>
+           </div>`
+        : '';
+
+    container.innerHTML = countHtml + renderJobsListHtml(filteredJobs) + loadMoreHtml;
 }
 
 // Render jobs list HTML (reusable for all tabs)
