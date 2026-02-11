@@ -3,7 +3,7 @@
 // Handles sign-in, session management, token retrieval
 // ==========================================
 
-// Clerk instance — set after auto-init completes
+// Clerk instance — set after Clerk.load() completes
 let clerkInstance = null;
 
 // Get JWT token for API calls
@@ -66,56 +66,36 @@ function handleSignedIn(user) {
     }
 }
 
-// Called once Clerk is fully loaded — mount sign-in or enter app
-function onClerkReady() {
-    if (clerkInstance.user) {
-        // Already signed in (session persisted)
-        handleSignedIn(clerkInstance.user);
-    } else {
-        // Not signed in — mount sign-in form
+// Initialize Clerk — follows official vanilla JS pattern:
+// https://clerk.com/docs/quickstarts/javascript
+window.addEventListener('load', async function () {
+    try {
+        await window.Clerk.load();
+        clerkInstance = window.Clerk;
+
+        if (window.Clerk.user) {
+            // Already signed in (session persisted)
+            handleSignedIn(window.Clerk.user);
+        } else {
+            // Not signed in — mount sign-in form
+            const signInEl = document.getElementById('clerk-sign-in');
+            if (signInEl) {
+                window.Clerk.mountSignIn(signInEl);
+            }
+        }
+
+        // Listen for auth state changes (sign-in, sign-out)
+        window.Clerk.addListener(({ user, session }) => {
+            if (user && session && !currentRole) {
+                handleSignedIn(user);
+            }
+        });
+
+    } catch (e) {
+        console.error('Clerk init error:', e);
         const signInEl = document.getElementById('clerk-sign-in');
         if (signInEl) {
-            clerkInstance.mountSignIn(signInEl);
+            signInEl.innerHTML = '<p style="color: #c62828; text-align: center; padding: 20px;">Unable to load sign-in. Please refresh the page.</p>';
         }
     }
-
-    // Listen for auth state changes (sign-in, sign-out)
-    clerkInstance.addListener(({ user, session }) => {
-        if (user && session && !currentRole) {
-            handleSignedIn(user);
-        }
-    });
-}
-
-// Wait for Clerk auto-init to finish loading (do NOT call .load() again)
-function waitForClerk() {
-    const check = setInterval(() => {
-        if (window.Clerk) {
-            clerkInstance = window.Clerk;
-            // Auto-init calls .load() — wait for it to finish
-            if (clerkInstance.loaded) {
-                clearInterval(check);
-                onClerkReady();
-            }
-        }
-    }, 100);
-
-    // Timeout after 15s — show error
-    setTimeout(() => {
-        clearInterval(check);
-        if (!clerkInstance || !clerkInstance.loaded) {
-            console.error('Clerk failed to load within 15 seconds');
-            const signInEl = document.getElementById('clerk-sign-in');
-            if (signInEl && !signInEl.hasChildNodes()) {
-                signInEl.innerHTML = '<p style="color: #c62828; text-align: center; padding: 20px;">Unable to load sign-in. Please refresh the page.</p>';
-            }
-        }
-    }, 15000);
-}
-
-// Start when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', waitForClerk);
-} else {
-    waitForClerk();
-}
+});
