@@ -6,11 +6,14 @@
 const QB_API_BASE = 'https://bleachers-api.vercel.app/api/qb';
 
 const EstimatesAPI = {
-    // Get headers with user role
-    getHeaders() {
+    // Get headers with auth token
+    async getHeaders() {
         const headers = { 'Content-Type': 'application/json' };
-        if (typeof currentRole !== 'undefined' && currentRole) {
-            headers['X-User-Role'] = currentRole;
+        if (typeof getAuthToken === 'function') {
+            const token = await getAuthToken();
+            if (token) {
+                headers['Authorization'] = 'Bearer ' + token;
+            }
         }
         return headers;
     },
@@ -38,7 +41,7 @@ const EstimatesAPI = {
         if (status) params.set('status', status);
 
         const response = await fetch(`${QB_API_BASE}/estimates?${params}`, {
-            headers: this.getHeaders()
+            headers: await this.getHeaders()
         });
 
         if (!response.ok) {
@@ -94,7 +97,7 @@ const EstimatesAPI = {
     async create(estimateData) {
         const response = await fetch(`${QB_API_BASE}/estimates`, {
             method: 'POST',
-            headers: this.getHeaders(),
+            headers: await this.getHeaders(),
             body: JSON.stringify(estimateData)
         });
 
@@ -116,7 +119,7 @@ const EstimatesAPI = {
         params.set('limit', 100);
 
         const response = await fetch(`${QB_API_BASE}/customers?${params}`, {
-            headers: this.getHeaders()
+            headers: await this.getHeaders()
         });
 
         if (!response.ok) {

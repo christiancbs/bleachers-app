@@ -238,7 +238,13 @@ function checkQuickBooksStatus() {
     const reconnectBtn = document.getElementById('qbReconnectBtn');
 
     // Check QB connection status via API
-    fetch('https://bleachers-api.vercel.app/api/auth/status')
+    (async () => {
+    const headers = typeof getAuthToken === 'function' ? {} : {};
+    if (typeof getAuthToken === 'function') {
+        const token = await getAuthToken();
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+    }
+    fetch('https://bleachers-api.vercel.app/api/auth/status', { headers })
         .then(response => response.json())
         .then(data => {
             if (data.connected) {
@@ -259,6 +265,7 @@ function checkQuickBooksStatus() {
             statusDetail.textContent = 'Could not reach the API to verify status';
             reconnectBtn.style.display = 'block';
         });
+    })();
 }
 
 function reconnectQuickBooks() {

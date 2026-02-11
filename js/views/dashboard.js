@@ -294,7 +294,7 @@ async function loadEstimates() {
     }
     ['allEstimatesList', 'estimatesList', 'acceptedEstimatesList'].forEach(id => {
         const el = document.getElementById(id);
-        if (el && !el.innerHTML.trim()) el.innerHTML = loadingHtml;
+        if (el) el.innerHTML = loadingHtml;
     });
 
     // Fetch from QB API and update badge counts

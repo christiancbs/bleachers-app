@@ -160,6 +160,9 @@ function closeMobileMenu(sidebarId) {
 }
 
 function logout() {
+    if (typeof clerkLogout === 'function') {
+        clerkLogout();
+    }
     currentRole = '';
     document.getElementById('loginScreen').classList.remove('hidden');
     document.getElementById('officeDashboard').classList.add('hidden');
@@ -217,12 +220,6 @@ function showView(view) {
     } else if (view === 'parts') {
         document.getElementById('partsView').classList.remove('hidden');
         setActiveNav('parts');
-    } else if (view === 'partsOrders') {
-        document.getElementById('partsOrdersView').classList.remove('hidden');
-        setActiveNav('partsOrders');
-    } else if (view === 'shipping') {
-        document.getElementById('shippingView').classList.remove('hidden');
-        setActiveNav('shipping');
     } else if (view === 'opsReview') {
         document.getElementById('opsReviewView').classList.remove('hidden');
         setActiveNav('opsReview');

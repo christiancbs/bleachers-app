@@ -15,27 +15,7 @@
             </div>
             <img src="menu-logo-wide.png" alt="Bleachers & Seats" style="max-width: 320px; margin: 0 auto 16px; display: block;">
             <p class="login-subtitle">Professional, Accurate, On-Time</p>
-
-            <div class="form-group">
-                <label class="form-label">Email Address</label>
-                <input type="email" class="form-input" value="office@bleachers.com" placeholder="you@company.com">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Password</label>
-                <input type="password" class="form-input" value="password" placeholder="Enter your password">
-            </div>
-
-            <button class="btn btn-primary" onclick="login('office')" style="width: 100%; margin-bottom: 12px;">
-                Sign In
-            </button>
-
-            <div class="demo-accounts">
-                <strong>Demo Accounts (click to login):</strong>
-                <div onclick="login('admin')" style="cursor: pointer;">• <strong>admin@bleachers.com</strong> - Admin</div>
-                <div onclick="login('office')" style="cursor: pointer;">• <strong>office@bleachers.com</strong> - Office Staff</div>
-                <div onclick="login('inspector')" style="cursor: pointer;">• <strong>tech@bleachers.com</strong> - Field Staff</div>
-            </div>
+            <div id="clerk-sign-in"></div>
         </div>
     </div>
 
@@ -4044,7 +4024,7 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label">Hours</label>
-                    <input type="number" id="laborHours" class="form-input" min="0.5" step="0.5" value="1">
+                    <input type="number" id="addLaborHours" class="form-input" min="0.5" step="0.5" value="1">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Hourly Rate ($)</label>
@@ -4106,28 +4086,28 @@
                 <div style="background: #f8f9fa; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px;">
                     <div style="display: flex; gap: 12px; align-items: center;">
                         <span style="font-weight: 700; color: #0066cc;">Job #</span>
-                        <input type="text" id="woJobNumber" class="form-input" style="width: 100px;" readonly>
+                        <input type="text" id="createWoJobNumber" class="form-input" style="width: 100px;" readonly>
                     </div>
                 </div>
 
                 <!-- Customer & Location -->
                 <div class="form-group">
                     <label class="form-label">Customer</label>
-                    <input type="text" id="woCustomerName" class="form-input" readonly style="background: #f8f9fa;">
+                    <input type="text" id="createWoCustomerName" class="form-input" readonly style="background: #f8f9fa;">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Location</label>
-                    <input type="text" id="woLocationName" class="form-input" readonly style="background: #f8f9fa;">
+                    <input type="text" id="createWoLocationName" class="form-input" readonly style="background: #f8f9fa;">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Address</label>
-                    <input type="text" id="woLocationAddress" class="form-input" readonly style="background: #f8f9fa;">
+                    <input type="text" id="createWoLocationAddress" class="form-input" readonly style="background: #f8f9fa;">
                 </div>
 
                 <!-- Job Type -->
                 <div class="form-group">
                     <label class="form-label">Job Type</label>
-                    <select id="woJobType" class="form-input">
+                    <select id="createWoJobType" class="form-input">
                         <option value="repair">Repair</option>
                         <option value="inspection">Inspection</option>
                         <option value="service_call">Service Call</option>
@@ -4138,36 +4118,36 @@
                 <!-- Description -->
                 <div class="form-group">
                     <label class="form-label">Description</label>
-                    <textarea id="woDescription" class="form-input" rows="3" placeholder="Work to be performed..."></textarea>
+                    <textarea id="createWoDescription" class="form-input" rows="3" placeholder="Work to be performed..."></textarea>
                 </div>
 
                 <!-- Contact Info -->
                 <div style="display: flex; gap: 12px;">
                     <div class="form-group" style="flex: 1;">
                         <label class="form-label">Contact Name</label>
-                        <input type="text" id="woContactName" class="form-input" placeholder="On-site contact">
+                        <input type="text" id="createWoContactName" class="form-input" placeholder="On-site contact">
                     </div>
                     <div class="form-group" style="flex: 1;">
                         <label class="form-label">Contact Phone</label>
-                        <input type="text" id="woContactPhone" class="form-input" placeholder="(xxx) xxx-xxxx">
+                        <input type="text" id="createWoContactPhone" class="form-input" placeholder="(xxx) xxx-xxxx">
                     </div>
                 </div>
 
                 <!-- Special Instructions -->
                 <div class="form-group">
                     <label class="form-label">Special Instructions</label>
-                    <textarea id="woSpecialInstructions" class="form-input" rows="2" placeholder="Access notes, parking, etc."></textarea>
+                    <textarea id="createWoSpecialInstructions" class="form-input" rows="2" placeholder="Access notes, parking, etc."></textarea>
                 </div>
 
                 <!-- Notes -->
                 <div class="form-group">
                     <label class="form-label">Internal Notes</label>
-                    <textarea id="woNotes" class="form-input" rows="2" placeholder="Notes for the team..."></textarea>
+                    <textarea id="createWoNotes" class="form-input" rows="2" placeholder="Notes for the team..."></textarea>
                 </div>
 
                 <!-- Parts Info -->
                 <div style="background: #e3f2fd; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px;">
-                    <div style="font-size: 13px; color: #1565c0;" id="woPartsInfo">
+                    <div style="font-size: 13px; color: #1565c0;" id="createWoPartsInfo">
                         Parts from inspection will be attached
                     </div>
                 </div>
@@ -4175,7 +4155,7 @@
                 <!-- Submit -->
                 <div style="display: flex; gap: 12px;">
                     <button class="btn btn-outline" onclick="closeCreateWorkOrderModal()" style="flex: 1;">Cancel</button>
-                    <button class="btn btn-primary" id="woSubmitBtn" onclick="submitWorkOrderFromModal()" style="flex: 1; background: #ff9800;">
+                    <button class="btn btn-primary" id="createWoSubmitBtn" onclick="submitWorkOrderFromModal()" style="flex: 1; background: #ff9800;">
                         Create Work Order
                     </button>
                 </div>
@@ -4183,8 +4163,14 @@
         </div>
     </div>
 
-    <!-- Config (API keys - gitignored, load first) -->
-    <script src="js/config.js"></script>
+    <!-- Clerk Auth SDK -->
+    <script
+      async crossorigin="anonymous"
+      data-clerk-publishable-key="pk_test_bGlrZWQtcmF5LTIxLmNsZXJrLmFjY291bnRzLmRldiQ"
+      src="https://liked-ray-21.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+      type="text/javascript">
+    </script>
+
     <!-- Data & Constants -->
     <script src="js/data.js"></script>
 
@@ -4209,5 +4195,8 @@
 
     <!-- App core (load last - kicks off init) -->
     <script src="js/app.js"></script>
+
+    <!-- Clerk auth (after app.js so login() is available) -->
+    <script src="js/auth.js"></script>
 </body>
 </html>

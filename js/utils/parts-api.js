@@ -6,11 +6,14 @@
 const PARTS_API_BASE = 'https://bleachers-api.vercel.app/api/parts';
 
 const PartsAPI = {
-    // Get headers with user role for auth
-    getHeaders() {
+    // Get headers with auth token
+    async getHeaders() {
         const headers = { 'Content-Type': 'application/json' };
-        if (typeof currentRole !== 'undefined' && currentRole) {
-            headers['X-User-Role'] = currentRole;
+        if (typeof getAuthToken === 'function') {
+            const token = await getAuthToken();
+            if (token) {
+                headers['Authorization'] = 'Bearer ' + token;
+            }
         }
         return headers;
     },
@@ -24,7 +27,7 @@ const PartsAPI = {
         params.set('limit', limit);
 
         const response = await fetch(`${PARTS_API_BASE}/search?${params}`, {
-            headers: this.getHeaders()
+            headers: await this.getHeaders()
         });
 
         if (!response.ok) {
@@ -39,7 +42,7 @@ const PartsAPI = {
     async addPart(partData) {
         const response = await fetch(PARTS_API_BASE, {
             method: 'POST',
-            headers: this.getHeaders(),
+            headers: await this.getHeaders(),
             body: JSON.stringify(partData)
         });
 
@@ -55,7 +58,7 @@ const PartsAPI = {
     async updatePart(id, partData) {
         const response = await fetch(`${PARTS_API_BASE}/${id}`, {
             method: 'PUT',
-            headers: this.getHeaders(),
+            headers: await this.getHeaders(),
             body: JSON.stringify(partData)
         });
 
@@ -71,7 +74,7 @@ const PartsAPI = {
     async deletePart(id) {
         const response = await fetch(`${PARTS_API_BASE}/${id}`, {
             method: 'DELETE',
-            headers: this.getHeaders()
+            headers: await this.getHeaders()
         });
 
         if (!response.ok) {
@@ -86,7 +89,7 @@ const PartsAPI = {
     async importParts(parts, vendor) {
         const response = await fetch(`${PARTS_API_BASE}/import`, {
             method: 'POST',
-            headers: this.getHeaders(),
+            headers: await this.getHeaders(),
             body: JSON.stringify({ parts, vendor })
         });
 
@@ -102,7 +105,7 @@ const PartsAPI = {
     async uploadImage(partId, partNumber, imageData) {
         const response = await fetch(`${PARTS_API_BASE}/images`, {
             method: 'POST',
-            headers: this.getHeaders(),
+            headers: await this.getHeaders(),
             body: JSON.stringify({ partId, partNumber, imageData })
         });
 
@@ -118,7 +121,7 @@ const PartsAPI = {
     async uploadImagesBulk(images) {
         const response = await fetch(`${PARTS_API_BASE}/images/bulk`, {
             method: 'POST',
-            headers: this.getHeaders(),
+            headers: await this.getHeaders(),
             body: JSON.stringify({ images })
         });
 

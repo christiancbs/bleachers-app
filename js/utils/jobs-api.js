@@ -6,11 +6,14 @@
 const JOBS_API_BASE = 'https://bleachers-api.vercel.app/api/jobs';
 
 const JobsAPI = {
-    // Get headers with user role for auth
-    getHeaders() {
+    // Get headers with auth token
+    async getHeaders() {
         const headers = { 'Content-Type': 'application/json' };
-        if (typeof currentRole !== 'undefined' && currentRole) {
-            headers['X-User-Role'] = currentRole;
+        if (typeof getAuthToken === 'function') {
+            const token = await getAuthToken();
+            if (token) {
+                headers['Authorization'] = 'Bearer ' + token;
+            }
         }
         return headers;
     },
@@ -30,7 +33,7 @@ const JobsAPI = {
         if (options.offset) params.set('offset', options.offset);
 
         const url = params.toString() ? `${JOBS_API_BASE}?${params}` : JOBS_API_BASE;
-        const response = await fetch(url, { headers: this.getHeaders() });
+        const response = await fetch(url, { headers: await this.getHeaders() });
 
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
@@ -43,7 +46,7 @@ const JobsAPI = {
     // Get single job with attachments and inspection banks
     async get(id) {
         const response = await fetch(`${JOBS_API_BASE}/${id}`, {
-            headers: this.getHeaders()
+            headers: await this.getHeaders()
         });
 
         if (!response.ok) {
@@ -58,7 +61,7 @@ const JobsAPI = {
     async create(jobData) {
         const response = await fetch(JOBS_API_BASE, {
             method: 'POST',
-            headers: this.getHeaders(),
+            headers: await this.getHeaders(),
             body: JSON.stringify(jobData)
         });
 
@@ -74,7 +77,7 @@ const JobsAPI = {
     async update(id, jobData) {
         const response = await fetch(`${JOBS_API_BASE}/${id}`, {
             method: 'PUT',
-            headers: this.getHeaders(),
+            headers: await this.getHeaders(),
             body: JSON.stringify(jobData)
         });
 
@@ -90,7 +93,7 @@ const JobsAPI = {
     async delete(id) {
         const response = await fetch(`${JOBS_API_BASE}/${id}`, {
             method: 'DELETE',
-            headers: this.getHeaders()
+            headers: await this.getHeaders()
         });
 
         if (!response.ok) {
@@ -108,7 +111,7 @@ const JobsAPI = {
     // Preview QB estimates available for import
     async syncPreview(limit = 50) {
         const response = await fetch(`${JOBS_API_BASE}/sync?limit=${limit}`, {
-            headers: this.getHeaders()
+            headers: await this.getHeaders()
         });
 
         if (!response.ok) {
@@ -123,7 +126,7 @@ const JobsAPI = {
     async syncImport(options = {}) {
         const response = await fetch(`${JOBS_API_BASE}/sync`, {
             method: 'POST',
-            headers: this.getHeaders(),
+            headers: await this.getHeaders(),
             body: JSON.stringify(options) // { all: true } or { estimateIds: [...] }
         });
 
@@ -143,7 +146,7 @@ const JobsAPI = {
     async uploadAttachment(jobId, options) {
         const response = await fetch(`${JOBS_API_BASE}/attachments`, {
             method: 'POST',
-            headers: this.getHeaders(),
+            headers: await this.getHeaders(),
             body: JSON.stringify({
                 jobId,
                 type: options.type || 'photo',
@@ -168,7 +171,7 @@ const JobsAPI = {
     async deleteAttachment(attachmentId) {
         const response = await fetch(`${JOBS_API_BASE}/attachments?id=${attachmentId}`, {
             method: 'DELETE',
-            headers: this.getHeaders()
+            headers: await this.getHeaders()
         });
 
         if (!response.ok) {
@@ -187,7 +190,7 @@ const JobsAPI = {
     async addInspectionBank(jobId, bankData) {
         const response = await fetch(`${JOBS_API_BASE}/inspections`, {
             method: 'POST',
-            headers: this.getHeaders(),
+            headers: await this.getHeaders(),
             body: JSON.stringify({
                 jobId,
                 bankName: bankData.bankName,
@@ -211,7 +214,7 @@ const JobsAPI = {
     async updateInspectionBank(bankId, bankData) {
         const response = await fetch(`${JOBS_API_BASE}/inspections?id=${bankId}`, {
             method: 'PUT',
-            headers: this.getHeaders(),
+            headers: await this.getHeaders(),
             body: JSON.stringify(bankData)
         });
 
@@ -227,7 +230,7 @@ const JobsAPI = {
     async deleteInspectionBank(bankId) {
         const response = await fetch(`${JOBS_API_BASE}/inspections?id=${bankId}`, {
             method: 'DELETE',
-            headers: this.getHeaders()
+            headers: await this.getHeaders()
         });
 
         if (!response.ok) {
