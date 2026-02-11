@@ -23,7 +23,7 @@ async function getAuthToken() {
 async function clerkLogout() {
     if (clerkInstance) {
         try {
-            await clerkInstance.signOut();
+            await clerkInstance.signOut({ redirectUrl: '/bleachers-app/' });
         } catch (e) {
             console.error('Clerk signOut error:', e);
         }
@@ -74,6 +74,7 @@ window.addEventListener('load', async function () {
         await window.Clerk.load({
             afterSignInUrl: appUrl,
             afterSignUpUrl: appUrl,
+            afterSignOutUrl: appUrl,
             signInForceRedirectUrl: appUrl,
             signUpForceRedirectUrl: appUrl
         });
