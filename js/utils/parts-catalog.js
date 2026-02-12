@@ -499,7 +499,6 @@ function submitInspection() {
 
     currentInspection = {};
     currentInspectionType = '';
-    updateDashboardStats();
     goBackFromInspection();
 }
 

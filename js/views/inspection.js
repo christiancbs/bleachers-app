@@ -13,7 +13,6 @@ function init() {
     populateCustomers();
     populateJobCustomers();
     populateCategories();
-    updateDashboardStats();
 
     // Load sample data if no jobs exist
     if (inspectionJobs.length === 0) {

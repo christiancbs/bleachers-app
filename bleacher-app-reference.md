@@ -1,7 +1,7 @@
 # Bleachers & Seats - App Development Reference
 
-**Last Updated:** February 9, 2026
-**Version:** v3.8.0
+**Last Updated:** February 10, 2026
+**Version:** v4.0.0
 **Branch:** `main`
 
 ---
@@ -15,10 +15,11 @@ python3 -m http.server 8080
 # Open http://localhost:8080 in browser
 ```
 
-**Test Logins:**
-- **Field Staff:** Click "tech@bleachers.com" - Test status tracking in "My Jobs"
-- **Office:** Click "office@bleachers.com" - View "Estimates" for real QB data
-- **Admin:** Click "admin@bleachers.com" - Full access to all features
+**Sign In:**
+- Uses **Clerk** hosted sign-in (email + password)
+- Roles set via Clerk `publicMetadata.role`: `admin`, `office`, `technician`
+- Session persists across page refreshes (Clerk handles cookies)
+- Sign out via sidebar logout button
 
 **Test v3.7.0 Features (Procurement Intelligence):**
 1. Login as **Office** → **Estimates** → **+ Create Estimate** tab
@@ -51,7 +52,9 @@ python3 -m http.server 8080
 - `v3.5.0` - Territory View, Site Equipment Profile
 - `v3.6.0` - Estimate Builder, streamlined Create Job, Ops Review workflow
 - `v3.7.0` - Procurement Intelligence — auto-notes, stock part tracking, pre-schedule verification
-- `v3.8.0` - **Current:** Ops Foundation — territory DB column + API filtering, confirmation tracking, expanded pink categories, scraper fixes
+- `v3.8.0` - Ops Foundation — territory DB column + API filtering, confirmation tracking, expanded pink categories, scraper fixes
+- `v3.8.1` - Security — PII removal from public repo, security plan for Clerk auth
+- `v4.0.0` - **Current:** Clerk Auth — real authentication replaces demo login, JWT Bearer tokens on all API calls
 
 ---
 
@@ -99,7 +102,7 @@ python3 -m http.server 8080
 
 ---
 
-## What's Built (v3.8.0)
+## What's Built (v4.0.0)
 
 **Core Features:**
 - **Home Page** - Role-specific landing with bulletins, notifications, and action items
@@ -132,6 +135,17 @@ python3 -m http.server 8080
   - **Confirmation Tracking** - Schedule entries now capture `confirmedWith`, `confirmationMethod` (email/phone/in_person), `confirmedBy`, `confirmedDate`. Tooltips show confirmation details on schedule grid.
   - **Expanded Pink/Shit List Categories** - 9 reason categories: Wrong Part, Can't Access, Additional Work, Equipment Issue, Customer Not Ready, Safety Concern, Scope Change, Weather/Access, Other. `PINK_REASONS` constant in data.js.
   - **ServicePal Scraper Fixes** - Fixed column alignment (off-by-one in Kendo grid parsing), added KY/GA/MS state detection for territory
+- **Security (v3.8.1):**
+  - **PII Removal** - Stripped all hardcoded customer, employee, vendor, and sample data from public repo
+  - **Data Loading** - CUSTOMERS, EMPLOYEES, VENDORS, BULLETINS, NOTIFICATIONS now load from API/localStorage only
+- **Clerk Authentication (v4.0.0):**
+  - **Real Sign-In** - Clerk hosted sign-in form replaces demo login buttons (email + password)
+  - **JWT Bearer Tokens** - All API calls send `Authorization: Bearer <jwt>` header via `getAuthToken()`
+  - **Session Persistence** - Clerk manages session cookies; page refresh auto-logs in
+  - **Role from Clerk** - User role read from `publicMetadata.role` (admin/office/technician)
+  - **Backend 2-Tier Auth** - `requireAuth()` checks: Bearer JWT (Clerk) → X-API-Key (scripts)
+  - **User Display** - Sidebar shows real user name and initials from Clerk profile
+  - **15 Route Files Protected** - Every backend API endpoint requires authentication
 - **Create Work Order from Estimate** - Converts accepted estimate to work order with labor lines as instructions
 - **Jobs View (Tabbed):**
   - **All** - All work orders (with stock warning banners)
@@ -167,7 +181,9 @@ python3 -m http.server 8080
 | Layer | Technology |
 |-------|------------|
 | Frontend | Plain HTML/CSS/JS |
+| Authentication | Clerk (vanilla JS SDK from CDN) |
 | Backend API | Vercel (Node.js ESM) - **Pro Plan** |
+| Backend Auth | `@clerk/backend` (JWT verification) |
 | Parts Database | Vercel Postgres (Neon) |
 | Jobs Database | Vercel Postgres (Neon) - same DB |
 | File Storage | Vercel Blob |
@@ -184,8 +200,9 @@ python3 -m http.server 8080
 ├── index.html                 # Main app (4,000+ lines)
 ├── css/app.css                # All styles
 ├── js/
+│   ├── auth.js                # Clerk auth: init, sign-in, session, token, logout
 │   ├── app.js                 # Core: init, login, routing, nav
-│   ├── data.js                # Constants, sample data, STOCK_LOCATIONS, COMMON_PROCUREMENT_NOTES
+│   ├── data.js                # Constants, enums, helpers (PII removed — data loads from API/localStorage)
 │   ├── views/
 │   │   ├── admin.js           # Employee, settings, parts management
 │   │   ├── create.js          # Office/field unified create forms with typeahead
@@ -213,14 +230,14 @@ python3 -m http.server 8080
 │       │   └── _progress.json # Resume state
 │       └── MIGRATION-REFERENCE.md
 ├── bleacher-app-reference.md  # This file
-└── REFERENCE.md               # System architecture docs
+└── bleacher-app-history.md    # Archived changelog and version history
 
 ~/bleachers-api/
 ├── api/
 │   ├── _lib/
 │   │   ├── qb.js              # QuickBooks token management
 │   │   ├── db.js              # Postgres connection helper
-│   │   └── auth.js            # Role validation helper
+│   │   └── auth.js            # 2-tier auth: Clerk JWT → API Key
 │   ├── auth/                  # OAuth endpoints
 │   │   ├── connect.js         # GET - Initiates OAuth flow
 │   │   ├── callback.js        # GET - Handles OAuth callback
@@ -342,23 +359,40 @@ Estimate Builder → QB PrivateNote (structured memo) → Work Order metadata �
 | POST | `/attachments` | Upload photo/PDF |
 | POST | `/inspections` | Add inspection bank |
 
-**Auth:** Write operations require `X-User-Role: admin` or `office` header.
+**Auth:** All endpoints require authentication via `requireAuth()`. Two methods accepted (in priority order):
+1. **Bearer JWT** (Clerk) — `Authorization: Bearer <token>` — primary method for app users
+2. **API Key** — `X-API-Key: <key>` — for scripts and data imports
+
+Write operations (POST/PUT/DELETE) additionally require `admin` or `office` role via `hasWriteAccess()`.
+
+---
+
+## Security
+
+**Authentication (v4.0.0 — implemented):**
+- **Clerk sign-in** replaces demo login — real email + password authentication
+- **Clerk JS SDK v5** loaded from Clerk-hosted CDN (`liked-ray-21.clerk.accounts.dev`)
+- **JWT Bearer tokens** sent on all API requests via `getAuthToken()` in `js/auth.js`
+- **Backend `requireAuth()`** on all 15 route files — verifies Clerk JWT using `@clerk/backend`
+- **2-tier auth chain:** Bearer JWT (Clerk) → X-API-Key (scripts)
+- **Role-based access** from Clerk `user.publicMetadata.role` (admin/office/technician)
+- **`hasWriteAccess()`** gate on write operations (requires admin or office role)
+- CORS locked to `christiancbs.github.io`
+- QB OAuth tokens stored server-side in Upstash Redis
+- SQL queries use parameterized statements (no injection risk)
+- QB integration is read-only except estimate creation
+
+**PII Removal (v3.8.1):**
+- Removed hardcoded customer contacts, employee data, sample work orders from public repo
+- All data now loads from API or localStorage — nothing sensitive in the repo
+- `data.js` retains constants, enums, checklists, and helper functions only
+
+**Remaining:**
+- Move from Clerk dev instance (`pk_test_`) to production instance (`pk_live_`)
 
 ---
 
 ## Next Steps
-
-**Immediate (Work Order Flow):**
-1. ~~Jobs database~~ ✅ DONE
-2. ~~Estimates view wired to QB~~ ✅ DONE
-3. ~~Jobs view mirrors field staff~~ ✅ DONE
-4. ~~Create Work Order from Accepted Estimate~~ ✅ DONE
-5. ~~Jobs view with tabs (All/Backlog/This Week/Completed/Shit List)~~ ✅ DONE
-6. ~~Parts Tracking on work orders~~ ✅ DONE
-7. ~~Add to Planning workflow~~ ✅ DONE
-8. ~~Estimate Builder~~ ✅ DONE - Create estimates with parts, labor, custom items → push to QB
-9. ~~Streamlined Create Job form~~ ✅ DONE - Typeahead customer search, job types
-10. ~~Procurement Intelligence~~ ✅ DONE - Auto-notes, stock tracking, pre-schedule verification
 
 **Next (Persistent Scheduling):**
 1. Wire scheduling UI to jobs API (replace localStorage with DB-backed schedule)
@@ -369,91 +403,36 @@ Estimate Builder → QB PrivateNote (structured memo) → Work Order metadata �
 
 **Short-term:**
 1. Sales/Estimate Analytics Dashboard (pipeline health, territory win rates, deal size intelligence)
-2. ServicePal Import Pipeline (data cleaning + batch import to Postgres)
-3. Customer Database Migration (QB 1,000 customers → Postgres, replace hardcoded 7)
-4. Signature capture for work orders
-5. Offline mode for field staff
-6. ~~ServicePal data migration~~ **IN PROGRESS** - scraper running (column alignment fixed)
-
----
-
-## ServicePal Migration (IN PROGRESS)
-
-**Status:** Scraper running - extracting all historical job data from ServicePal.
-
-**Current Stats (as of Feb 9, 2026):**
-- **302 jobs** scraped (of ~16,854 total)
-- **478 work orders** extracted
-- **1,279 photos** downloaded
-- **58MB** output so far
-
-**Form Types Detected:**
-| Type | Count | Description |
-|------|-------|-------------|
-| Work Order | 224 | Standard job completion form |
-| Go See: Bleacher Parts Spec | 32 | Inspection/spec forms |
-| Bleacher Inspection Form | 57 | Indoor bleacher inspections |
-
-**Territory Distribution:**
-| Territory | Jobs |
-|-----------|------|
-| TN | 70 (64%) |
-| AL | 33 (30%) |
-| FL | 6 (5%) |
-
-**Scraper Location:** `~/bleachers-app/scripts/servicepal-migration/`
-
-**Commands:**
-```bash
-cd ~/bleachers-app/scripts/servicepal-migration
-
-# Resume scraping (prevents Mac sleep)
-caffeinate -i npm run scrape:resume
-
-# Test run (10 jobs only)
-npm run scrape:test
-
-# Full fresh start
-npm run scrape
-```
-
-**Output:**
-- `output/jobs/{jobNumber}.json` - Full job data with work orders
-- `output/photos/{jobNumber}_photo_{n}.jpg` - Downloaded images
-- `output/_progress.json` - Resume state and stats
-
-**Data Sources Being Consolidated:**
-1. **ServicePal** - All historical jobs, work orders, photos, technician notes
-2. **QuickBooks** - Estimates, customers, invoices (API connected)
-3. **Salesmate** - Contact data (separate export)
-
-**Key Patterns Discovered:**
-- Teams organized by territory (TNBSTeam, ALBSTeam, etc.)
-- Parts staged at regional shops ("TN Shop", "FL Shop")
-- Vehicle/toolbox checklists done daily
-- Jobs reference estimate numbers (e.g., "TN522009") - linkable to QB
-- Common repairs: drive wheel cleaning, motor tensioning, guide rods, deck boards
-
-**Potential New Features from Data:**
-- Territory View for scheduling
-- Fleet/Vehicle Management
-- Site Equipment Profile (goal counts, strap counts per location)
-- Shop Inventory tracking
-- Tech Hours Dashboard
-
-**Next:** Build import script to load ServicePal data into bleachers-app Postgres.
+2. Customer Database Migration (QB 1,000 customers → Postgres — CRM view currently empty after PII removal)
+3. Signature capture for work orders
+4. Offline mode for field staff
+5. Fleet/Vehicle Management
+6. Shop Inventory tracking
+7. Tech Hours Dashboard
+8. Switch Clerk from dev (`pk_test_`) to production (`pk_live_`)
 
 ---
 
 ## Troubleshooting
 
+**Clerk Sign-In Not Showing:**
+1. Check browser console for Clerk init errors
+2. Verify Clerk SDK script tag loads (Network tab → `clerk.browser.js`)
+3. Ensure `#clerk-sign-in` div exists in login screen HTML
+4. Check Clerk dashboard domain settings (must include GitHub Pages domain)
+
+**API Returns 401:**
+1. Check that Clerk session is active (browser DevTools → Application → Cookies)
+2. Verify `Authorization: Bearer <token>` header in Network tab
+3. For curl testing, use `X-API-Key` header (see Test Commands)
+
 **Estimates Not Loading:**
 1. Check browser console for errors
-2. Test API: `curl https://bleachers-api.vercel.app/api/qb/estimates?limit=5`
+2. Test API with auth header (see Test Commands)
 3. If QB disconnected, reconnect via `/api/auth/connect`
 
 **Parts Catalog Not Loading:**
-1. Test API: `https://bleachers-api.vercel.app/api/parts/search?q=motor`
+1. Test API with auth header (see Test Commands)
 2. Check Vercel dashboard for Postgres status
 
 **Status Updates Not Persisting:**
@@ -462,7 +441,7 @@ npm run scrape
 
 **Jobs Not Appearing:**
 1. Hard refresh browser (Cmd+Shift+R)
-2. Test API: `curl https://bleachers-api.vercel.app/api/jobs`
+2. Test API with auth header (see Test Commands)
 3. Check that work order was created from accepted estimate
 
 ---
@@ -483,21 +462,29 @@ npm run scrape
 
 ## Test Commands
 
+All endpoints require authentication. Use API key header for curl testing:
+
 ```bash
+# Set auth header variable
+AUTH="-H 'X-API-Key: <your-admin-api-key>'"
+
 # Test QB connection
-curl https://bleachers-api.vercel.app/api/qb/company-info
+curl $AUTH https://bleachers-api.vercel.app/api/qb/company-info
 
 # Get QB estimates
-curl "https://bleachers-api.vercel.app/api/qb/estimates?limit=5"
+curl $AUTH "https://bleachers-api.vercel.app/api/qb/estimates?limit=5"
 
 # Search parts
-curl "https://bleachers-api.vercel.app/api/parts/search?q=seat+board"
+curl $AUTH "https://bleachers-api.vercel.app/api/parts/search?q=seat+board"
 
 # List work orders
-curl https://bleachers-api.vercel.app/api/jobs
+curl $AUTH https://bleachers-api.vercel.app/api/jobs
 
 # Get single work order with details
-curl https://bleachers-api.vercel.app/api/jobs/1
+curl $AUTH https://bleachers-api.vercel.app/api/jobs/1
+
+# Verify auth is enforced (should return 401)
+curl https://bleachers-api.vercel.app/api/jobs
 ```
 
 ---

@@ -26,15 +26,6 @@
             text-align: center;
         }
 
-        .login-card {
-            background: white;
-            padding: 48px;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            width: 100%;
-            max-width: 440px;
-        }
-
         .login-logo {
             width: 120px;
             height: 120px;
@@ -51,37 +42,10 @@
             border-radius: 16px;
         }
 
-        .login-title {
-            text-align: center;
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            display: none; /* Hidden - using logo image instead */
-        }
-
         .login-subtitle {
             text-align: center;
             color: #666;
             margin-bottom: 0;
-        }
-
-        .demo-accounts {
-            background: #e7f3ff;
-            padding: 16px;
-            border-radius: 8px;
-            margin-top: 24px;
-            font-size: 13px;
-        }
-
-        .demo-accounts strong {
-            display: block;
-            margin-bottom: 8px;
-            color: #0066cc;
-        }
-
-        .demo-accounts div {
-            margin: 4px 0;
-            color: #495057;
         }
 
         /* App Layout */

@@ -263,19 +263,6 @@ function renderTodayPanel(containerId) {
 }
 
 // ==========================================
-// DASHBOARD (Obsolete)
-// Kept for backwards compatibility
-// ==========================================
-
-function loadOfficeDashboard() {
-    // Dashboard view is obsolete - office/admin default to Home
-}
-
-function updateDashboardStats() {
-    // Stub function - old dashboard view is obsolete
-}
-
-// ==========================================
 // ESTIMATES
 // View, filter, and manage estimates
 // ==========================================
@@ -1766,7 +1753,6 @@ function saveLocation() {
 
 // Tech Functions
 function loadTechDashboard() {
-    updateDashboardStats();
 }
 
 function loadTechInspections() {

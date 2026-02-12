@@ -4,6 +4,138 @@
 
 ---
 
+## Version 3.5.0 (February 10, 2026)
+
+**Production Data Import & UI Fixes for 3,007 Jobs**
+
+Replaced 23 seed jobs with the company's full historical dataset. Built and ran a 4-step data import pipeline, then fixed UI to handle the larger dataset.
+
+### Data Import Pipeline (`scripts/data-import/`)
+
+**Step 1 — Cleanup:** Deleted all 523 existing jobs (seed data + prior test imports).
+
+**Step 2 — ServicePal Import:** Imported 569 scraped ServicePal jobs. Parser handles misaligned Kendo grid data by falling back to `rawPageText` parsing. Extracts address, territory, estimate IDs, work order metadata. Output: `job-id-map.json` (jobNumber → API id).
+
+**Step 3 — Photo Upload:** Uploaded 2,236 photos (filtered from 2,962 after removing placeholders and missing files). Base64-encoded and POSTed to `/api/jobs/attachments`. ~156MB total. Zero errors.
+
+**Step 4 — Excel Import (2024-2025 only):** Parsed 4 Excel project trackers (2025 Original, 2025 Southern, 2024 Original, 2024 Southern). 3,220 rows → 2,568 unique after dedup. Three import paths:
+- **Path 1 — Estimate matches existing ServicePal job:** UPDATE with `qbEstimateTotal` (545 jobs enriched)
+- **Path 2 — Has estimate but no matching job:** CREATE as `EST-{estimateNumber}` (2,021 new jobs)
+- **Path 3 — No estimate number:** CREATE as `XL-{year}-{OT|ST}-{seq}` (16 historical records)
+
+**Final database state:** 3,007 total jobs. 2,793 with estimate ID, 2,097 with estimate total. By source: 569 ServicePal, 2,422 EST-*, 16 XL-*.
+
+### Backend Change
+
+- **API max limit raised** from 100 to 500 in `api/jobs/index.js` (line 38) to support larger dataset pagination.
+
+### Frontend Fixes
+
+- **Office tab pagination:** Added "Load More" button with count header ("Showing X of Y jobs") to All, Backlog, Completed, Shit List tabs. 100 jobs per page.
+- **Job click-through fixed:** Added missing `onclick="openJobDetail(${job.id})"` to job list items in Office tabs (were unclickable).
+- **Schedule duplication fixed:** `formatJobLocation()` was appending `job.title` which for imported EST-* jobs was identical to `job.description`. Now checks `job.title !== job.description` before including.
+- **Draft dropdown limit:** Raised from 100 to 500 for schedule planning.
+- **Estimates loading indicator:** Added animated loading bar to `loadEstimates()` — **known bug: doesn't display** (needs debugging).
+
+### Import Pipeline Files
+```
+scripts/data-import/
+├── package.json              # xlsx dependency
+├── config.js                 # API URL, file paths, rate limits
+├── lib/
+│   ├── api-client.js         # fetch wrapper with retry + rate limiting
+│   ├── progress.js           # JSON-based resume tracking
+│   ├── servicepal-parser.js  # Scraped JSON → API payload (with rawPageText fallback)
+│   └── excel-parser.js       # xlsx parsing, date/dollar normalization, dedup
+├── step-1-cleanup.js         # Delete all existing jobs
+├── step-2-servicepal.js      # Import 569 ServicePal jobs
+├── step-3-photos.js          # Upload 2,236 photos to Vercel Blob
+└── step-4-excel.js           # Import/merge 2024-2025 Excel tracker data
+```
+
+**Commits:**
+- `e6cd723` (bleachers-api) — Raise API max limit from 100 to 500
+- `d78e51b` (bleachers-app) — Add pagination to office job tabs for 3,007+ imported jobs
+- `f1551be` (bleachers-app) — Fix 3 UI issues: job click-through, schedule duplication, estimates loading
+
+**Known Issue:** Estimates loading bar doesn't display — the `loadingHtml` injection condition (`!el.innerHTML.trim()`) may be preventing it from showing when containers already have content.
+
+---
+
+## Version 3.4.0 (February 9, 2026)
+
+**Codebase Audit & Health Fixes**
+
+**Fixes:**
+- **Removed ghost `config.js` script tag** - Referenced in index.html but file never existed; no code depended on it (API bases are hardcoded in API client files)
+- **Fixed 8 duplicate element IDs** - Create Work Order modal reused `wo*` IDs that conflicted with the WO detail view. Renamed modal IDs to `createWo*` prefix (`createWoJobNumber`, `createWoDescription`, etc.)
+- **Fixed duplicate `laborHours` ID** - Inspection form and Add Labor modal both used `id="laborHours"`. Renamed estimate builder modal's to `addLaborHours`
+- **Removed dead `partsOrders`/`shipping` view code** - `showView()` had branches for views that don't exist in the HTML. Removed from app.js
+
+**Files Modified:**
+- `index.html` - Removed config.js script tag, renamed 8 duplicate IDs in Create WO modal, renamed laborHours in Add Labor modal
+- `js/views/ops-review.js` - Updated all getElementById calls to use `createWo*` prefix
+- `js/views/estimate-builder.js` - Updated laborHours references to `addLaborHours`
+- `js/app.js` - Removed dead partsOrders/shipping view branches
+
+---
+
+## Version 3.3.0 (February 9, 2026)
+
+**Ops Director Feedback — 8 UI Improvements**
+
+Reviewed app with Ops Director (Story). Implemented 8 feedback items:
+
+**Features:**
+1. **Field Staff: Hide Prices** - Removed dollar amounts from tech parts catalog search results. Office/estimate builder contexts still show pricing.
+2. **Customer Types System** - Added 7 customer types (County Schools, Collegiate, Private School, Contractor, Government, Worship, Other) with icons and badge colors. Type filter dropdown in Accounts view.
+3. **Pipeline Territory Tabs** - Sub-tabs for All, Original (KY/TN), Southern (AL/FL), and New Installs in Sales Pipeline view.
+4. **Employee Resources** - New nav section with link to Employee Resource Guide PDF. Accessible to both office and field staff roles.
+5. **Remove Create WO from Ops Review** - Work orders should only be created after sales sells the work. Ops review flow is now: Inspect → Approve → Build Estimate only.
+6. **Local Inventory Priority Path** - Placeholder `LOCAL_INVENTORY` array in data.js. When populated, matching parts will surface first in estimate builder with "In Stock" badge.
+7. **Rename "This Week" to "Team Schedule"** - Schedule tab label updated.
+8. **Move "This Week" to Scheduling** - Card-based office jobs grid moved from Jobs tabs to Scheduling as "This Week" tab. Jobs view now: All, Backlog, Completed, Shit List.
+
+**Files Modified:**
+- `index.html` - Scheduling tab restructure, Jobs tab cleanup, Employee Resources views, Accounts type filter, Pipeline territory tabs, Ops Review sub-filter cleanup
+- `js/utils/parts-catalog.js` - Hide prices in `searchTechParts()`
+- `js/data.js` - Added `CUSTOMER_TYPES` constant, `LOCAL_INVENTORY` placeholder
+- `js/views/dashboard.js` - Customer type system in Accounts, pipeline territory filtering
+- `js/views/ops-review.js` - Removed Create WO button from approval flow
+- `js/views/estimate-builder.js` - Local inventory priority in parts search
+- `js/views/scheduling.js` - Added officeThisWeek tab, removed thisWeek from Jobs
+- `js/app.js` - Added resources view routing, customer types in populateCustomers
+
+**Commit:** `cf3f584`
+
+---
+
+## Version 3.2.2 (February 8, 2026)
+
+**Persistent DB-Backed Scheduling (HI-1)**
+
+Migrated scheduling from in-memory sample data to API-backed persistent storage.
+
+**Features:**
+- **API-Backed Schedule Grid** - Team Schedule (table view) now fetches from Jobs API filtered by territory + date range
+- **API-Backed Planning** - Planning tab fetches next week's data from API
+- **Add to Planning Flow** - Jobs > Backlog "Add to Planning" button navigates to Scheduling > Planning with job pre-selected
+- **Place on Day** - Click a day in Planning to schedule a draft job (updates status to `scheduled` via API)
+- **Territory + Week Navigation** - Both schedule views support territory switching and week prev/next with API re-fetch
+- **Stock Parts Verification** - Pre-schedule check warns about unverified stock parts before placing jobs
+- **Procurement Notes** - Shows procurement notes from estimates when scheduling
+- **Parts Tracking** - Job detail modal includes parts tracking fields (PO #, promise date, destination, received status)
+- **Office This Week View** - Card-based progress tracker with stats (completed, in-progress, en-route)
+- **Seed Data** - 23 realistic jobs seeded via API for demo (both territories, multiple statuses)
+
+**Files Modified:**
+- `js/views/scheduling.js` - Complete rewrite: API data loading, schedule grid rendering, planning view, office jobs grid, QB sync modal
+- `js/utils/jobs-api.js` - Already existed, used for API calls
+- `index.html` - officeThisWeek view HTML, scheduling tab structure
+- `scripts/seed-jobs.js` - One-time seed script (not committed)
+
+---
+
 ## Version 3.2.1 (February 7, 2026)
 
 **Office Parts Management & Image UX Improvements**
@@ -295,6 +427,140 @@
 60. CRM: Helper functions getPrimaryContact() and getContactForRole()
 61. Navigation: Sidebar uses data-view attributes for reliable highlighting
 62. Navigation: Reorganized sidebars (Search at top, Office default Dashboard, Field default My Jobs, Field nav reordered)
+63. Data Import: 4-step pipeline importing 569 ServicePal jobs, 2,236 photos, 2,568 Excel rows into production API
+64. Data Import: ServicePal parser with rawPageText fallback for misaligned Kendo grid scrapes
+65. Data Import: Excel parser linking QuickBooks estimates to ServicePal jobs via estimate number
+66. Data Import: Resume support with JSON progress files and completed Set for O(1) skip-check
+67. Backend: API max limit raised from 100 to 500 for large dataset pagination
+68. UI: Office tab pagination with Load More (100/page) and count headers
+69. UI: Job click-through fixed in Office tabs (missing onclick handler)
+70. UI: Schedule duplication fixed (title === description for imported jobs)
+71. Estimate Builder — create estimates with parts, labor, custom items → push to QB (v3.6.0)
+72. Streamlined Create Job form with typeahead customer search (v3.6.0)
+73. Ops Review workflow with 3-button actions (v3.6.0)
+74. Procurement Intelligence — auto-notes, stock tracking, pre-schedule verification (v3.7.0)
+75. Ops Foundation — territory DB column + API filtering, confirmation tracking, pink categories (v3.8.0)
+76. PII removal from public repo, data loads from API/localStorage (v3.8.1)
+77. Immediate WO Flow: Jobs database, Estimates view, Jobs view, Create WO, Tabs, Parts Tracking, Planning (items 1-7 complete)
+78. Immediate WO Flow: Estimate Builder + Streamlined Create Job + Procurement Intelligence (items 8-10 complete)
+79. Clerk Auth: Real authentication with JWT Bearer tokens on all API calls (v4.0.0)
+80. ServicePal Migration: Production import — 3,007 jobs, 2,236 photos (Feb 10, 2026)
+81. Security Audit: Removed legacy X-User-Role bypass, secured OAuth endpoints, QB query validation (v4.0.1)
+82. Security Audit: PII cleanup (names, phones removed from index.html), dead code removal, API key scrubbed (v4.0.1)
+
+---
+
+## Version 4.0.0 (February 10, 2026)
+
+**Clerk Authentication**
+
+Real authentication replaces demo login. Clerk hosted sign-in form (email + password). JWT Bearer tokens on all API calls via `getAuthToken()`. Session persistence via Clerk cookies. Role from `publicMetadata.role` (admin/office/technician). Backend 3-tier auth: Bearer JWT → API Key → Legacy X-User-Role (legacy removed in v4.0.1). User display shows real name and initials from Clerk profile. All 15 route files protected with `requireAuth()`.
+
+## Version 3.8.x (February 9-10, 2026)
+
+**v3.8.0 — Ops Foundation:**
+- Territory column on jobs table, auto-detected from job_number prefix (TN/KY → Original, AL/FL → Southern). 388 Original + 106 Southern backfilled.
+- Territory + date range API filtering for scheduling queries
+- Confirmation tracking (confirmedWith, confirmationMethod, confirmedBy, confirmedDate)
+- Expanded Pink/Shit List to 9 reason categories
+- ServicePal scraper fixes (column alignment, KY/GA/MS state detection)
+
+**v3.8.1 — Security:**
+- PII removal from public repo (customer contacts, employee data, sample work orders)
+- All data loads from API or localStorage — nothing sensitive in repo
+- Security plan created for Clerk auth implementation
+
+## Version 3.7.0 (February 9, 2026)
+
+**Procurement Intelligence:**
+- Auto-detection engine scans line items and suggests procurement notes
+- Procurement Notes UI with add/dismiss on suggestions, dropdown of 9 common notes, custom entry
+- Stock part marking (click "stock?" → pick shop TN/FL/AL → blue badge)
+- QB PrivateNote integration with structured memo format
+- Estimate → Work Order bridge (procurement notes + stock parts auto-transferred)
+- Pre-schedule verification gate for unverified stock parts
+- Stock warning banner in jobs list, procurement notes in job detail
+
+## Version 3.6.0 (February 8, 2026)
+
+**Estimate Builder & Ops Review:**
+- Estimate Builder with parts, labor, and custom line items → push to QB
+- Streamlined Create Job with typeahead customer search and job types
+- Ops Review workflow with 3-button approach (Approve | Create Work Order | Build Estimate)
+
+---
+
+### ServicePal Migration (Completed February 10, 2026)
+
+**Production Import Results:**
+- **3,007 jobs** imported to Postgres
+- **2,236 photos** uploaded to Vercel Blob
+
+**Scraper Stats (final, Feb 9, 2026):**
+- 302 jobs scraped (of ~16,854 total)
+- 478 work orders extracted
+- 1,279 photos downloaded
+- 58MB output
+
+**Form Types Detected:**
+| Type | Count | Description |
+|------|-------|-------------|
+| Work Order | 224 | Standard job completion form |
+| Go See: Bleacher Parts Spec | 32 | Inspection/spec forms |
+| Bleacher Inspection Form | 57 | Indoor bleacher inspections |
+
+**Territory Distribution:**
+| Territory | Jobs |
+|-----------|------|
+| TN | 70 (64%) |
+| AL | 33 (30%) |
+| FL | 6 (5%) |
+
+**Data Sources Consolidated:**
+1. ServicePal — All historical jobs, work orders, photos, technician notes
+2. QuickBooks — Estimates, customers, invoices (API connected)
+3. Salesmate — Contact data (separate export)
+
+**Key Patterns Discovered:**
+- Teams organized by territory (TNBSTeam, ALBSTeam, etc.)
+- Parts staged at regional shops ("TN Shop", "FL Shop")
+- Vehicle/toolbox checklists done daily
+- Jobs reference estimate numbers (e.g., "TN522009") — linkable to QB
+- Common repairs: drive wheel cleaning, motor tensioning, guide rods, deck boards
+
+**Features That Emerged From Data (some already built):**
+- Territory View for scheduling *(built in v3.5.0)*
+- Site Equipment Profile *(built in v3.5.0)*
+- Fleet/Vehicle Management *(future)*
+- Shop Inventory tracking *(future)*
+- Tech Hours Dashboard *(future)*
+
+---
+
+### Security Implementation Plan (Completed v4.0.0)
+
+*Archived from `security-plan-reference.md`. Phases 1-4 and 6 complete. Phase 5 (remove legacy X-User-Role) completed in v4.0.1 audit.*
+
+**Original vulnerabilities addressed:**
+- No real authentication → Clerk sign-in with JWT
+- API completely open → requireAuth() on all 15+ route files
+- Spoofable X-User-Role header → removed in v4.0.1
+- Real PII in public repo → stripped in v3.8.1
+- Parts database publicly queryable → auth required
+
+**Architecture:**
+```
+Browser → Clerk sign-in → JWT → API verifies with @clerk/backend → extracts role
+Scripts → X-API-Key header → API verifies against env var → grants admin
+```
+
+**Phases executed:**
+1. Clerk Setup — application created, user accounts configured with publicMetadata.role
+2. Backend Auth — @clerk/backend installed, requireAuth() on all routes, CORS updated
+3. Frontend Auth — Clerk JS SDK, auth.js module, API clients send Bearer tokens
+4. PII Removal — CUSTOMERS/EMPLOYEES arrays emptied, data loads from API
+5. Legacy Removal — X-User-Role fallback deleted from auth.js (v4.0.1)
+6. Script Access — data-import scripts use X-API-Key header
 
 ---
 

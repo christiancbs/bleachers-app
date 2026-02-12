@@ -145,114 +145,6 @@
                         </div>
                     </div>
 
-                    <!-- Dashboard View (OBSOLETE - kept for reference, hidden by default) -->
-                    <div id="dashboardView" class="hidden">
-                        <div class="page-header">
-                            <h1 class="page-title">Office Dashboard</h1>
-                            <p class="page-subtitle">Pipeline overview and team activity</p>
-                        </div>
-
-                        <div class="alert-box alert-warning">
-                            ⚠️ 2 estimates expiring this week
-                        </div>
-
-                        <div class="alert-box alert-danger">
-                            🔴 1 project waiting on parts
-                        </div>
-
-                        <div class="alert-box alert-info">
-                            ℹ️ 3 new inspections submitted
-                        </div>
-
-                        <div class="stats-grid">
-                            <div class="stat-card green">
-                                <div class="stat-label">Total Pipeline Value</div>
-                                <div class="stat-value">$127,500</div>
-                                <div class="stat-subtitle">Across 31 projects</div>
-                            </div>
-                            <div class="stat-card blue">
-                                <div class="stat-label">New Inspections</div>
-                                <div class="stat-value" id="totalInspections">0</div>
-                                <div class="stat-subtitle">This week</div>
-                            </div>
-                            <div class="stat-card purple">
-                                <div class="stat-label">Active Projects</div>
-                                <div class="stat-value" id="totalJobs">0</div>
-                                <div class="stat-subtitle">In progress</div>
-                            </div>
-                            <div class="stat-card orange">
-                                <div class="stat-label">Estimates Created</div>
-                                <div class="stat-value">8</div>
-                                <div class="stat-subtitle">This week</div>
-                            </div>
-                        </div>
-
-                        <div class="card">
-                            <div class="card-header">
-                                <h2 class="card-title">Pipeline Status</h2>
-                            </div>
-                            <div class="card-body">
-                                <div class="pipeline-status">
-                                    <div class="status-box review">
-                                        <div class="status-count">5</div>
-                                        <div class="status-label">Ops Review</div>
-                                    </div>
-                                    <div class="status-box ordering">
-                                        <div class="status-count">12</div>
-                                        <div class="status-label">Parts Ordering</div>
-                                    </div>
-                                    <div class="status-box scheduled">
-                                        <div class="status-count">8</div>
-                                        <div class="status-label">Scheduled</div>
-                                    </div>
-                                    <div class="status-box progress">
-                                        <div class="status-count">6</div>
-                                        <div class="status-label">In Progress</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="card">
-                            <div class="card-header">
-                                <h2 class="card-title">Quick Actions</h2>
-                            </div>
-                            <div class="card-body">
-                                <div class="quick-actions">
-                                    <button class="btn btn-primary" onclick="showView('estimates')">📄 Review Estimates</button>
-                                    <button class="btn btn-outline" onclick="showView('parts')">📦 Check Inventory</button>
-                                    <button class="btn btn-outline" onclick="showView('scheduling')">📅 View Schedule</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="card">
-                            <div class="card-header">
-                                <h2 class="card-title">Recent Activity</h2>
-                            </div>
-                            <div class="card-body">
-                                <div class="inspection-item">
-                                    <div class="flex-between">
-                                        <div>
-                                            <strong>Wilson County Schools</strong>
-                                            <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">3 new estimates created</p>
-                                        </div>
-                                        <span style="font-size: 12px; color: #6c757d;">2h ago</span>
-                                    </div>
-                                </div>
-                                <div class="inspection-item">
-                                    <div class="flex-between">
-                                        <div>
-                                            <strong>Franklin Special SD</strong>
-                                            <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">Parts arrived for Project #1847</p>
-                                        </div>
-                                        <span style="font-size: 12px; color: #6c757d;">4h ago</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Estimates View -->
                     <div id="estimatesView" class="hidden">
                         <div class="page-header">
@@ -544,11 +436,11 @@
                                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
                                         <div class="form-group">
                                             <label class="form-label">Primary Contact</label>
-                                            <p id="custDetailContact" style="font-size: 14px;">Mike Mann</p>
+                                            <p id="custDetailContact" style="font-size: 14px;"></p>
                                         </div>
                                         <div class="form-group">
                                             <label class="form-label">Phone</label>
-                                            <p id="custDetailPhone" style="font-size: 14px;">(731) 635-2941</p>
+                                            <p id="custDetailPhone" style="font-size: 14px;"></p>
                                         </div>
                                     </div>
                                 </div>
@@ -966,9 +858,9 @@
                                             <p style="font-size: 13px; margin-top: 8px;">GOAL 5: Labor to install safety strap *Lift rental required*</p>
                                             <div style="margin-top: 12px; padding: 12px; background: #f8f9fa; border-radius: 6px; font-size: 13px;">
                                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                                                    <div><strong>Confirmed with:</strong> Mike Mann</div>
-                                                    <div><strong>Confirmed by:</strong> Savannah Kirkland</div>
-                                                    <div><strong>Parts Location:</strong> Floyd's house - dropping at Millington HS</div>
+                                                    <div><strong>Confirmed with:</strong></div>
+                                                    <div><strong>Confirmed by:</strong></div>
+                                                    <div><strong>Parts Location:</strong></div>
                                                     <div><strong>Scheduled:</strong> 1/22/2026</div>
                                                 </div>
                                             </div>
@@ -1784,8 +1676,8 @@
                                             </div>
                                             <!-- Read-only view -->
                                             <div id="woContactDisplay">
-                                                <p id="woContactName" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Chris McCorkle</p>
-                                                <a id="woContactPhoneLink" href="tel:7316352642" style="color: #0066cc; font-weight: 600; text-decoration: none;">📞 <span id="woContactPhone">(731) 635-2642</span></a>
+                                                <p id="woContactName" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"></p>
+                                                <a id="woContactPhoneLink" href="tel:" style="color: #0066cc; font-weight: 600; text-decoration: none;">📞 <span id="woContactPhone"></span></a>
                                             </div>
                                             <!-- Edit view -->
                                             <div id="woContactEdit" class="hidden" style="margin-top: 8px;">
@@ -1828,7 +1720,7 @@
                                             </div>
                                             <!-- Read-only view -->
                                             <div id="woPartsDisplay">
-                                                <p id="woPartsLocation" style="font-size: 14px; font-weight: 600; color: #e65100;">Floyd's house - dropping at Millington HS</p>
+                                                <p id="woPartsLocation" style="font-size: 14px; font-weight: 600; color: #e65100;"></p>
                                             </div>
                                             <!-- Edit view -->
                                             <div id="woPartsEdit" class="hidden">
@@ -1888,11 +1780,11 @@
                                             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 16px;">
                                                 <div>
                                                     <p style="font-size: 12px; color: #6c757d; margin-bottom: 4px;">Confirmed With</p>
-                                                    <p id="woConfirmedWithDisplay" style="font-weight: 600;">Mike Mann</p>
+                                                    <p id="woConfirmedWithDisplay" style="font-weight: 600;"></p>
                                                 </div>
                                                 <div>
                                                     <p style="font-size: 12px; color: #6c757d; margin-bottom: 4px;">Confirmed By</p>
-                                                    <p id="woConfirmedByDisplay" style="font-weight: 600;">Savannah Kirkland</p>
+                                                    <p id="woConfirmedByDisplay" style="font-weight: 600;"></p>
                                                 </div>
                                                 <div>
                                                     <p style="font-size: 12px; color: #6c757d; margin-bottom: 4px;">Confirmation Date</p>
@@ -3763,8 +3655,8 @@
                                 <!-- Contact -->
                                 <div style="margin-bottom: 20px; padding: 12px; background: white; border-radius: 8px;">
                                     <p style="font-size: 12px; color: #6c757d; margin-bottom: 4px; text-transform: uppercase; font-weight: 600;">Site Contact</p>
-                                    <p id="twoContactName" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Chris McCorkle</p>
-                                    <a id="twoContactPhone" href="tel:7316352642" style="color: #0066cc; font-weight: 600; text-decoration: none;">📞 (731) 635-2642</a>
+                                    <p id="twoContactName" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"></p>
+                                    <a id="twoContactPhone" href="tel:" style="color: #0066cc; font-weight: 600; text-decoration: none;">📞 </a>
                                 </div>
 
                                 <!-- What You're Doing -->
@@ -3776,7 +3668,7 @@
                                 <!-- Parts Location -->
                                 <div style="padding: 12px; background: #fff3e0; border-radius: 8px; border-left: 4px solid #ff9800;">
                                     <p style="font-size: 12px; color: #e65100; margin-bottom: 4px; text-transform: uppercase; font-weight: 600;">📦 Parts Location</p>
-                                    <p id="twoPartsLocation" style="font-size: 14px; font-weight: 600; color: #e65100;">Floyd's house - dropping at Millington HS</p>
+                                    <p id="twoPartsLocation" style="font-size: 14px; font-weight: 600; color: #e65100;"></p>
                                 </div>
 
                                 <!-- Special Instructions (if any) -->

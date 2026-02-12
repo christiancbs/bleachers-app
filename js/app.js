@@ -10,7 +10,6 @@ function init() {
         populateJobCustomers();
     }
     populateCategories();
-    updateDashboardStats();
 
     // Load sample data if no jobs exist
     if (inspectionJobs.length === 0) {
@@ -78,16 +77,6 @@ async function populateCategories() {
     });
 }
 
-function updateDashboardStats() {
-    const totalInspectionsEl = document.getElementById('totalInspections');
-    const totalJobsEl = document.getElementById('totalJobs');
-    const techInspectionsCountEl = document.getElementById('techInspectionsCount');
-
-    if (totalInspectionsEl) totalInspectionsEl.textContent = inspections.length;
-    if (totalJobsEl) totalJobsEl.textContent = jobs.length;
-    if (techInspectionsCountEl) techInspectionsCountEl.textContent = inspections.length;
-}
-
 // Navigation
 function login(role) {
     currentRole = role;
@@ -98,26 +87,11 @@ function login(role) {
         // Show/hide admin nav section
         var adminNav = document.getElementById('adminNavSection');
         if (adminNav) {
-            if (role === 'admin') {
-                adminNav.classList.remove('hidden');
-                document.getElementById('officeUserAvatar').textContent = 'AD';
-                document.getElementById('officeUserName').textContent = 'Admin';
-            } else {
-                adminNav.classList.add('hidden');
-                document.getElementById('officeUserAvatar').textContent = 'OM';
-                document.getElementById('officeUserName').textContent = 'Office Manager';
-            }
-        } else {
-            // No admin nav section, just update user info
-            if (role === 'admin') {
-                document.getElementById('officeUserAvatar').textContent = 'AD';
-                document.getElementById('officeUserName').textContent = 'Admin';
-            } else {
-                document.getElementById('officeUserAvatar').textContent = 'OM';
-                document.getElementById('officeUserName').textContent = 'Office Manager';
-            }
+            adminNav.classList.toggle('hidden', role !== 'admin');
         }
-        loadOfficeDashboard();
+        // Set empty defaults — Clerk's handleSignedIn() overwrites with real user data
+        document.getElementById('officeUserAvatar').textContent = '';
+        document.getElementById('officeUserName').textContent = '';
         // Defer showing home to next frame to ensure DOM is painted
         requestAnimationFrame(function() {
             showView('home'); // Default to Home
@@ -197,9 +171,6 @@ function showView(view) {
     } else if (view === 'officeSearch') {
         document.getElementById('officeSearchView').classList.remove('hidden');
         setActiveNav('officeSearch');
-    } else if (view === 'dashboard') {
-        document.getElementById('dashboardView').classList.remove('hidden');
-        setActiveNav('dashboard');
     } else if (view === 'estimates') {
         document.getElementById('estimatesView').classList.remove('hidden');
         setActiveNav('estimates');
