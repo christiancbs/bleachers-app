@@ -338,7 +338,7 @@ function filterEstimates(filter) {
     }
 }
 
-function loadEstimatesAll() {
+async function loadEstimatesAll() {
     const list = document.getElementById('allEstimatesList');
     const searchEl = document.getElementById('allEstimateSearch');
     const searchTerm = searchEl ? searchEl.value.toLowerCase() : '';
@@ -352,8 +352,33 @@ function loadEstimatesAll() {
             (e.customerName || '').toLowerCase().includes(searchTerm) ||
             (e.email || '').toLowerCase().includes(searchTerm)
         );
+
+        // If no results in QB cache, search local Postgres estimates table
+        if (estimates.length === 0) {
+            try {
+                const localData = await EstimatesAPI.listLocal({ q: searchTerm, limit: 50 });
+                const localEstimates = localData.estimates || [];
+                if (localEstimates.length > 0) {
+                    // Merge into QB cache so detail view works
+                    const existingIds = new Set((window._qbEstimates || []).map(e => e.qbEstimateId || e.id));
+                    for (const le of localEstimates) {
+                        if (!existingIds.has(le.qbEstimateId)) {
+                            const merged = { ...le, id: le.qbEstimateId };
+                            window._qbEstimates.push(merged);
+                        }
+                    }
+                    estimates = localEstimates.map(le => ({ ...le, id: le.qbEstimateId }));
+                }
+            } catch (err) {
+                console.error('Local estimate search failed:', err);
+            }
+        }
     }
 
+    renderEstimatesList(list, estimates, searchTerm);
+}
+
+function renderEstimatesList(list, estimates, searchTerm) {
     if (estimates.length === 0) {
         list.innerHTML = `
             <div class="empty-state" style="padding: 40px;">
@@ -1031,18 +1056,35 @@ async function navigateToEstimate(qbEstimateId) {
     let est = findEst();
     if (est) {
         viewQbEstimate(est.id);
-    } else {
-        try {
-            await loadEstimates();
-            est = findEst();
-            if (est) {
-                viewQbEstimate(est.id);
-            } else {
-                alert('Estimate not found in QuickBooks');
-            }
-        } catch (err) {
-            alert('Failed to load estimate: ' + err.message);
+        return;
+    }
+
+    // Not in QB cache — try reloading QB, then fall back to local Postgres
+    try {
+        await loadEstimates();
+        est = findEst();
+        if (est) {
+            viewQbEstimate(est.id);
+            return;
         }
+
+        // Search local estimates table (covers older estimates beyond QB's 500 limit)
+        const localData = await EstimatesAPI.listLocal({ q: qbEstimateId, limit: 10 });
+        const localEst = (localData.estimates || []).find(e =>
+            e.qbEstimateId === qbEstimateId || e.docNumber === qbEstimateId
+        );
+        if (localEst) {
+            // Merge into cache so viewQbEstimate can find it
+            const merged = { ...localEst, id: localEst.qbEstimateId };
+            window._qbEstimates = window._qbEstimates || [];
+            window._qbEstimates.push(merged);
+            viewQbEstimate(merged.id);
+            return;
+        }
+
+        alert('Estimate not found');
+    } catch (err) {
+        alert('Failed to load estimate: ' + err.message);
     }
 }
 
