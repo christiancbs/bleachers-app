@@ -1,33 +1,10 @@
-# Python
-venv/
-__pycache__/
-*.pyc
-
-# Node
-node_modules/
-
 # OS
 .DS_Store
 Thumbs.db
 
-# Large vendor files (keep local, don't push)
-vendor-data/*.pdf
-tools/*.pdf
-tools/*.csv
-tools/2025_Parts_Guide_extracted/
-
 # Config with API keys (never commit)
 js/config.js
-
-# One-time migration scripts
-tools/migrate*.html
-tools/migrate*.js
-tools/migrate*.sh
-tools/run-migrate.sh
 
 # Internal reference docs (local only, not for public repo)
 bleacher-app-reference.md
 bleacher-app-history.md
-
-# Archives (keep local for reference)
-archive/
