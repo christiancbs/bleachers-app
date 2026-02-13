@@ -1035,13 +1035,8 @@ async function createWorkOrderFromEstimate(evt, estimateId) {
             // Non-blocking: the work order was created successfully
         }
 
-        // Success - show confirmation and navigate to Jobs
-        alert(`Work order ${result.job.jobNumber} created successfully!\n\nThe estimate's line items have been converted to work instructions.`);
-
-        // Navigate to Jobs view to see the new work order
-        if (typeof loadJobsView === 'function') {
-            document.querySelector('[data-view="jobs"]')?.click();
-        }
+        // Navigate to the new work order detail view
+        viewWorkOrderDetail(result.job.id, 'estimateDetail');
     } catch (err) {
         console.error('Error creating work order:', err);
         alert('Failed to create work order: ' + err.message);

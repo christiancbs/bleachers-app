@@ -562,16 +562,8 @@ function submitOfficeCreate() {
 
         JobsAPI.create(jobData)
             .then(function(result) {
-                var typeLabel = {
-                    'work_order': 'Work Order',
-                    'service_call': 'Service Call',
-                    'go_see': 'Go-See',
-                    'field_check': 'Field Check'
-                }[type] || jobType;
-
-                alert(typeLabel + ' #' + jobNumber + ' created!\n\nIt is now in Jobs → Backlog.');
                 initOfficeCreateForm();
-                showView('jobs');
+                viewWorkOrderDetail(result.job.id, 'officeCreate');
             })
             .catch(function(err) {
                 console.error('Failed to create job:', err);

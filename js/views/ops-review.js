@@ -479,20 +479,20 @@ function openCreateWorkOrderModal() {
                       currentJob.inspectionType === 'bleacher' ? 'Indoor Bleacher' : 'Outdoor Bleacher';
 
     // Pre-fill the modal form
-    document.getElementById('woJobNumber').value = currentJob.jobNumber;
-    document.getElementById('woCustomerName').value = currentJob.customerName || '';
-    document.getElementById('woLocationName').value = currentJob.locationName || '';
-    document.getElementById('woLocationAddress').value = currentJob.locationAddress || '';
-    document.getElementById('woJobType').value = defaultJobType;
-    document.getElementById('woDescription').value = `${typeLabel} - ${issueCount} issues found across ${currentJob.banks?.length || 0} bank(s).`;
-    document.getElementById('woContactName').value = '';
-    document.getElementById('woContactPhone').value = '';
-    document.getElementById('woSpecialInstructions').value = '';
-    document.getElementById('woNotes').value = `Inspector: ${currentJob.inspectorName || 'Unknown'}. Certificate: ${currentJob.inspectorCertificate || 'N/A'}`;
+    document.getElementById('createWoJobNumber').value = currentJob.jobNumber;
+    document.getElementById('createWoCustomerName').value = currentJob.customerName || '';
+    document.getElementById('createWoLocationName').value = currentJob.locationName || '';
+    document.getElementById('createWoLocationAddress').value = currentJob.locationAddress || '';
+    document.getElementById('createWoJobType').value = defaultJobType;
+    document.getElementById('createWoDescription').value = `${typeLabel} - ${issueCount} issues found across ${currentJob.banks?.length || 0} bank(s).`;
+    document.getElementById('createWoContactName').value = '';
+    document.getElementById('createWoContactPhone').value = '';
+    document.getElementById('createWoSpecialInstructions').value = '';
+    document.getElementById('createWoNotes').value = `Inspector: ${currentJob.inspectorName || 'Unknown'}. Certificate: ${currentJob.inspectorCertificate || 'N/A'}`;
 
     // Show parts count
     const partsCount = currentJob.selectedParts?.length || 0;
-    document.getElementById('woPartsInfo').textContent = partsCount > 0
+    document.getElementById('createWoPartsInfo').textContent = partsCount > 0
         ? `${partsCount} part(s) from inspection will be attached`
         : 'No parts specified in inspection';
 
@@ -507,25 +507,25 @@ function closeCreateWorkOrderModal() {
 
 // Submit work order from modal
 async function submitWorkOrderFromModal() {
-    const submitBtn = document.getElementById('woSubmitBtn');
+    const submitBtn = document.getElementById('createWoSubmitBtn');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Creating...';
 
     try {
         const jobData = {
-            jobNumber: document.getElementById('woJobNumber').value,
-            jobType: document.getElementById('woJobType').value,
+            jobNumber: document.getElementById('createWoJobNumber').value,
+            jobType: document.getElementById('createWoJobType').value,
             status: 'draft',  // Draft = unassigned/backlog
             customerId: currentJob.customerId,
-            customerName: document.getElementById('woCustomerName').value,
+            customerName: document.getElementById('createWoCustomerName').value,
             locationId: currentJob.locationId,
-            locationName: document.getElementById('woLocationName').value,
-            locationAddress: document.getElementById('woLocationAddress').value,
-            description: document.getElementById('woDescription').value,
-            contactName: document.getElementById('woContactName').value,
-            contactPhone: document.getElementById('woContactPhone').value,
-            specialInstructions: document.getElementById('woSpecialInstructions').value,
-            notes: document.getElementById('woNotes').value,
+            locationName: document.getElementById('createWoLocationName').value,
+            locationAddress: document.getElementById('createWoLocationAddress').value,
+            description: document.getElementById('createWoDescription').value,
+            contactName: document.getElementById('createWoContactName').value,
+            contactPhone: document.getElementById('createWoContactPhone').value,
+            specialInstructions: document.getElementById('createWoSpecialInstructions').value,
+            notes: document.getElementById('createWoNotes').value,
             inspectionJobNumber: currentJob.jobNumber,
             partsNeeded: currentJob.selectedParts || [],
             createdBy: currentRole === 'admin' ? 'Admin' : 'Office'
@@ -564,10 +564,9 @@ async function submitWorkOrderFromModal() {
         localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
 
         closeCreateWorkOrderModal();
-        alert(`Work order created!\n\nJob #${jobData.jobNumber} is now in Jobs → Backlog.`);
 
-        // Refresh view
-        renderOpsReviewDetail(currentJob);
+        // Navigate to the new work order detail view
+        viewWorkOrderDetail(result.job.id, 'opsReviewDetail');
 
     } catch (err) {
         console.error('Failed to create work order:', err);
