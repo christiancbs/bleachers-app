@@ -478,8 +478,8 @@ function openCreateWorkOrderModal() {
     const typeLabel = currentJob.inspectionType === 'basketball' ? 'Basketball Goal' :
                       currentJob.inspectionType === 'bleacher' ? 'Indoor Bleacher' : 'Outdoor Bleacher';
 
-    // Pre-fill the modal form
-    document.getElementById('createWoJobNumber').value = currentJob.jobNumber;
+    // Pre-fill the modal form (job number auto-assigned by API)
+    document.getElementById('createWoJobNumber').value = '';
     document.getElementById('createWoCustomerName').value = currentJob.customerName || '';
     document.getElementById('createWoLocationName').value = currentJob.locationName || '';
     document.getElementById('createWoLocationAddress').value = currentJob.locationAddress || '';
@@ -512,8 +512,9 @@ async function submitWorkOrderFromModal() {
     submitBtn.textContent = 'Creating...';
 
     try {
+        const manualJobNumber = document.getElementById('createWoJobNumber').value.trim();
         const jobData = {
-            jobNumber: document.getElementById('createWoJobNumber').value,
+            ...(manualJobNumber ? { jobNumber: manualJobNumber } : {}),
             jobType: document.getElementById('createWoJobType').value,
             status: 'draft',  // Draft = unassigned/backlog
             customerId: currentJob.customerId,
