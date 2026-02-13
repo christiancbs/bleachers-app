@@ -1565,21 +1565,27 @@ function showJobDetailModal(job) {
                     ${renderProcurementNotesSection(job.metadata)}
                     ${renderStockPartsSection(job.metadata)}
 
-                    ${job.attachments && job.attachments.length > 0 ? `
+                    ${job.attachments && job.attachments.length > 0 ? (() => {
+                        const imageUrls = job.attachments.filter(a => a.contentType?.startsWith('image/')).map(a => a.blobUrl);
+                        window._jobImageUrls = imageUrls;
+                        return `
                         <div style="margin-bottom: 20px;">
                             <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Attachments (${job.attachments.length})</label>
                             <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
-                                ${job.attachments.map((a, i) => `
-                                    <div onclick="${a.contentType?.startsWith('image/') ? `expandJobImage('${a.blobUrl}')` : `window.open('${a.blobUrl}','_blank')`}" style="display: block; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid #dee2e6; cursor: pointer;">
-                                        ${a.contentType?.startsWith('image/')
-                                            ? `<img src="${a.blobUrl}" style="width: 100%; height: 100%; object-fit: cover;">`
-                                            : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f8f9fa;">📄</div>`
-                                        }
-                                    </div>
-                                `).join('')}
+                                ${job.attachments.map(a => {
+                                    if (a.contentType?.startsWith('image/')) {
+                                        const idx = imageUrls.indexOf(a.blobUrl);
+                                        return `<div onclick="expandJobImage(${idx})" style="display:block;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid #dee2e6;cursor:pointer;">
+                                            <img src="${a.blobUrl}" style="width:100%;height:100%;object-fit:cover;">
+                                        </div>`;
+                                    }
+                                    return `<div onclick="window.open('${a.blobUrl}','_blank')" style="display:block;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid #dee2e6;cursor:pointer;">
+                                        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f8f9fa;">📄</div>
+                                    </div>`;
+                                }).join('')}
                             </div>
-                        </div>
-                    ` : ''}
+                        </div>`;
+                    })() : ''}
 
                     ${job.inspectionBanks && job.inspectionBanks.length > 0 ? `
                         <div>
@@ -1616,16 +1622,100 @@ function closeJobDetailModal() {
     if (modal) modal.remove();
 }
 
-function expandJobImage(url) {
+let _imageViewerIdx = 0;
+let _imageViewerZoom = 1;
+
+function expandJobImage(index) {
+    const urls = window._jobImageUrls || [];
+    if (urls.length === 0) return;
+    _imageViewerIdx = index;
+    _imageViewerZoom = 1;
+    _renderImageOverlay();
+}
+
+function _renderImageOverlay() {
+    const urls = window._jobImageUrls || [];
+    const url = urls[_imageViewerIdx];
+    const count = urls.length;
     const existing = document.getElementById('imageOverlay');
     if (existing) existing.remove();
 
+    const navBtnStyle = 'position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:32px;width:48px;height:48px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);';
+
     document.body.insertAdjacentHTML('beforeend', `
-        <div id="imageOverlay" onclick="document.getElementById('imageOverlay').remove()" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10001;display:flex;align-items:center;justify-content:center;cursor:pointer;">
-            <img src="${url}" style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,0.5);">
-            <button style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:28px;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+        <div id="imageOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:10001;display:flex;align-items:center;justify-content:center;">
+            <img id="imageOverlayImg" src="${url}" style="max-width:90vw;max-height:85vh;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,0.5);transform:scale(${_imageViewerZoom});transition:transform 0.2s;cursor:${_imageViewerZoom > 1 ? 'zoom-out' : 'zoom-in'};" onclick="toggleImageZoom(event)">
+            ${count > 1 ? `
+                <button onclick="navigateImage(-1)" style="${navBtnStyle}left:16px;">&#8249;</button>
+                <button onclick="navigateImage(1)" style="${navBtnStyle}right:16px;">&#8250;</button>
+                <div style="position:absolute;bottom:20px;color:rgba(255,255,255,0.7);font-size:14px;">${_imageViewerIdx + 1} / ${count}</div>
+            ` : ''}
+            <div style="position:absolute;top:16px;right:16px;display:flex;gap:8px;">
+                <button onclick="zoomImage()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:18px;width:40px;height:40px;border-radius:50%;cursor:pointer;backdrop-filter:blur(4px);">${_imageViewerZoom > 1 ? '−' : '+'}</button>
+                <button onclick="closeImageOverlay()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:24px;width:40px;height:40px;border-radius:50%;cursor:pointer;backdrop-filter:blur(4px);">&times;</button>
+            </div>
         </div>
     `);
+
+    // Close on backdrop click (not on image/buttons)
+    document.getElementById('imageOverlay').addEventListener('click', function(e) {
+        if (e.target === this) closeImageOverlay();
+    });
+
+    // Add keyboard handler
+    document.removeEventListener('keydown', _imageKeyHandler);
+    document.addEventListener('keydown', _imageKeyHandler);
+}
+
+function _imageKeyHandler(e) {
+    if (!document.getElementById('imageOverlay')) {
+        document.removeEventListener('keydown', _imageKeyHandler);
+        return;
+    }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); navigateImage(-1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); navigateImage(1); }
+    else if (e.key === 'Escape') { e.preventDefault(); closeImageOverlay(); }
+    else if (e.key === '+' || e.key === '=') { e.preventDefault(); _imageViewerZoom = Math.min(_imageViewerZoom + 0.5, 4); _updateZoom(); }
+    else if (e.key === '-') { e.preventDefault(); _imageViewerZoom = Math.max(_imageViewerZoom - 0.5, 1); _updateZoom(); }
+}
+
+function navigateImage(dir) {
+    const urls = window._jobImageUrls || [];
+    if (urls.length <= 1) return;
+    _imageViewerIdx = (_imageViewerIdx + dir + urls.length) % urls.length;
+    _imageViewerZoom = 1;
+    _renderImageOverlay();
+}
+
+function toggleImageZoom(e) {
+    e.stopPropagation();
+    _imageViewerZoom = _imageViewerZoom > 1 ? 1 : 2;
+    _updateZoom();
+}
+
+function zoomImage() {
+    _imageViewerZoom = _imageViewerZoom > 1 ? 1 : 2;
+    _updateZoom();
+}
+
+function _updateZoom() {
+    const img = document.getElementById('imageOverlayImg');
+    if (img) {
+        img.style.transform = `scale(${_imageViewerZoom})`;
+        img.style.cursor = _imageViewerZoom > 1 ? 'zoom-out' : 'zoom-in';
+    }
+    // Update zoom button
+    const overlay = document.getElementById('imageOverlay');
+    if (overlay) {
+        const zoomBtn = overlay.querySelector('div[style*="top:16px"] button:first-child');
+        if (zoomBtn) zoomBtn.textContent = _imageViewerZoom > 1 ? '−' : '+';
+    }
+}
+
+function closeImageOverlay() {
+    const overlay = document.getElementById('imageOverlay');
+    if (overlay) overlay.remove();
+    document.removeEventListener('keydown', _imageKeyHandler);
 }
 
 // Edit job (placeholder - can expand later)
