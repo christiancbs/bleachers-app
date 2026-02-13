@@ -705,11 +705,11 @@ async function viewQbEstimate(estimateId) {
 
     const statusStyle = EstimatesAPI.statusColors[est.status] || { bg: '#e0e0e0', color: '#616161' };
 
-    // Fetch related jobs for this estimate
+    // Fetch related jobs for this estimate (jobs store doc number as qbEstimateId)
     let relatedJobs = [];
     try {
-        const jobsData = await JobsAPI.list({ limit: 100 });
-        relatedJobs = (jobsData.jobs || []).filter(j => j.qbEstimateId === estimateId);
+        const jobsData = await JobsAPI.list({ limit: 500 });
+        relatedJobs = (jobsData.jobs || []).filter(j => j.qbEstimateId === est.docNumber || j.qbEstimateId === estimateId);
     } catch (err) {
         console.error('Failed to load related jobs:', err);
     }
@@ -1027,15 +1027,16 @@ async function createWorkOrderFromEstimate(evt, estimateId) {
 
 // Navigate to estimate from a job's qbEstimateId
 async function navigateToEstimate(qbEstimateId) {
-    const est = (window._qbEstimates || []).find(e => e.id === qbEstimateId);
+    const findEst = () => (window._qbEstimates || []).find(e => e.id === qbEstimateId || e.docNumber === qbEstimateId);
+    let est = findEst();
     if (est) {
-        viewQbEstimate(qbEstimateId);
+        viewQbEstimate(est.id);
     } else {
         try {
             await loadEstimates();
-            const found = (window._qbEstimates || []).find(e => e.id === qbEstimateId);
-            if (found) {
-                viewQbEstimate(qbEstimateId);
+            est = findEst();
+            if (est) {
+                viewQbEstimate(est.id);
             } else {
                 alert('Estimate not found in QuickBooks');
             }
