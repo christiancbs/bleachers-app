@@ -134,6 +134,82 @@ const EstimatesAPI = {
     clearCache() {
         this._cache = null;
         this._cacheTime = null;
+    },
+
+    // ==========================================
+    // LOCAL ESTIMATES (Postgres mirror)
+    // For relationship queries and navigation
+    // ==========================================
+
+    _localBase: 'https://bleachers-api.vercel.app/api/estimates',
+
+    // Upsert estimate to local Postgres table
+    async upsertLocal(estimateData) {
+        const response = await fetch(this._localBase, {
+            method: 'POST',
+            headers: await this.getHeaders(),
+            body: JSON.stringify(estimateData)
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to upsert local estimate');
+        }
+
+        return response.json();
+    },
+
+    // Get local estimate by ID (includes relatedJobs)
+    async getLocal(id) {
+        const response = await fetch(`${this._localBase}/${id}`, {
+            headers: await this.getHeaders()
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to fetch local estimate');
+        }
+
+        return response.json();
+    },
+
+    // List local estimates
+    async listLocal(options = {}) {
+        const { q, status, customer_id, limit = 50, offset = 0 } = options;
+
+        const params = new URLSearchParams();
+        if (q) params.set('q', q);
+        if (status) params.set('status', status);
+        if (customer_id) params.set('customer_id', customer_id);
+        params.set('limit', limit);
+        params.set('offset', offset);
+
+        const response = await fetch(`${this._localBase}?${params}`, {
+            headers: await this.getHeaders()
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to list local estimates');
+        }
+
+        return response.json();
+    },
+
+    // Sync QB estimates to local table
+    async syncToLocal(options = {}) {
+        const response = await fetch(`${this._localBase}/sync`, {
+            method: 'POST',
+            headers: await this.getHeaders(),
+            body: JSON.stringify(options)
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to sync estimates');
+        }
+
+        return response.json();
     }
 };
 

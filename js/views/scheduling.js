@@ -1528,6 +1528,22 @@ function showJobDetailModal(job) {
                         </div>
                     </div>
 
+                    ${job.qbEstimateId ? `
+                        <div style="margin-bottom: 20px; padding: 12px 16px; background: #e8f4fd; border: 1px solid #bee5eb; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <label style="font-size: 11px; color: #0c5460; text-transform: uppercase; margin: 0;">Parent Estimate</label>
+                                <p style="margin: 4px 0 0; font-weight: 500; color: #0c5460;">
+                                    ${job.metadata?.sourceEstimate?.docNumber ? 'Estimate #' + job.metadata.sourceEstimate.docNumber : 'QB Estimate ' + job.qbEstimateId}
+                                    ${job.qbEstimateTotal ? ' — $' + parseFloat(job.qbEstimateTotal).toLocaleString() : ''}
+                                </p>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-outline" onclick="closeJobDetailModal(); navigateToEstimate('${job.qbEstimateId}')" style="font-size: 12px; padding: 6px 12px; color: #0c5460; border-color: #0c5460;">View Estimate</button>
+                                <button class="btn btn-outline" onclick="closeJobDetailModal(); createEstimateFromJob(${job.id})" style="font-size: 12px; padding: 6px 12px;">Create Follow-up Estimate</button>
+                            </div>
+                        </div>
+                    ` : ''}
+
                     ${job.description ? `
                         <div style="margin-bottom: 20px;">
                             <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Work Instructions</label>

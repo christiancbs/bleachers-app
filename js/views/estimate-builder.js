@@ -37,6 +37,20 @@ function initEstimateBuilder(prefillData = null) {
         prefillFromInspection(prefillData);
     }
 
+    // If spawned from a job, pre-fill customer info
+    if (window._spawnFromCustomerName && !prefillData) {
+        (async () => {
+            try {
+                const result = await EstimatesAPI.getCustomers(window._spawnFromCustomerName);
+                if (result.customers && result.customers.length > 0) {
+                    selectQbCustomer(result.customers[0]);
+                }
+            } catch (err) {
+                console.warn('Failed to pre-fill customer from job spawn:', err);
+            }
+        })();
+    }
+
     renderEstimateBuilder();
 }
 
@@ -597,9 +611,9 @@ function promptPartQuantity(partId, part) {
 function openAddLaborModal() {
     document.getElementById('addLaborModal').classList.remove('hidden');
     document.getElementById('laborRate').value = DEFAULT_LABOR_RATE;
-    document.getElementById('laborHours').value = '1';
+    document.getElementById('addLaborHours').value = '1';
     document.getElementById('laborDescription').value = '';
-    document.getElementById('laborHours').focus();
+    document.getElementById('addLaborHours').focus();
 }
 
 function closeAddLaborModal() {
@@ -607,7 +621,7 @@ function closeAddLaborModal() {
 }
 
 function addLaborFromModal() {
-    const hours = parseFloat(document.getElementById('laborHours').value) || 0;
+    const hours = parseFloat(document.getElementById('addLaborHours').value) || 0;
     const rate = parseFloat(document.getElementById('laborRate').value) || DEFAULT_LABOR_RATE;
     const description = document.getElementById('laborDescription').value;
 
@@ -880,6 +894,28 @@ async function submitEstimateToQb() {
         };
 
         const result = await EstimatesAPI.create(estimateData);
+
+        // If spawned from a job, upsert local estimate with linkage
+        if (window._spawnFromJobId && result.id) {
+            try {
+                await EstimatesAPI.upsertLocal({
+                    qbEstimateId: String(result.id),
+                    docNumber: result.docNumber || null,
+                    status: 'Pending',
+                    customerId: estimateBuilderState.qbCustomer.Id,
+                    customerName: estimateBuilderState.qbCustomer.DisplayName,
+                    totalAmount: total,
+                    spawnedFromJobId: window._spawnFromJobId
+                });
+            } catch (err) {
+                console.warn('Failed to upsert local estimate after spawn:', err);
+            }
+            // Clean up spawn context
+            window._spawnFromJobId = null;
+            window._spawnFromJobNumber = null;
+            window._spawnFromCustomerId = null;
+            window._spawnFromCustomerName = null;
+        }
 
         // Success
         alert(`Estimate created successfully!\nEstimate #${result.docNumber || result.id || 'N/A'}`);

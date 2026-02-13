@@ -695,7 +695,7 @@ function initEstimateCreate() {
 }
 
 // View QB Estimate detail
-function viewQbEstimate(estimateId) {
+async function viewQbEstimate(estimateId) {
     // Find estimate in cache
     const est = (window._qbEstimates || []).find(e => e.id === estimateId);
     if (!est) {
@@ -704,6 +704,43 @@ function viewQbEstimate(estimateId) {
     }
 
     const statusStyle = EstimatesAPI.statusColors[est.status] || { bg: '#e0e0e0', color: '#616161' };
+
+    // Fetch related jobs for this estimate
+    let relatedJobs = [];
+    try {
+        const jobsData = await JobsAPI.list({ limit: 100 });
+        relatedJobs = (jobsData.jobs || []).filter(j => j.qbEstimateId === estimateId);
+    } catch (err) {
+        console.error('Failed to load related jobs:', err);
+    }
+
+    const relatedJobsHtml = relatedJobs.length > 0 ? `
+        <div class="card" style="margin-top: 24px;">
+            <div class="card-header">
+                <h2 class="card-title">Related Work Orders</h2>
+                <span class="badge badge-info">${relatedJobs.length} job${relatedJobs.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div class="card-body" style="padding: 0;">
+                ${relatedJobs.map(job => `
+                    <div class="inspection-item" style="cursor: pointer; border-bottom: 1px solid #e9ecef; padding: 16px;"
+                         onclick="viewWorkOrderDetail(${job.id})">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong style="color: #007bff;">${job.jobNumber}</strong>
+                                <span class="badge" style="margin-left: 8px; background: ${job.status === 'completed' ? '#c8e6c9' : job.status === 'draft' ? '#fff3e0' : '#e3f2fd'}; color: ${job.status === 'completed' ? '#2e7d32' : job.status === 'draft' ? '#e65100' : '#1565c0'};">${job.status}</span>
+                                <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">${job.title || job.customerName || ''}</p>
+                            </div>
+                            <div style="text-align: right; font-size: 13px; color: #6c757d;">
+                                ${job.assignedTo ? '<div>' + job.assignedTo + '</div>' : ''}
+                                ${job.scheduledDate ? new Date(job.scheduledDate).toLocaleDateString() : 'Unscheduled'}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>` : '';
+
+    const woButtonLabel = relatedJobs.length > 0 ? 'Create Additional Work Order' : 'Create Work Order';
 
     document.getElementById('estimateDetailContent').innerHTML = `
         <div class="card" style="margin-bottom: 24px;">
@@ -780,10 +817,12 @@ function viewQbEstimate(estimateId) {
 
         ${est.status === 'Accepted' ? `
             <div style="margin-top: 24px; padding: 20px; background: #e8f5e9; border-radius: 8px; text-align: center;">
-                <p style="font-weight: 600; color: #2e7d32; margin-bottom: 12px;">✅ This estimate has been accepted</p>
-                <button class="btn btn-primary" onclick="createWorkOrderFromEstimate(event, '${est.id}')">Create Work Order</button>
+                <p style="font-weight: 600; color: #2e7d32; margin-bottom: 12px;">This estimate has been accepted</p>
+                <button class="btn btn-primary" onclick="createWorkOrderFromEstimate(event, '${est.id}')">${woButtonLabel}</button>
             </div>
         ` : ''}
+
+        ${relatedJobsHtml}
     `;
 
     showView('estimateDetail');
@@ -849,10 +888,13 @@ async function createWorkOrderFromEstimate(evt, estimateId) {
     // Check if work order already exists for this estimate
     try {
         const existing = await JobsAPI.list({ limit: 100 });
-        const alreadyExists = existing.jobs.find(j => j.qbEstimateId === estimateId);
-        if (alreadyExists) {
-            alert(`A work order already exists for this estimate: ${alreadyExists.jobNumber}`);
-            return;
+        const existingJobs = (existing.jobs || []).filter(j => j.qbEstimateId === estimateId);
+        if (existingJobs.length > 0) {
+            const proceed = confirm(
+                `Work orders already exist for this estimate: ${existingJobs.map(j => j.jobNumber).join(', ')}\n\n` +
+                'Do you want to create an additional work order? (e.g., for multi-phase work)'
+            );
+            if (!proceed) return;
         }
     } catch (err) {
         console.error('Error checking existing work orders:', err);
@@ -948,6 +990,26 @@ async function createWorkOrderFromEstimate(evt, estimateId) {
     try {
         const result = await JobsAPI.create(jobData);
 
+        // Upsert estimate to local table for relationship tracking
+        try {
+            await EstimatesAPI.upsertLocal({
+                qbEstimateId: estimateId,
+                docNumber: est.docNumber,
+                txnDate: est.txnDate,
+                status: est.status,
+                customerId: est.customerId,
+                customerName: est.customerName,
+                totalAmount: est.totalAmount,
+                email: est.email,
+                lineItems: est.lineItems,
+                privateNote: est.privateNote,
+                customerMemo: est.customerMemo
+            });
+        } catch (syncErr) {
+            console.warn('Failed to sync estimate locally:', syncErr);
+            // Non-blocking: the work order was created successfully
+        }
+
         // Success - show confirmation and navigate to Jobs
         alert(`Work order ${result.job.jobNumber} created successfully!\n\nThe estimate's line items have been converted to work instructions.`);
 
@@ -960,6 +1022,47 @@ async function createWorkOrderFromEstimate(evt, estimateId) {
         alert('Failed to create work order: ' + err.message);
         btn.disabled = false;
         btn.textContent = originalText;
+    }
+}
+
+// Navigate to estimate from a job's qbEstimateId
+async function navigateToEstimate(qbEstimateId) {
+    const est = (window._qbEstimates || []).find(e => e.id === qbEstimateId);
+    if (est) {
+        viewQbEstimate(qbEstimateId);
+    } else {
+        try {
+            await loadEstimates();
+            const found = (window._qbEstimates || []).find(e => e.id === qbEstimateId);
+            if (found) {
+                viewQbEstimate(qbEstimateId);
+            } else {
+                alert('Estimate not found in QuickBooks');
+            }
+        } catch (err) {
+            alert('Failed to load estimate: ' + err.message);
+        }
+    }
+}
+
+// Create a follow-up estimate spawned from a job
+async function createEstimateFromJob(jobId) {
+    try {
+        const jobData = await JobsAPI.get(jobId);
+        const job = jobData.job;
+
+        // Store spawn context for the estimate builder
+        window._spawnFromJobId = jobId;
+        window._spawnFromJobNumber = job.jobNumber;
+        window._spawnCustomerId = job.customerId;
+        window._spawnCustomerName = job.customerName;
+
+        // Navigate to the estimate create tab
+        showView('estimates');
+        filterEstimates('create');
+    } catch (err) {
+        console.error('Failed to load job for estimate:', err);
+        alert('Failed to load job: ' + err.message);
     }
 }
 
@@ -1296,56 +1399,68 @@ function sortPipelineBy(sortType) {
 // Customer hierarchy, locations, contacts
 // ==========================================
 
-function loadAccounts(filter = '', territory = '', typeFilter = '') {
+async function loadAccounts(filter = '', territory = '', typeFilter = '') {
     const list = document.getElementById('accountsList');
     const countEl = document.getElementById('accountCount');
-    const searchTerm = filter.toLowerCase();
 
-    const filteredCustomers = CUSTOMERS.filter(c => {
-        // Territory filter
-        if (territory && c.territory !== territory) return false;
-        // Type filter
-        if (typeFilter && c.type !== typeFilter) return false;
-        // Search filter
-        if (!searchTerm) return true;
-        if (c.name.toLowerCase().includes(searchTerm)) return true;
-        if (c.locations.some(l => l.name.toLowerCase().includes(searchTerm))) return true;
-        return false;
-    });
+    // Show loading state
+    list.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading customers...</div>';
 
-    countEl.textContent = `${filteredCustomers.length} customers`;
+    try {
+        const data = await CustomersAPI.list({
+            q: filter || undefined,
+            territory: territory || undefined,
+            type: typeFilter || undefined,
+            limit: 200
+        });
 
-    list.innerHTML = filteredCustomers.map(customer => {
-        const typeInfo = CUSTOMER_TYPES[customer.type] || CUSTOMER_TYPES.other;
-        const typeIcon = typeInfo.icon;
-        const typeLabel = typeInfo.label;
-        const typeBadgeClass = typeInfo.badge;
-        const primaryContact = getPrimaryContact(customer.contacts);
+        // Update global CUSTOMERS array for detail view compatibility
+        CUSTOMERS.length = 0;
+        CUSTOMERS.push(...data.customers);
 
-        return `
-        <div class="inspection-item" onclick="viewCustomerDetail('${customer.id}')" style="cursor: pointer;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <div>
-                    <div style="margin-bottom: 8px;">
-                        <span style="font-size: 18px;">${typeIcon}</span>
-                        <strong style="margin-left: 8px; font-size: 16px;">${customer.name}</strong>
-                        <span class="badge ${typeBadgeClass}" style="margin-left: 8px;">${typeLabel}</span>
+        const filteredCustomers = data.customers;
+        countEl.textContent = `${filteredCustomers.length} customers`;
+
+        if (filteredCustomers.length === 0) {
+            list.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No customers found</div>';
+            return;
+        }
+
+        list.innerHTML = filteredCustomers.map(customer => {
+            const typeInfo = CUSTOMER_TYPES[customer.type] || CUSTOMER_TYPES.other;
+            const typeIcon = typeInfo.icon;
+            const typeLabel = typeInfo.label;
+            const typeBadgeClass = typeInfo.badge;
+            const primaryContact = getPrimaryContact(customer.contacts);
+
+            return `
+            <div class="inspection-item" onclick="viewCustomerDetail('${customer.id}')" style="cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <div style="margin-bottom: 8px;">
+                            <span style="font-size: 18px;">${typeIcon}</span>
+                            <strong style="margin-left: 8px; font-size: 16px;">${customer.name}</strong>
+                            <span class="badge ${typeBadgeClass}" style="margin-left: 8px;">${typeLabel}</span>
+                        </div>
+                        <p style="font-size: 13px; color: #6c757d;">${customer.address || ''}</p>
+                        <p style="font-size: 12px; color: #6c757d; margin-top: 4px;">${primaryContact.name || ''} ${primaryContact.phone ? '• ' + primaryContact.phone : customer.phone ? '• ' + customer.phone : ''}</p>
+                        <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+                            ${(customer.locations || []).map(loc => `
+                                <span style="background: #e9ecef; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${loc.name}</span>
+                            `).join('')}
+                        </div>
                     </div>
-                    <p style="font-size: 13px; color: #6c757d;">${customer.billingAddress}</p>
-                    <p style="font-size: 12px; color: #6c757d; margin-top: 4px;">${primaryContact.name} • ${primaryContact.phone || customer.phone}</p>
-                    <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
-                        ${customer.locations.map(loc => `
-                            <span style="background: #e9ecef; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${loc.name}</span>
-                        `).join('')}
+                    <div style="text-align: right;">
+                        <div style="font-size: 24px; font-weight: 700; color: #4CAF50;">${(customer.locations || []).length}</div>
+                        <div style="font-size: 11px; color: #6c757d;">Locations</div>
                     </div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 24px; font-weight: 700; color: #4CAF50;">${customer.locations.length}</div>
-                    <div style="font-size: 11px; color: #6c757d;">Locations</div>
                 </div>
             </div>
-        </div>
-    `}).join('');
+        `}).join('');
+    } catch (err) {
+        console.error('Failed to load customers:', err);
+        list.innerHTML = '<div style="padding: 40px; text-align: center; color: #dc3545;">Failed to load customers: ' + err.message + '</div>';
+    }
 }
 
 function filterAccounts() {
@@ -1372,7 +1487,7 @@ function viewCustomerDetail(customerId) {
 
     // Populate info
     const primaryContact = getPrimaryContact(customer.contacts);
-    document.getElementById('custDetailAddress').textContent = customer.billingAddress;
+    document.getElementById('custDetailAddress').textContent = customer.address || '';
     document.getElementById('custDetailContact').textContent = primaryContact.name || 'No contacts';
     document.getElementById('custDetailPhone').textContent = primaryContact.phone || customer.phone;
 
@@ -1585,7 +1700,7 @@ function closeCustomerModal() {
     document.getElementById('customerModal').classList.add('hidden');
 }
 
-function saveCustomer() {
+async function saveCustomer() {
     const name = document.getElementById('custName').value.trim();
     const type = document.getElementById('custType').value;
     const address = document.getElementById('custAddress').value.trim();
@@ -1597,24 +1712,26 @@ function saveCustomer() {
         return;
     }
 
-    // Create new customer
-    const newCustomer = {
-        id: 'cust' + Date.now(),
-        name: name,
-        type: type,
-        billingAddress: address,
-        phone: phone,
-        territory: territory,
-        contacts: [],
-        locations: []
-    };
+    try {
+        const result = await CustomersAPI.create({
+            name,
+            type,
+            address,
+            phone,
+            territory
+        });
 
-    CUSTOMERS.push(newCustomer);
-    closeCustomerModal();
-    loadAccounts();
+        closeCustomerModal();
+        await loadAccounts();
 
-    // Open the new customer detail to add contacts/locations
-    viewCustomerDetail(newCustomer.id);
+        // Open the new customer detail to add contacts/locations
+        if (result.customer) {
+            viewCustomerDetail(result.customer.id);
+        }
+    } catch (err) {
+        console.error('Failed to create customer:', err);
+        alert('Failed to create customer: ' + err.message);
+    }
 }
 
 // ==========================================
