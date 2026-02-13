@@ -87,7 +87,8 @@ function apiJobToScheduleEntry(job) {
         internalNotes: meta.internalNotes || '',
         notes: meta.notes || '',
         estimateNumber: job.jobNumber,
-        qbEstimateTotal: job.qbEstimateTotal
+        qbEstimateTotal: job.qbEstimateTotal,
+        parentJobId: job.parentJobId || null
     };
 }
 
@@ -1541,6 +1542,34 @@ function showJobDetailModal(job) {
                                 <button class="btn btn-outline" onclick="closeJobDetailModal(); navigateToEstimate('${job.qbEstimateId}')" style="font-size: 12px; padding: 6px 12px; color: #0c5460; border-color: #0c5460;">View Estimate</button>
                                 <button class="btn btn-outline" onclick="closeJobDetailModal(); createEstimateFromJob(${job.id})" style="font-size: 12px; padding: 6px 12px;">Create Follow-up Estimate</button>
                             </div>
+                        </div>
+                    ` : ''}
+
+                    ${job.parentJob ? `
+                        <div style="margin-bottom: 20px; padding: 12px 16px; background: #e3f2fd; border: 1px solid #90caf9; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <label style="font-size: 11px; color: #1565c0; text-transform: uppercase; margin: 0; font-weight: 600;">Parent Inspection</label>
+                                <p style="margin: 4px 0 0; font-weight: 500; color: #0d47a1;">
+                                    Job #${job.parentJob.jobNumber}
+                                    ${job.parentJob.locationName ? ' — ' + job.parentJob.locationName : ''}
+                                </p>
+                            </div>
+                            <button class="btn btn-outline" onclick="closeJobDetailModal(); openJobDetail(${job.parentJob.id})" style="font-size: 12px; padding: 6px 12px; color: #1565c0; border-color: #1565c0;">View Inspection</button>
+                        </div>
+                    ` : ''}
+
+                    ${job.childJobs && job.childJobs.length > 0 ? `
+                        <div style="margin-bottom: 20px; padding: 12px 16px; background: #fff8e1; border: 1px solid #ffe082; border-radius: 8px;">
+                            <label style="font-size: 11px; color: #f57f17; text-transform: uppercase; margin: 0 0 8px; display: block; font-weight: 600;">Child Work Orders (${job.childJobs.length})</label>
+                            ${job.childJobs.map(c => `
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #fff3e0;">
+                                    <div>
+                                        <span style="font-weight: 500;">Job #${c.jobNumber}</span>
+                                        <span style="font-size: 12px; color: #6c757d; margin-left: 8px;">${(c.status || 'draft').replace('_', ' ')}</span>
+                                    </div>
+                                    <button class="btn btn-outline" onclick="closeJobDetailModal(); openJobDetail(${c.id})" style="font-size: 11px; padding: 4px 10px;">View</button>
+                                </div>
+                            `).join('')}
                         </div>
                     ` : ''}
 

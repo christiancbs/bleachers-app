@@ -167,6 +167,60 @@ async function viewWorkOrderDetail(workOrderId, fromView) {
 
         // Reset the completion form
         resetOfficeCompletionForm();
+
+        // Render parent inspection card
+        const parentCard = document.getElementById('woParentInspectionCard');
+        if (parentCard) {
+            if (wo._fromApi && job && job.parentJob) {
+                const p = job.parentJob;
+                const pStatus = p.status || 'completed';
+                const pDate = p.completedAt ? new Date(p.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+                parentCard.innerHTML = `
+                    <div style="padding: 14px 16px; background: #e3f2fd; border: 1px solid #90caf9; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 11px; color: #1565c0; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Parent Inspection</div>
+                            <div style="font-weight: 600; margin-top: 4px; color: #0d47a1;">Job #${p.jobNumber}</div>
+                            <div style="font-size: 13px; color: #1565c0; margin-top: 2px;">${p.locationName || p.customerName || ''} ${pDate ? '&bull; ' + pDate : ''}</div>
+                        </div>
+                        <button class="btn btn-outline" onclick="viewWorkOrderDetail(${p.id}, 'workOrderDetail')" style="font-size: 12px; padding: 6px 14px; color: #1565c0; border-color: #1565c0;">View Inspection</button>
+                    </div>
+                `;
+                parentCard.classList.remove('hidden');
+            } else {
+                parentCard.innerHTML = '';
+                parentCard.classList.add('hidden');
+            }
+        }
+
+        // Render child work orders card
+        const childCard = document.getElementById('woChildJobsCard');
+        if (childCard) {
+            if (wo._fromApi && job && job.childJobs && job.childJobs.length > 0) {
+                const childRows = job.childJobs.map(c => {
+                    const cStatus = c.status || 'draft';
+                    const statusColors = { draft: '#6c757d', scheduled: '#f57c00', in_progress: '#1976d2', completed: '#2e7d32' };
+                    const color = statusColors[cStatus] || '#6c757d';
+                    return `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #fff3e0;">
+                        <div>
+                            <span style="font-weight: 600;">Job #${c.jobNumber}</span>
+                            <span style="font-size: 12px; color: ${color}; margin-left: 8px;">${cStatus.replace('_', ' ')}</span>
+                            <div style="font-size: 13px; color: #6c757d;">${c.locationName || ''}</div>
+                        </div>
+                        <button class="btn btn-outline" onclick="viewWorkOrderDetail(${c.id}, 'workOrderDetail')" style="font-size: 11px; padding: 4px 10px;">View</button>
+                    </div>`;
+                }).join('');
+                childCard.innerHTML = `
+                    <div style="padding: 14px 16px; background: #fff8e1; border: 1px solid #ffe082; border-radius: 10px;">
+                        <div style="font-size: 11px; color: #f57f17; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px;">Child Work Orders (${job.childJobs.length})</div>
+                        ${childRows}
+                    </div>
+                `;
+                childCard.classList.remove('hidden');
+            } else {
+                childCard.innerHTML = '';
+                childCard.classList.add('hidden');
+            }
+        }
     }
 
     showView('workOrderDetail');

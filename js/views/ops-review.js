@@ -512,6 +512,42 @@ async function submitWorkOrderFromModal() {
     submitBtn.textContent = 'Creating...';
 
     try {
+        // Ensure the parent inspection exists in the DB
+        let parentJobId = currentJob._apiId || null;
+        if (!parentJobId && typeof JobsAPI !== 'undefined') {
+            try {
+                // Persist the inspection to the DB so the parent link works
+                const inspResult = await JobsAPI.create({
+                    jobType: 'inspection',
+                    status: 'completed',
+                    customerId: currentJob.customerId,
+                    customerName: currentJob.customerName,
+                    locationName: currentJob.locationName,
+                    address: currentJob.locationAddress,
+                    description: currentJob.description || (currentJob.inspectionType || 'Inspection') + ' - ' + (currentJob.banks?.length || 0) + ' bank(s)',
+                    contactName: currentJob.contactName,
+                    contactPhone: currentJob.contactPhone,
+                    metadata: {
+                        inspectorName: currentJob.inspectorName,
+                        inspectorCertificate: currentJob.inspectorCertificate,
+                        inspectionType: currentJob.inspectionType,
+                        source: 'ops-review-persist'
+                    }
+                });
+                parentJobId = inspResult.job?.id;
+                // Store API id so future WOs from same inspection reuse it
+                currentJob._apiId = parentJobId;
+                const idx = inspectionJobs.findIndex(j => j.jobNumber === currentJob.jobNumber);
+                if (idx >= 0) {
+                    inspectionJobs[idx]._apiId = parentJobId;
+                    localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
+                }
+            } catch (persistErr) {
+                console.warn('Could not persist inspection to DB:', persistErr);
+                // Continue without parent link — inspection banks will still be copied
+            }
+        }
+
         const manualJobNumber = document.getElementById('createWoJobNumber').value.trim();
         const jobData = {
             ...(manualJobNumber ? { jobNumber: manualJobNumber } : {}),
@@ -528,13 +564,37 @@ async function submitWorkOrderFromModal() {
             specialInstructions: document.getElementById('createWoSpecialInstructions').value,
             notes: document.getElementById('createWoNotes').value,
             inspectionJobNumber: currentJob.jobNumber,
+            parentJobId: parentJobId,
             partsNeeded: currentJob.selectedParts || [],
             createdBy: currentRole === 'admin' ? 'Admin' : 'Office'
         };
 
         const result = await JobsAPI.create(jobData);
 
-        // Add inspection banks to the job
+        // Add inspection banks to the parent inspection job (if we just persisted it)
+        if (parentJobId && currentJob.banks) {
+            for (const bank of currentJob.banks) {
+                try {
+                    await JobsAPI.addInspectionBank(parentJobId, {
+                        bankName: bank.name,
+                        bleacherType: bank.bleacherType,
+                        rowCount: bank.tiers || bank.rows,
+                        checklistData: {
+                            understructure: bank.understructureChecklist,
+                            topSide: bank.topSideChecklist
+                        },
+                        issues: [
+                            ...(bank.understructureIssues || []).map(i => ({ ...i, location: 'understructure' })),
+                            ...(bank.topSideIssues || []).map(i => ({ ...i, location: 'topside' }))
+                        ]
+                    });
+                } catch (bankErr) {
+                    console.warn('Failed to add inspection bank to parent:', bankErr);
+                }
+            }
+        }
+
+        // Add inspection banks to the child work order
         if (result.job && result.job.id && currentJob.banks) {
             for (const bank of currentJob.banks) {
                 try {

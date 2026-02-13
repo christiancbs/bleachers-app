@@ -156,6 +156,7 @@ function loadMyJobs() {
                         ${timestampHtml}
                         ${job.confirmation === 'XX' ? '<span class="badge badge-success" style="margin-top: 8px;">Confirmed</span>' : job.confirmation === 'X' ? '<span class="badge badge-warning" style="margin-top: 8px;">Confirmation Pending</span>' : ''}
                         ${actionButtons ? `<div style="margin-top: 12px;">${actionButtons}</div>` : ''}
+                        ${job.parentJobId ? `<div style="margin-top: 8px;"><button class="btn btn-outline" style="padding: 4px 10px; font-size: 12px; color: #1565c0; border-color: #1565c0;" onclick="openInspectionReferenceModal(${job.parentJobId})">View Inspection</button></div>` : ''}
                     </div>
                 `;
             }
@@ -459,5 +460,97 @@ function moveJobToShitList(jobId, reason, notes) {
         // Mark as pink job in schedule
         job.isPink = true;
     }
+}
+
+// ==========================================
+// INSPECTION REFERENCE MODAL
+// Read-only view of parent inspection for techs
+// ==========================================
+
+async function openInspectionReferenceModal(parentJobId) {
+    if (typeof JobsAPI === 'undefined') {
+        alert('API not available');
+        return;
+    }
+
+    try {
+        const data = await JobsAPI.get(parentJobId);
+        const job = data.job;
+
+        const banksHtml = (job.inspectionBanks && job.inspectionBanks.length > 0)
+            ? job.inspectionBanks.map(bank => {
+                const issuesList = (bank.issues && bank.issues.length > 0)
+                    ? bank.issues.map(i => `<li style="margin-bottom: 4px;">${typeof i === 'string' ? i : (i.description || i.issue || JSON.stringify(i))}</li>`).join('')
+                    : '<li style="color: #6c757d;">No issues noted</li>';
+                return `
+                    <div style="padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px;">
+                        <div style="font-weight: 600;">${bank.bankName}</div>
+                        <div style="font-size: 13px; color: #6c757d; margin-bottom: 6px;">${bank.bleacherType || ''} &bull; ${bank.rowCount || '?'} rows &bull; ${bank.seatCount || '?'} seats &bull; ${bank.status || ''}</div>
+                        <ul style="margin: 4px 0 0 16px; padding: 0; font-size: 13px;">${issuesList}</ul>
+                    </div>
+                `;
+            }).join('')
+            : '<p style="color: #6c757d; text-align: center;">No inspection banks recorded</p>';
+
+        const photosHtml = (job.attachments && job.attachments.length > 0)
+            ? `<div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                ${job.attachments.filter(a => a.contentType?.startsWith('image/')).map(a =>
+                    `<div style="width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid #dee2e6; cursor: pointer;" onclick="window.open('${a.blobUrl}', '_blank')">
+                        <img src="${a.blobUrl}" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>`
+                ).join('')}
+              </div>`
+            : '';
+
+        const modalHtml = `
+            <div id="inspectionRefModal" class="modal-backdrop" onclick="if(event.target===this)closeInspectionRefModal()" style="z-index: 10000;">
+                <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+                    <div class="modal-header">
+                        <div>
+                            <h2 style="margin: 0;">Inspection #${job.jobNumber}</h2>
+                            <div style="font-size: 13px; color: #6c757d; margin-top: 4px;">${job.locationName || job.customerName || ''}</div>
+                        </div>
+                        <button onclick="closeInspectionRefModal()" style="background:none;border:none;font-size:24px;cursor:pointer;">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        ${job.description ? `
+                            <div style="margin-bottom: 16px;">
+                                <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Description</label>
+                                <div style="margin-top: 4px; padding: 10px; background: #f8f9fa; border-radius: 8px; font-size: 13px; white-space: pre-wrap;">${job.description}</div>
+                            </div>
+                        ` : ''}
+
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Inspection Banks (${job.inspectionBanks?.length || 0})</label>
+                            <div style="margin-top: 8px;">${banksHtml}</div>
+                        </div>
+
+                        ${photosHtml ? `
+                            <div>
+                                <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Photos (${job.attachments?.filter(a => a.contentType?.startsWith('image/')).length || 0})</label>
+                                ${photosHtml}
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline" onclick="closeInspectionRefModal()">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const existing = document.getElementById('inspectionRefModal');
+        if (existing) existing.remove();
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    } catch (err) {
+        console.error('Failed to load inspection:', err);
+        alert('Failed to load inspection: ' + err.message);
+    }
+}
+
+function closeInspectionRefModal() {
+    const modal = document.getElementById('inspectionRefModal');
+    if (modal) modal.remove();
 }
 
