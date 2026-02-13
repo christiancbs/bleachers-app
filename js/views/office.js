@@ -3,15 +3,64 @@
 // Work order detail, editing, completion
 // ==========================================
 
-function viewWorkOrderDetail(workOrderId) {
+// Track where user navigated from so Back button returns correctly
+var _woBackTarget = 'officeSearch';
+
+function goBackFromWorkOrder() {
+    showView(_woBackTarget);
+}
+
+async function viewWorkOrderDetail(workOrderId, fromView) {
+    // Track navigation source for Back button
+    if (fromView) {
+        _woBackTarget = fromView;
+    }
+
     // Populate the customer/location dropdown
     populateOfficeWorkOrderCustomerDropdown();
 
     // Reset all edit sections to display mode
     resetAllEditSections();
 
-    // Load work order data
-    const wo = OFFICE_WORK_ORDERS[workOrderId];
+    // Load work order data — try in-memory first, then Jobs API
+    var wo = OFFICE_WORK_ORDERS[workOrderId];
+
+    if (!wo && typeof JobsAPI !== 'undefined') {
+        // workOrderId is a Postgres job ID — fetch from API
+        try {
+            var jobData = await JobsAPI.get(workOrderId);
+            var job = jobData.job || jobData;
+            wo = {
+                jobNumber: job.jobNumber,
+                jobType: job.jobType || 'repair',
+                status: job.status || 'draft',
+                locationName: job.locationName || job.customerName || '',
+                address: job.address || '',
+                customerId: job.customerId || '',
+                locationId: '',
+                contactName: job.contactName || '',
+                contactPhone: job.contactPhone || '',
+                description: job.description || job.title || '',
+                partsLocation: '',
+                specialInstructions: job.specialInstructions || '',
+                scheduledDate: job.scheduledDate ? job.scheduledDate.substring(0, 10) : '',
+                scheduledTime: '',
+                assignedTo: job.assignedTo || '',
+                confirmedWith: '',
+                confirmedBy: '',
+                confirmedDate: '',
+                completed: job.status === 'completed' ? 'yes' : '',
+                hoursWorked: job.estimatedHours || '',
+                completedBy: '',
+                techNotes: '',
+                _fromApi: true,
+                _apiId: job.id
+            };
+        } catch (err) {
+            console.error('Failed to load job from API:', err);
+        }
+    }
+
     if (wo) {
         currentWorkOrder = { ...wo, id: workOrderId };
 
@@ -26,38 +75,47 @@ function viewWorkOrderDetail(workOrderId) {
         // Status badge
         const statusBadge = document.getElementById('woStatusBadge');
         statusBadge.textContent = wo.status;
-        const statusClass = wo.status === 'Completed' ? 'badge-success' :
+        const statusClass = wo.status === 'completed' ? 'badge-success' :
+                           wo.status === 'Completed' ? 'badge-success' :
                            wo.status === 'Pink' ? 'badge-danger' :
                            wo.status === 'Parts Received' ? 'badge-success' :
-                           wo.status === 'Scheduled' ? 'badge-warning' : 'badge-info';
+                           wo.status === 'parts_received' ? 'badge-success' :
+                           wo.status === 'Scheduled' ? 'badge-warning' :
+                           wo.status === 'scheduled' ? 'badge-warning' :
+                           wo.status === 'in_progress' ? 'badge-warning' :
+                           wo.status === 'draft' ? 'badge-secondary' : 'badge-info';
         statusBadge.className = `badge ${statusClass}`;
 
         // Location section (display)
         document.getElementById('woLocationName').textContent = wo.locationName;
-        document.getElementById('woLocationAddress').textContent = wo.address;
-        const encodedAddress = encodeURIComponent(wo.address);
-        document.getElementById('woDirectionsLink').href = `https://maps.google.com/?q=${encodedAddress}`;
+        document.getElementById('woLocationAddress').textContent = wo.address || '';
+        if (wo.address) {
+            const encodedAddress = encodeURIComponent(wo.address);
+            document.getElementById('woDirectionsLink').href = `https://maps.google.com/?q=${encodedAddress}`;
+        }
 
         // Location section (edit inputs)
-        document.getElementById('woCustomerLocation').value = `${wo.customerId}|${wo.locationId}`;
-        document.getElementById('woLocationAddressInput').value = wo.address;
+        document.getElementById('woCustomerLocation').value = `${wo.customerId || ''}|${wo.locationId || ''}`;
+        document.getElementById('woLocationAddressInput').value = wo.address || '';
 
         // Contact section (display)
-        document.getElementById('woContactName').textContent = wo.contactName;
-        document.getElementById('woContactPhone').textContent = wo.contactPhone;
-        document.getElementById('woContactPhoneLink').href = `tel:${wo.contactPhone.replace(/\D/g, '')}`;
+        document.getElementById('woContactName').textContent = wo.contactName || '—';
+        document.getElementById('woContactPhone').textContent = wo.contactPhone || '—';
+        if (wo.contactPhone) {
+            document.getElementById('woContactPhoneLink').href = `tel:${wo.contactPhone.replace(/\D/g, '')}`;
+        }
 
         // Contact section (edit inputs)
-        document.getElementById('woContactNameInput').value = wo.contactName;
-        document.getElementById('woContactPhoneInput').value = wo.contactPhone;
+        document.getElementById('woContactNameInput').value = wo.contactName || '';
+        document.getElementById('woContactPhoneInput').value = wo.contactPhone || '';
 
         // Description section
-        document.getElementById('woDescription').textContent = wo.description;
-        document.getElementById('woDescriptionInput').value = wo.description;
+        document.getElementById('woDescription').textContent = wo.description || '';
+        document.getElementById('woDescriptionInput').value = wo.description || '';
 
         // Parts location section
-        document.getElementById('woPartsLocation').textContent = wo.partsLocation;
-        document.getElementById('woPartsLocationInput').value = wo.partsLocation;
+        document.getElementById('woPartsLocation').textContent = wo.partsLocation || '—';
+        document.getElementById('woPartsLocationInput').value = wo.partsLocation || '';
 
         // Special instructions section
         const instructions = wo.specialInstructions || 'None';
@@ -65,12 +123,20 @@ function viewWorkOrderDetail(workOrderId) {
         document.getElementById('woSpecialInstructionsInput').value = wo.specialInstructions || '';
 
         // Scheduling section (display)
-        const schedDate = new Date(wo.scheduledDate + 'T00:00:00');
-        document.getElementById('woScheduledDateDisplay').textContent = schedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        const [hours, minutes] = wo.scheduledTime.split(':');
-        const timeDate = new Date();
-        timeDate.setHours(parseInt(hours), parseInt(minutes));
-        document.getElementById('woScheduledTimeDisplay').textContent = timeDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        if (wo.scheduledDate) {
+            const schedDate = new Date(wo.scheduledDate + 'T00:00:00');
+            document.getElementById('woScheduledDateDisplay').textContent = schedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        } else {
+            document.getElementById('woScheduledDateDisplay').textContent = '—';
+        }
+        if (wo.scheduledTime) {
+            const [hours, minutes] = wo.scheduledTime.split(':');
+            const timeDate = new Date();
+            timeDate.setHours(parseInt(hours), parseInt(minutes));
+            document.getElementById('woScheduledTimeDisplay').textContent = timeDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        } else {
+            document.getElementById('woScheduledTimeDisplay').textContent = '—';
+        }
         document.getElementById('woAssignedToDisplay').textContent = wo.assignedTo || '—';
         document.getElementById('woConfirmedWithDisplay').textContent = wo.confirmedWith || '—';
         document.getElementById('woConfirmedByDisplay').textContent = wo.confirmedBy || '—';
@@ -82,9 +148,9 @@ function viewWorkOrderDetail(workOrderId) {
         }
 
         // Scheduling section (edit inputs)
-        document.getElementById('woScheduledDate').value = wo.scheduledDate;
-        document.getElementById('woScheduledTime').value = wo.scheduledTime;
-        document.getElementById('woAssignedTo').value = wo.assignedTo;
+        document.getElementById('woScheduledDate').value = wo.scheduledDate || '';
+        document.getElementById('woScheduledTime').value = wo.scheduledTime || '';
+        document.getElementById('woAssignedTo').value = wo.assignedTo || '';
         document.getElementById('woConfirmedWith').value = wo.confirmedWith || '';
         document.getElementById('woConfirmedBy').value = wo.confirmedBy || '';
         document.getElementById('woConfirmedDate').value = wo.confirmedDate || '';

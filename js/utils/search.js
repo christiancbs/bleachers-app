@@ -38,7 +38,7 @@ async function performTechSearch() {
     results.forEach(function(r) {
         var statusBg = r.data.status === 'completed' ? '#c8e6c9' : r.data.status === 'draft' ? '#fff3e0' : '#e3f2fd';
         var statusColor = r.data.status === 'completed' ? '#2e7d32' : r.data.status === 'draft' ? '#e65100' : '#1565c0';
-        html += '<div class="card" style="margin-bottom: 8px; cursor: pointer;" onclick="viewWorkOrderDetail(' + r.data.id + ')">';
+        html += '<div class="card" style="margin-bottom: 8px; cursor: pointer;" onclick="viewWorkOrderDetail(' + r.data.id + ', \'officeSearch\')">';
         html += '<div class="card-body" style="padding: 12px 16px;">';
         html += '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">';
         html += '<span style="font-weight: 600; color: #007bff;">#' + r.data.jobNumber + '</span>';
@@ -143,7 +143,7 @@ async function performOfficeSearch() {
 
     results.forEach(function(r) {
         if (r.type === 'workorder') {
-            html += '<div class="card" style="margin-bottom: 8px; cursor: pointer;" onclick="viewWorkOrderDetail(\'' + r.key + '\')">';
+            html += '<div class="card" style="margin-bottom: 8px; cursor: pointer;" onclick="viewWorkOrderDetail(\'' + r.key + '\', \'officeSearch\')">';
             html += '<div class="card-body" style="padding: 12px 16px;">';
             html += '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">';
             html += '<span class="badge badge-info">Work Order</span>';
@@ -169,7 +169,7 @@ async function performOfficeSearch() {
         } else if (r.type === 'job') {
             var jStatusBg = r.data.status === 'completed' ? '#c8e6c9' : r.data.status === 'draft' ? '#fff3e0' : '#e3f2fd';
             var jStatusColor = r.data.status === 'completed' ? '#2e7d32' : r.data.status === 'draft' ? '#e65100' : '#1565c0';
-            html += '<div class="card" style="margin-bottom: 8px; cursor: pointer;" onclick="viewWorkOrderDetail(' + r.data.id + ')">';
+            html += '<div class="card" style="margin-bottom: 8px; cursor: pointer;" onclick="viewWorkOrderDetail(' + r.data.id + ', \'officeSearch\')">';
             html += '<div class="card-body" style="padding: 12px 16px;">';
             html += '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">';
             html += '<span class="badge badge-info">Job</span>';

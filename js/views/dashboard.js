@@ -748,7 +748,7 @@ async function viewQbEstimate(estimateId) {
             <div class="card-body" style="padding: 0;">
                 ${relatedJobs.map(job => `
                     <div class="inspection-item" style="cursor: pointer; border-bottom: 1px solid #e9ecef; padding: 16px;"
-                         onclick="viewWorkOrderDetail(${job.id})">
+                         onclick="viewWorkOrderDetail(${job.id}, 'estimateDetail')">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
                                 <strong style="color: #007bff;">${job.jobNumber}</strong>
