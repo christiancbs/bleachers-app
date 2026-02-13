@@ -1569,13 +1569,13 @@ function showJobDetailModal(job) {
                         <div style="margin-bottom: 20px;">
                             <label style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Attachments (${job.attachments.length})</label>
                             <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
-                                ${job.attachments.map(a => `
-                                    <a href="${a.blobUrl}" target="_blank" style="display: block; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid #dee2e6;">
+                                ${job.attachments.map((a, i) => `
+                                    <div onclick="${a.contentType?.startsWith('image/') ? `expandJobImage('${a.blobUrl}')` : `window.open('${a.blobUrl}','_blank')`}" style="display: block; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid #dee2e6; cursor: pointer;">
                                         ${a.contentType?.startsWith('image/')
                                             ? `<img src="${a.blobUrl}" style="width: 100%; height: 100%; object-fit: cover;">`
                                             : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f8f9fa;">📄</div>`
                                         }
-                                    </a>
+                                    </div>
                                 `).join('')}
                             </div>
                         </div>
@@ -1614,6 +1614,18 @@ function showJobDetailModal(job) {
 function closeJobDetailModal() {
     const modal = document.getElementById('jobDetailModal');
     if (modal) modal.remove();
+}
+
+function expandJobImage(url) {
+    const existing = document.getElementById('imageOverlay');
+    if (existing) existing.remove();
+
+    document.body.insertAdjacentHTML('beforeend', `
+        <div id="imageOverlay" onclick="document.getElementById('imageOverlay').remove()" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10001;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+            <img src="${url}" style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,0.5);">
+            <button style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:28px;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+        </div>
+    `);
 }
 
 // Edit job (placeholder - can expand later)
