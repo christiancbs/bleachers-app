@@ -25,5 +25,9 @@ tools/migrate*.js
 tools/migrate*.sh
 tools/run-migrate.sh
 
+# Internal reference docs (local only, not for public repo)
+bleacher-app-reference.md
+bleacher-app-history.md
+
 # Archives (keep local for reference)
 archive/
