@@ -147,6 +147,17 @@ function logout() {
     }
 }
 
+// Non-blocking toast notification
+function showNotification(message, type = 'info') {
+    const colors = { info: '#1976d2', error: '#c62828', success: '#2e7d32', warning: '#f57c00' };
+    const bg = colors[type] || colors.info;
+    const el = document.createElement('div');
+    el.style.cssText = `position:fixed;top:20px;left:50%;transform:translateX(-50%);background:${bg};color:white;padding:12px 24px;border-radius:8px;font-size:14px;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.3);transition:opacity 0.3s;max-width:90vw;text-align:center;`;
+    el.textContent = message;
+    document.body.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
+}
+
 function showView(view) {
     // Close mobile menu if open
     closeMobileMenu('officeSidebar');

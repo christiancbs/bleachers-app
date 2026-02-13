@@ -724,7 +724,7 @@ async function viewQbEstimate(estimateId) {
     // Find estimate in cache
     const est = (window._qbEstimates || []).find(e => e.id === estimateId);
     if (!est) {
-        alert('Estimate not found');
+        showNotification('Estimate not found in cache', 'warning');
         return;
     }
 
@@ -901,7 +901,7 @@ async function createWorkOrderFromEstimate(evt, estimateId) {
     // Get estimate from cache
     const est = (window._qbEstimates || []).find(e => e.id === estimateId);
     if (!est) {
-        alert('Estimate not found');
+        showNotification('Estimate not found in cache', 'warning');
         return;
     }
 
@@ -1073,9 +1073,9 @@ async function navigateToEstimate(qbEstimateId) {
             return;
         }
 
-        alert('Estimate not found');
+        showNotification('Estimate not found — it may not be synced yet. Try syncing estimates first.', 'warning');
     } catch (err) {
-        alert('Failed to load estimate: ' + err.message);
+        showNotification('Failed to load estimate: ' + err.message, 'error');
     }
 }
 
