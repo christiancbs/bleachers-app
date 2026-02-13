@@ -72,9 +72,7 @@ window.addEventListener('load', async function () {
     try {
         const appUrl = '/bleachers-app/';
         await window.Clerk.load({
-            afterSignInUrl: appUrl,
-            afterSignUpUrl: appUrl,
-            afterSignOutUrl: appUrl,
+            fallbackRedirectUrl: appUrl,
             signInForceRedirectUrl: appUrl,
             signUpForceRedirectUrl: appUrl
         });
@@ -88,8 +86,8 @@ window.addEventListener('load', async function () {
             const signInEl = document.getElementById('clerk-sign-in');
             if (signInEl) {
                 window.Clerk.mountSignIn(signInEl, {
-                    afterSignInUrl: appUrl,
-                    signInForceRedirectUrl: appUrl
+                    fallbackRedirectUrl: appUrl,
+                    forceRedirectUrl: appUrl
                 });
             }
         }
