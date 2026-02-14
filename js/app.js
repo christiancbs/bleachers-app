@@ -205,14 +205,23 @@ function initBrandScatter() {
         layer.appendChild(img);
     }
 
-    document.body.appendChild(layer);
+    const loginScreen = document.getElementById('loginScreen');
+    if (loginScreen) {
+        loginScreen.appendChild(layer);
+    }
     // Fade in after a short delay
     requestAnimationFrame(() => { layer.style.opacity = '1'; });
 }
 
-// Initialize scatter after page fully loads
+// Initialize login screen effects after page fully loads
 window.addEventListener('load', function() {
-    setTimeout(initBrandScatter, 500);
+    // Delay logo animation until page is ready
+    const logo = document.querySelector('.login-logo-animate');
+    if (logo) {
+        logo.classList.add('ready');
+    }
+    // Then fade in scatter icons
+    setTimeout(initBrandScatter, 600);
 });
 
 function showView(view) {
