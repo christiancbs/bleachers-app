@@ -332,6 +332,8 @@
             pointer-events: none;
             z-index: 0;
             overflow: hidden;
+            opacity: 0;
+            transition: opacity 1s ease;
         }
 
         .brand-scatter-icon {

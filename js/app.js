@@ -206,10 +206,14 @@ function initBrandScatter() {
     }
 
     document.body.appendChild(layer);
+    // Fade in after a short delay
+    requestAnimationFrame(() => { layer.style.opacity = '1'; });
 }
 
-// Initialize scatter on load
-initBrandScatter();
+// Initialize scatter after page fully loads
+window.addEventListener('load', function() {
+    setTimeout(initBrandScatter, 500);
+});
 
 function showView(view) {
     // Close mobile menu if open
