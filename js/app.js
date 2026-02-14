@@ -158,6 +158,59 @@ function showNotification(message, type = 'info') {
     setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
 }
 
+// Scattered brand icons background
+function initBrandScatter() {
+    const existing = document.querySelector('.brand-scatter-layer');
+    if (existing) return; // Already created
+
+    const layer = document.createElement('div');
+    layer.className = 'brand-scatter-layer';
+
+    const count = 100;
+    const placed = []; // Track placed icons to prevent overlap
+
+    for (let i = 0; i < count; i++) {
+        const size = 20 + Math.random() * 60; // 20px to 80px
+        const rotation = Math.floor(Math.random() * 360);
+
+        // Try to place without overlapping (up to 20 attempts)
+        let x, y, overlaps;
+        let attempts = 0;
+        do {
+            x = Math.random() * 100;
+            y = Math.random() * 100;
+            overlaps = placed.some(p => {
+                const dx = x - p.x;
+                const dy = y - p.y;
+                const minDist = (size / 10 + p.size / 10) * 0.6;
+                return Math.sqrt(dx * dx + dy * dy) < minDist;
+            });
+            attempts++;
+        } while (overlaps && attempts < 20);
+
+        if (attempts >= 20 && overlaps) continue; // Skip if can't place
+
+        placed.push({ x, y, size });
+
+        const img = document.createElement('img');
+        img.src = 'bleachers-logo-icon.png';
+        img.className = 'brand-scatter-icon';
+        img.style.width = size + 'px';
+        img.style.height = size + 'px';
+        img.style.left = x + '%';
+        img.style.top = y + '%';
+        img.style.transform = 'rotate(' + rotation + 'deg)';
+        img.setAttribute('aria-hidden', 'true');
+        img.setAttribute('alt', '');
+        layer.appendChild(img);
+    }
+
+    document.body.appendChild(layer);
+}
+
+// Initialize scatter on load
+initBrandScatter();
+
 function showView(view) {
     // Close mobile menu if open
     closeMobileMenu('officeSidebar');
