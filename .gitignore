@@ -8,3 +8,9 @@ js/config.js
 # Internal reference docs (local only, not for public repo)
 bleacher-app-reference.md
 bleacher-app-history.md
+
+# Vendor pricing and specs (sensitive, never commit)
+vendor-data/
+
+# Internal operational docs with PII
+docs/

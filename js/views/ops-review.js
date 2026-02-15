@@ -321,6 +321,11 @@ function renderOpsReviewDetail(job) {
                 <!-- Status indicator -->
                 <div style="display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
                     <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 16px;">${job._apiId ? '✓' : '○'}</span>
+                        <span style="color: ${job._apiId ? '#2e7d32' : '#e65100'};">${job._apiId ? 'Saved to Database' : 'Not Saved to Database'}</span>
+                        ${!job._apiId ? '<button class="btn btn-outline" onclick="retryPersistInspection()" style="font-size: 11px; padding: 2px 8px; margin-left: 8px;">Retry Save</button>' : ''}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="font-size: 16px;">${hasEstimate ? '✓' : '○'}</span>
                         <span style="color: ${hasEstimate ? '#2e7d32' : '#6c757d'};">Estimate ${hasEstimate ? 'Created' : 'Pending'}</span>
                     </div>
@@ -420,8 +425,89 @@ function updateOpsReviewBadge() {
 // INSPECTION ACTIONS
 // ==========================================
 
-// Approve inspection only (just status change, no work order)
-function approveInspectionOnly() {
+// Persist inspection to DB as an independent billable job
+async function persistInspectionToDB(job) {
+    // Already persisted — return existing ID
+    if (job._apiId) {
+        return job._apiId;
+    }
+
+    if (typeof JobsAPI === 'undefined') {
+        throw new Error('JobsAPI not available');
+    }
+
+    // Create the inspection job in Postgres
+    const inspResult = await JobsAPI.create({
+        jobType: 'inspection',
+        status: 'completed',
+        customerId: job.customerId,
+        customerName: job.customerName,
+        locationName: job.locationName,
+        address: job.locationAddress,
+        description: job.description || (job.inspectionType || 'Inspection') + ' - ' + (job.banks?.length || 0) + ' bank(s)',
+        contactName: job.contactName,
+        contactPhone: job.contactPhone,
+        metadata: {
+            inspectorName: job.inspectorName,
+            inspectorCertificate: job.inspectorCertificate,
+            inspectionType: job.inspectionType,
+            source: 'ops-review-approve'
+        }
+    });
+
+    const apiId = inspResult.job?.id;
+    if (!apiId) {
+        throw new Error('No job ID returned from API');
+    }
+
+    // Sync all inspection banks to the DB job
+    if (job.banks && job.banks.length > 0) {
+        for (const bank of job.banks) {
+            try {
+                await JobsAPI.addInspectionBank(apiId, {
+                    bankName: bank.name,
+                    bleacherType: bank.bleacherType,
+                    rowCount: bank.tiers || bank.rows,
+                    checklistData: {
+                        understructure: bank.understructureChecklist,
+                        topSide: bank.topSideChecklist
+                    },
+                    issues: [
+                        ...(bank.understructureIssues || []).map(i => ({ ...i, location: 'understructure' })),
+                        ...(bank.topSideIssues || []).map(i => ({ ...i, location: 'topside' }))
+                    ]
+                });
+            } catch (bankErr) {
+                console.warn('Failed to add inspection bank:', bankErr);
+            }
+        }
+    }
+
+    // Store the API ID back on the localStorage record
+    job._apiId = apiId;
+    const idx = inspectionJobs.findIndex(j => j.jobNumber === job.jobNumber);
+    if (idx >= 0) {
+        inspectionJobs[idx]._apiId = apiId;
+        localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
+    }
+
+    return apiId;
+}
+
+// Retry persisting inspection to DB (called from UI retry button)
+async function retryPersistInspection() {
+    if (!currentJob) return;
+    try {
+        await persistInspectionToDB(currentJob);
+        alert('Inspection saved to database successfully!');
+        renderOpsReviewDetail(currentJob);
+    } catch (err) {
+        alert('Failed to save: ' + err.message);
+    }
+}
+
+// Approve inspection and persist to DB as a billable job
+async function approveInspectionOnly() {
     if (!currentJob) {
         alert('No job selected');
         return;
@@ -431,7 +517,7 @@ function approveInspectionOnly() {
         `Job #${currentJob.jobNumber}\n` +
         `${currentJob.locationName}\n` +
         `${currentJob.banks?.length || 0} bank(s) inspected\n\n` +
-        `You can then create a work order and/or estimate.`;
+        `This will save the inspection to the database as a billable job.`;
 
     if (!confirm(message)) return;
 
@@ -440,12 +526,19 @@ function approveInspectionOnly() {
     currentJob.reviewedBy = currentRole === 'admin' ? 'Admin' : 'Office';
     currentJob.reviewedAt = new Date().toISOString();
 
-    // Save inspection status
+    // Save inspection status to localStorage
     const idx = inspectionJobs.findIndex(j => j.jobNumber === currentJob.jobNumber);
     if (idx >= 0) inspectionJobs[idx] = currentJob;
     localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
 
-    alert(`Inspection #${currentJob.jobNumber} approved!`);
+    // Persist to DB as an independent billable job
+    try {
+        await persistInspectionToDB(currentJob);
+        alert(`Inspection #${currentJob.jobNumber} approved and saved to database!`);
+    } catch (err) {
+        console.error('Failed to persist inspection to DB:', err);
+        alert(`Inspection #${currentJob.jobNumber} approved locally.\n\nWarning: Could not save to database. You can retry from the detail view.`);
+    }
 
     // Refresh the view to show updated status
     renderOpsReviewDetail(currentJob);
@@ -512,39 +605,14 @@ async function submitWorkOrderFromModal() {
     submitBtn.textContent = 'Creating...';
 
     try {
-        // Ensure the parent inspection exists in the DB
+        // Get the parent inspection's DB ID (should already exist from approval)
         let parentJobId = currentJob._apiId || null;
         if (!parentJobId && typeof JobsAPI !== 'undefined') {
+            // Fallback: persist now if not done during approval
             try {
-                // Persist the inspection to the DB so the parent link works
-                const inspResult = await JobsAPI.create({
-                    jobType: 'inspection',
-                    status: 'completed',
-                    customerId: currentJob.customerId,
-                    customerName: currentJob.customerName,
-                    locationName: currentJob.locationName,
-                    address: currentJob.locationAddress,
-                    description: currentJob.description || (currentJob.inspectionType || 'Inspection') + ' - ' + (currentJob.banks?.length || 0) + ' bank(s)',
-                    contactName: currentJob.contactName,
-                    contactPhone: currentJob.contactPhone,
-                    metadata: {
-                        inspectorName: currentJob.inspectorName,
-                        inspectorCertificate: currentJob.inspectorCertificate,
-                        inspectionType: currentJob.inspectionType,
-                        source: 'ops-review-persist'
-                    }
-                });
-                parentJobId = inspResult.job?.id;
-                // Store API id so future WOs from same inspection reuse it
-                currentJob._apiId = parentJobId;
-                const idx = inspectionJobs.findIndex(j => j.jobNumber === currentJob.jobNumber);
-                if (idx >= 0) {
-                    inspectionJobs[idx]._apiId = parentJobId;
-                    localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
-                }
+                parentJobId = await persistInspectionToDB(currentJob);
             } catch (persistErr) {
                 console.warn('Could not persist inspection to DB:', persistErr);
-                // Continue without parent link — inspection banks will still be copied
             }
         }
 
@@ -570,29 +638,6 @@ async function submitWorkOrderFromModal() {
         };
 
         const result = await JobsAPI.create(jobData);
-
-        // Add inspection banks to the parent inspection job (if we just persisted it)
-        if (parentJobId && currentJob.banks) {
-            for (const bank of currentJob.banks) {
-                try {
-                    await JobsAPI.addInspectionBank(parentJobId, {
-                        bankName: bank.name,
-                        bleacherType: bank.bleacherType,
-                        rowCount: bank.tiers || bank.rows,
-                        checklistData: {
-                            understructure: bank.understructureChecklist,
-                            topSide: bank.topSideChecklist
-                        },
-                        issues: [
-                            ...(bank.understructureIssues || []).map(i => ({ ...i, location: 'understructure' })),
-                            ...(bank.topSideIssues || []).map(i => ({ ...i, location: 'topside' }))
-                        ]
-                    });
-                } catch (bankErr) {
-                    console.warn('Failed to add inspection bank to parent:', bankErr);
-                }
-            }
-        }
 
         // Add inspection banks to the child work order
         if (result.job && result.job.id && currentJob.banks) {
@@ -664,6 +709,7 @@ function buildEstimateFromInspection() {
     // Prepare data for estimate builder
     const prefillData = {
         jobNumber: currentJob.jobNumber,
+        _apiId: currentJob._apiId || null,
         customerId: currentJob.customerId,
         customerName: currentJob.customerName,
         locationId: currentJob.locationId,

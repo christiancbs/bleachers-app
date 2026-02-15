@@ -895,6 +895,42 @@ async function submitEstimateToQb() {
 
         const result = await EstimatesAPI.create(estimateData);
 
+        // If built from an inspection, link the estimate to the inspection job
+        const inspectionDbId = estimateBuilderState.sourceInspection?._apiId;
+        if (inspectionDbId && result.id) {
+            try {
+                // Upsert local estimate record with linkage
+                await EstimatesAPI.upsertLocal({
+                    qbEstimateId: String(result.id),
+                    docNumber: result.docNumber || null,
+                    status: 'Pending',
+                    customerId: estimateBuilderState.qbCustomer.Id,
+                    customerName: estimateBuilderState.qbCustomer.DisplayName,
+                    totalAmount: total,
+                    spawnedFromJobId: inspectionDbId
+                });
+
+                // Update the inspection job with the estimate reference
+                await JobsAPI.update(inspectionDbId, {
+                    qbEstimateId: result.docNumber || String(result.id)
+                });
+
+                // Update localStorage inspection record
+                if (estimateBuilderState.sourceInspection?.jobNumber) {
+                    const inspIdx = inspectionJobs.findIndex(
+                        j => j.jobNumber === estimateBuilderState.sourceInspection.jobNumber
+                    );
+                    if (inspIdx >= 0) {
+                        inspectionJobs[inspIdx].hasEstimate = true;
+                        inspectionJobs[inspIdx].estimateId = result.docNumber || String(result.id);
+                        localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
+                    }
+                }
+            } catch (linkErr) {
+                console.warn('Failed to link estimate to inspection job:', linkErr);
+            }
+        }
+
         // If spawned from a job, upsert local estimate with linkage
         if (window._spawnFromJobId && result.id) {
             try {
