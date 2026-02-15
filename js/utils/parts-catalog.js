@@ -3,68 +3,10 @@
 // Airtable search, part selection, old inspection form
 // ==========================================
 
+// Legacy stub — inspections view now loads from API via loadInspectionsView() in scheduling.js
 function loadOfficeInspections() {
-    const list = document.getElementById('officeInspectionsList');
-    const count = document.getElementById('officeInspectionsCount');
-    const inProgressCount = document.getElementById('officeInProgressCount');
-    const totalBanks = document.getElementById('officeTotalBanks');
-
-    // Use new inspectionJobs array
-    const submitted = inspectionJobs.filter(j => j.status === 'submitted');
-    const inProgress = inspectionJobs.filter(j => j.status === 'in_progress');
-
-    // Count total banks
-    let bankCount = 0;
-    inspectionJobs.forEach(j => bankCount += (j.banks?.length || 0));
-
-    // Update stat cards
-    if (count) count.textContent = submitted.length;
-    if (inProgressCount) inProgressCount.textContent = inProgress.length;
-    if (totalBanks) totalBanks.textContent = bankCount;
-
-    if (inspectionJobs.length === 0) {
-        list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>No inspections yet</p><p style="font-size: 14px; margin-top: 8px;">Click "New Inspection" to get started</p></div>';
-    } else {
-        // Show all jobs with status
-        list.innerHTML = inspectionJobs.map(job => {
-            const typeIcon = job.inspectionType === 'basketball' ? '🏀' :
-                             job.inspectionType === 'bleacher' ? '🏟️' :
-                             job.inspectionType === 'outdoor' ? '🪑' : '📋';
-            const typeLabel = job.inspectionType === 'basketball' ? 'Basketball' :
-                              job.inspectionType === 'bleacher' ? 'Indoor Bleacher' :
-                              job.inspectionType === 'outdoor' ? 'Outdoor Bleacher' : 'Inspection';
-            const statusBadge = job.status === 'submitted' ?
-                '<span class="badge badge-success">Submitted</span>' :
-                '<span class="badge badge-warning" style="background: #fff3e0; color: #e65100;">In Progress</span>';
-            const bankCount = job.banks?.length || 0;
-            const issueCount = job.banks?.reduce((sum, bank) => {
-                return sum + (bank.understructureIssues?.length || 0) + (bank.topSideIssues?.length || 0);
-            }, 0) || 0;
-
-            return `
-            <div class="inspection-item" onclick="viewSubmittedJob(${job.jobNumber})" style="cursor: pointer;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div>
-                        <div style="margin-bottom: 8px;">
-                            <span class="part-number" style="color: #0066cc; font-size: 14px;">${job.jobNumber}</span>
-                            <span style="margin-left: 8px; font-size: 12px; color: #6c757d;">${typeIcon} ${typeLabel}</span>
-                        </div>
-                        <strong>${job.locationName}</strong>
-                        <p style="font-size: 12px; color: #6c757d; margin-top: 2px;">${job.customerName}</p>
-                        <p style="font-size: 13px; color: #6c757d; margin-top: 8px;">
-                            ${bankCount} bank${bankCount !== 1 ? 's' : ''} • ${issueCount} issue${issueCount !== 1 ? 's' : ''} found
-                        </p>
-                        <p style="font-size: 12px; color: #999; margin-top: 4px;">
-                            Inspector: ${job.inspectorName || 'Unknown'} • ${new Date(job.createdAt).toLocaleDateString()}
-                        </p>
-                    </div>
-                    <div style="text-align: right;">
-                        ${statusBadge}
-                        <div style="color: #4CAF50; font-size: 20px; margin-top: 8px;">→</div>
-                    </div>
-                </div>
-            </div>
-        `}).join('');
+    if (typeof loadInspectionsView === 'function') {
+        loadInspectionsView();
     }
 }
 

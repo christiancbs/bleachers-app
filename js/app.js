@@ -298,8 +298,8 @@ function showView(view) {
         setActiveNav('accounts');
     } else if (view === 'inspections') {
         document.getElementById('officeInspectionsView').classList.remove('hidden');
-        setActiveNav('opsReview');
-        loadOfficeInspections();
+        setActiveNav('inspections');
+        loadInspectionsView();
     } else if (view === 'workorders') {
         document.getElementById('officeWorkOrdersView').classList.remove('hidden');
         setActiveNav('opsReview');

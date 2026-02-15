@@ -987,6 +987,361 @@ function renderJobsListHtml(jobs) {
     return html;
 }
 
+// ==========================================
+// INSPECTIONS VIEW (Tabbed: All | New | Completed)
+// ==========================================
+
+let currentInspectionsTab = 'all';
+let currentInspectionsTerritory = 'all';
+let inspTabData = {};
+let inspTabOffsets = {};
+const INSP_PAGE_SIZE = 100;
+
+function loadInspectionsView() {
+    switchInspectionsTab('all');
+}
+
+function switchInspectionsTab(tab) {
+    currentInspectionsTab = tab;
+
+    const tabs = ['all', 'new', 'completed'];
+    tabs.forEach(t => {
+        const btn = document.getElementById(`inspTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        const content = document.getElementById(`inspContent${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        if (btn) btn.classList.toggle('active', t === tab);
+        if (content) content.classList.toggle('hidden', t !== tab);
+    });
+
+    if (tab === 'all') {
+        loadInspectionsTabContent('all');
+    } else if (tab === 'new') {
+        loadInspectionsTabContent('new', 'draft');
+    } else if (tab === 'completed') {
+        loadInspectionsTabContent('completed', 'completed');
+    }
+}
+
+let searchInspectionsTimeout;
+function searchInspections() {
+    clearTimeout(searchInspectionsTimeout);
+    searchInspectionsTimeout = setTimeout(() => {
+        switchInspectionsTab(currentInspectionsTab);
+    }, 300);
+}
+
+function switchInspectionsTerritory(territory) {
+    currentInspectionsTerritory = territory;
+    const tabs = ['all', 'original', 'southern'];
+    tabs.forEach(t => {
+        const btn = document.getElementById(`inspTerritory${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        if (btn) btn.classList.toggle('active', t === territory);
+    });
+    switchInspectionsTab(currentInspectionsTab);
+}
+
+async function loadInspectionsTabContent(tabName, statusFilter = '') {
+    const container = document.getElementById(`inspList${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`);
+    if (!container) return;
+
+    const searchTerm = document.getElementById('inspectionsSearchInput')?.value || '';
+    inspTabData[tabName] = [];
+    inspTabOffsets[tabName] = 0;
+
+    container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading...</div>';
+
+    try {
+        const data = await JobsAPI.list({
+            q: searchTerm,
+            status: statusFilter,
+            jobType: 'inspection',
+            limit: INSP_PAGE_SIZE
+        });
+
+        const jobs = data.jobs || [];
+        inspTabData[tabName] = jobs;
+        inspTabOffsets[tabName] = jobs.length;
+
+        renderInspectionsTabContent(tabName, statusFilter, searchTerm, data.count);
+    } catch (err) {
+        console.error('Failed to load inspections:', err);
+        container.innerHTML = `
+            <div style="padding: 40px; text-align: center; color: #dc3545;">
+                <div style="font-size: 32px; margin-bottom: 12px;">⚠️</div>
+                <p>Failed to load inspections: ${err.message}</p>
+                <button class="btn btn-outline" onclick="switchInspectionsTab('${tabName}')" style="margin-top: 12px;">Retry</button>
+            </div>
+        `;
+    }
+}
+
+async function loadMoreInspections(tabName, statusFilter) {
+    const searchTerm = document.getElementById('inspectionsSearchInput')?.value || '';
+
+    try {
+        const data = await JobsAPI.list({
+            q: searchTerm,
+            status: statusFilter,
+            jobType: 'inspection',
+            limit: INSP_PAGE_SIZE,
+            offset: inspTabOffsets[tabName]
+        });
+
+        const newJobs = data.jobs || [];
+        inspTabData[tabName] = [...inspTabData[tabName], ...newJobs];
+        inspTabOffsets[tabName] += newJobs.length;
+
+        renderInspectionsTabContent(tabName, statusFilter, searchTerm, data.count);
+    } catch (err) {
+        console.error('Failed to load more inspections:', err);
+    }
+}
+
+function renderInspectionsTabContent(tabName, statusFilter, searchTerm, totalCount) {
+    const container = document.getElementById(`inspList${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`);
+    if (!container) return;
+
+    const jobs = inspTabData[tabName] || [];
+
+    // Apply territory filter (client-side)
+    let filteredJobs = jobs;
+    if (currentInspectionsTerritory !== 'all') {
+        filteredJobs = jobs.filter(job => getJobTerritory(job) === currentInspectionsTerritory);
+    }
+
+    if (filteredJobs.length === 0) {
+        const emptyMessages = {
+            all: 'No inspections found.',
+            new: 'No inspections awaiting scheduling.',
+            completed: 'No completed inspections yet.'
+        };
+        const territoryNote = currentInspectionsTerritory !== 'all' ? ` in ${currentInspectionsTerritory === 'original' ? 'Original (KY/TN)' : 'Southern (AL/FL)'} territory` : '';
+        const message = searchTerm
+            ? `No inspections matching "${searchTerm}"${territoryNote}`
+            : (emptyMessages[tabName] || 'No inspections found') + territoryNote;
+        container.innerHTML = `
+            <div style="padding: 40px; text-align: center; color: #6c757d;">
+                <div style="font-size: 48px; margin-bottom: 16px;">${searchTerm ? '🔍' : '📋'}</div>
+                <p>${message}</p>
+            </div>
+        `;
+        return;
+    }
+
+    const showing = filteredJobs.length;
+    const total = totalCount || showing;
+    const countHtml = total > showing
+        ? `<div style="padding: 8px 20px; font-size: 13px; color: #6c757d; border-bottom: 1px solid #e9ecef;">Showing ${showing} of ${total.toLocaleString()} inspections</div>`
+        : `<div style="padding: 8px 20px; font-size: 13px; color: #6c757d; border-bottom: 1px solid #e9ecef;">${total.toLocaleString()} inspections</div>`;
+
+    const hasMore = inspTabOffsets[tabName] < total;
+    const statusArg = statusFilter ? `'${statusFilter}'` : "''";
+    const loadMoreHtml = hasMore
+        ? `<div style="padding: 16px; text-align: center;">
+            <button class="btn btn-outline" onclick="loadMoreInspections('${tabName}', ${statusArg})" style="width: 100%;">
+                Load More (${(total - inspTabOffsets[tabName]).toLocaleString()} remaining)
+            </button>
+           </div>`
+        : '';
+
+    container.innerHTML = countHtml + renderInspectionsListHtml(filteredJobs, tabName) + loadMoreHtml;
+}
+
+function renderInspectionsListHtml(jobs, tabName) {
+    let html = '<div style="display: flex; flex-direction: column; gap: 0;">';
+
+    jobs.forEach(job => {
+        const statusColor = JobsAPI.statusColors[job.status] || '#6c757d';
+        const createdDate = job.createdAt ? new Date(job.createdAt).toLocaleDateString() : '';
+        const completedDate = job.completedAt ? new Date(job.completedAt).toLocaleDateString() : '';
+
+        // Count banks and issues from inspection_banks if available
+        const bankCount = job.inspectionBanks?.length || 0;
+        let issueCount = 0;
+        if (job.inspectionBanks) {
+            job.inspectionBanks.forEach(b => {
+                issueCount += (b.issues?.length || 0);
+            });
+        }
+
+        const reportBtn = job.status === 'completed' ? `
+            <button class="btn btn-outline" onclick="event.stopPropagation(); generateCustomerReport(${job.id})" style="font-size: 12px; padding: 6px 12px; margin-top: 4px; color: #1565c0; border-color: #1565c0;">
+                Customer Report
+            </button>
+        ` : '';
+
+        const scheduleBtn = job.status === 'draft' ? `
+            <button class="btn btn-primary" onclick="event.stopPropagation(); addToPlanning(${job.id})" style="font-size: 12px; padding: 6px 12px; margin-top: 4px;">
+                Schedule
+            </button>
+        ` : '';
+
+        html += `
+            <div class="job-list-item" onclick="openJobDetail(${job.id})" style="
+                padding: 16px 20px;
+                border-bottom: 1px solid #e9ecef;
+                cursor: pointer;
+                display: flex;
+                align-items: flex-start;
+                gap: 16px;
+                transition: background 0.15s;
+            " onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'">
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
+                        <span style="font-weight: 600; color: #007bff;">#${job.jobNumber}</span>
+                        <span class="badge" style="background: ${statusColor}20; color: ${statusColor}; font-size: 11px; padding: 2px 8px;">
+                            ${job.status.replace('_', ' ')}
+                        </span>
+                        <span class="badge" style="background: #e3f2fd; color: #1565c0; font-size: 11px; padding: 2px 8px;">
+                            Inspection
+                        </span>
+                    </div>
+                    <div style="font-weight: 500; margin-bottom: 4px;">
+                        ${job.customerName || 'No customer'}
+                    </div>
+                    <div style="font-size: 13px; color: #6c757d; margin-bottom: 4px;">
+                        ${job.locationName || ''}
+                    </div>
+                    ${bankCount > 0 ? `<div style="font-size: 13px; color: #495057;">${bankCount} bank${bankCount !== 1 ? 's' : ''} &bull; ${issueCount} issue${issueCount !== 1 ? 's' : ''}</div>` : ''}
+                    ${job.description ? `<div style="font-size: 13px; color: #495057; margin-top: 4px; max-height: 40px; overflow: hidden;">${job.description.substring(0, 120)}${job.description.length > 120 ? '...' : ''}</div>` : ''}
+                </div>
+                <div style="text-align: right; flex-shrink: 0; display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
+                    ${job.qbEstimateTotal ? `<div style="font-weight: 600; color: #28a745;">$${parseFloat(job.qbEstimateTotal).toLocaleString()}</div>` : ''}
+                    ${job.scheduledDate ? `<div style="font-size: 12px; color: #6c757d;">📅 ${new Date(job.scheduledDate).toLocaleDateString()}</div>` : ''}
+                    ${job.assignedTo ? `<div style="font-size: 12px; color: #6c757d;">👷 ${job.assignedTo}</div>` : ''}
+                    ${completedDate ? `<div style="font-size: 11px; color: #2e7d32;">Completed ${completedDate}</div>` : `<div style="font-size: 11px; color: #adb5bd;">Created ${createdDate}</div>`}
+                    ${reportBtn}
+                    ${scheduleBtn}
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    return html;
+}
+
+// Generate printable customer report (no prices, no part numbers)
+async function generateCustomerReport(jobId) {
+    try {
+        const data = await JobsAPI.get(jobId);
+        const job = data.job || data;
+        const banks = job.inspectionBanks || [];
+
+        const inspDate = job.completedAt ? new Date(job.completedAt).toLocaleDateString() : (job.createdAt ? new Date(job.createdAt).toLocaleDateString() : 'N/A');
+        const inspectorName = job.metadata?.inspectorName || job.assignedTo || 'Field Inspector';
+
+        let banksHtml = '';
+        banks.forEach((bank, i) => {
+            const issues = bank.issues || [];
+            const safetyIssues = issues.filter(iss => iss.location === 'understructure' || iss.severity === 'safety');
+            const otherIssues = issues.filter(iss => iss.location !== 'understructure' && iss.severity !== 'safety');
+
+            let issuesHtml = '';
+            if (issues.length === 0) {
+                issuesHtml = '<p style="color: #2e7d32; margin: 8px 0;">No issues found — passed inspection.</p>';
+            } else {
+                issuesHtml = '<ul style="margin: 8px 0; padding-left: 20px;">';
+                issues.forEach(iss => {
+                    const loc = iss.frame ? `Frame ${iss.frame}` : (iss.section ? `Section ${iss.section}` : '');
+                    const tier = iss.tier ? `, Tier ${iss.tier}` : (iss.row ? `, Row ${iss.row}` : '');
+                    const prefix = loc || tier ? `<strong>${loc}${tier}:</strong> ` : '';
+                    issuesHtml += `<li style="margin-bottom: 6px;">${prefix}${iss.description || 'Issue noted'}</li>`;
+                });
+                issuesHtml += '</ul>';
+            }
+
+            banksHtml += `
+                <div style="margin-bottom: 24px; page-break-inside: avoid;">
+                    <h3 style="margin: 0 0 8px; font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 6px;">
+                        ${bank.bankName || 'Bank ' + (i + 1)}
+                    </h3>
+                    <div style="font-size: 13px; color: #666; margin-bottom: 8px;">
+                        ${bank.bleacherType || 'Bleacher'} &bull; ${bank.rowCount || '?'} rows
+                    </div>
+                    <div style="font-size: 14px;">
+                        <strong>${issues.length} issue${issues.length !== 1 ? 's' : ''} found</strong>
+                    </div>
+                    ${issuesHtml}
+                </div>
+            `;
+        });
+
+        const totalIssues = banks.reduce((sum, b) => sum + (b.issues?.length || 0), 0);
+
+        const reportHtml = `<!DOCTYPE html>
+<html>
+<head>
+    <title>Inspection Report - ${job.locationName || job.customerName}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #333; padding: 40px; max-width: 800px; margin: 0 auto; }
+        @media print {
+            body { padding: 20px; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="margin-bottom: 24px; text-align: right;">
+        <button onclick="window.print()" style="padding: 10px 24px; background: #1565c0; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer;">Print / Save as PDF</button>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; border-bottom: 3px solid #1B6B37; padding-bottom: 20px;">
+        <div>
+            <h1 style="font-size: 22px; color: #1B6B37; margin-bottom: 4px;">Bleachers & Seats</h1>
+            <p style="font-size: 13px; color: #666;">Inspection Report</p>
+        </div>
+        <div style="text-align: right; font-size: 13px; color: #666;">
+            <div>Job #${job.jobNumber}</div>
+            <div>${inspDate}</div>
+        </div>
+    </div>
+
+    <div style="margin-bottom: 28px;">
+        <h2 style="font-size: 18px; margin-bottom: 12px;">Location</h2>
+        <div style="font-size: 15px; font-weight: 500;">${job.customerName || ''}</div>
+        <div style="font-size: 14px; color: #555;">${job.locationName || ''}</div>
+        ${job.address ? `<div style="font-size: 13px; color: #888; margin-top: 4px;">${job.address}</div>` : ''}
+    </div>
+
+    <div style="margin-bottom: 28px;">
+        <h2 style="font-size: 18px; margin-bottom: 12px;">Summary</h2>
+        <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+            <div style="background: #f5f5f5; padding: 12px 20px; border-radius: 6px; text-align: center;">
+                <div style="font-size: 24px; font-weight: 700;">${banks.length}</div>
+                <div style="font-size: 12px; color: #666;">Banks Inspected</div>
+            </div>
+            <div style="background: ${totalIssues > 0 ? '#fff3e0' : '#e8f5e9'}; padding: 12px 20px; border-radius: 6px; text-align: center;">
+                <div style="font-size: 24px; font-weight: 700; color: ${totalIssues > 0 ? '#e65100' : '#2e7d32'};">${totalIssues}</div>
+                <div style="font-size: 12px; color: #666;">Issues Found</div>
+            </div>
+            <div style="background: #f5f5f5; padding: 12px 20px; border-radius: 6px; text-align: center;">
+                <div style="font-size: 14px; font-weight: 500;">${inspectorName}</div>
+                <div style="font-size: 12px; color: #666;">Inspector</div>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-bottom: 28px;">
+        <h2 style="font-size: 18px; margin-bottom: 16px;">Detailed Findings</h2>
+        ${banksHtml || '<p style="color: #999;">No inspection banks recorded.</p>'}
+    </div>
+
+    <div style="margin-top: 40px; padding-top: 16px; border-top: 1px solid #ddd; font-size: 12px; color: #999; text-align: center;">
+        Bleachers & Seats &bull; Inspection Report &bull; ${inspDate}
+    </div>
+</body>
+</html>`;
+
+        const reportWindow = window.open('', '_blank');
+        reportWindow.document.write(reportHtml);
+        reportWindow.document.close();
+    } catch (err) {
+        console.error('Failed to generate customer report:', err);
+        alert('Failed to generate report: ' + err.message);
+    }
+}
+
 // Selected job for planning
 let selectedPlanningJob = null;
 
