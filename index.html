@@ -1683,9 +1683,7 @@
                         <!-- Parts Tracking / Procurement / Stock Section (populated from API) -->
                         <div id="woPartsTrackingSection" class="hidden" style="margin-bottom: 16px;"></div>
 
-                        <div style="display: grid; grid-template-columns: 1fr 300px; gap: 24px;">
-                            <!-- Main Column -->
-                            <div>
+                        <div>
                                 <!-- Job Info Card (Read-Only - matches Field Staff layout) -->
                                 <div class="card" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
                                     <div class="card-body">
@@ -2068,30 +2066,26 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                        </div>
 
-                            <!-- Right Column -->
-                            <div>
-                                <!-- Related Docs Card -->
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h2 class="card-title">Documents</h2>
+                        <!-- Documents Card (bottom of page) -->
+                        <div class="card" style="margin-top: 16px;">
+                            <div class="card-header">
+                                <h2 class="card-title">Documents</h2>
+                            </div>
+                            <div class="card-body">
+                                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                                    <div style="text-align: center; padding: 12px; background: #f8f9fa; border-radius: 8px; cursor: pointer;">
+                                        <div style="font-size: 32px;">📄</div>
+                                        <div style="font-size: 12px; margin-top: 4px;">Work Order</div>
                                     </div>
-                                    <div class="card-body">
-                                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                                            <div style="text-align: center; padding: 12px; background: #f8f9fa; border-radius: 8px; cursor: pointer;">
-                                                <div style="font-size: 32px;">📄</div>
-                                                <div style="font-size: 12px; margin-top: 4px;">Work Order</div>
-                                            </div>
-                                            <div style="text-align: center; padding: 12px; background: #f8f9fa; border-radius: 8px; cursor: pointer;">
-                                                <div style="font-size: 32px;">📋</div>
-                                                <div style="font-size: 12px; margin-top: 4px;">Inspection</div>
-                                            </div>
-                                            <div style="text-align: center; padding: 12px; background: #f8f9fa; border-radius: 8px; cursor: pointer;">
-                                                <div style="font-size: 32px;">💵</div>
-                                                <div style="font-size: 12px; margin-top: 4px;">Estimate</div>
-                                            </div>
-                                        </div>
+                                    <div style="text-align: center; padding: 12px; background: #f8f9fa; border-radius: 8px; cursor: pointer;">
+                                        <div style="font-size: 32px;">📋</div>
+                                        <div style="font-size: 12px; margin-top: 4px;">Inspection</div>
+                                    </div>
+                                    <div style="text-align: center; padding: 12px; background: #f8f9fa; border-radius: 8px; cursor: pointer;">
+                                        <div style="font-size: 32px;">💵</div>
+                                        <div style="font-size: 12px; margin-top: 4px;">Estimate</div>
                                     </div>
                                 </div>
                             </div>
