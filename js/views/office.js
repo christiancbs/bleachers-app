@@ -237,6 +237,7 @@ async function viewWorkOrderDetail(workOrderId, fromView) {
     }
 
     showView('workOrderDetail');
+    window.scrollTo(0, 0);
 }
 
 function resetAllEditSections() {
