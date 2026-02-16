@@ -4,12 +4,54 @@
 // ==========================================
 
 let currentApprovedSubFilter = 'all'; // 'all', 'awaiting_estimate', 'complete'
+let _opsDbInspections = []; // Cache of DB-backed inspections for ops review
 
-function loadOpsReview() {
-    const reviewJobs = inspectionJobs.filter(j => j.status === 'submitted' || j.status === 'under_review' || j.status === 'approved');
-    const submitted = reviewJobs.filter(j => j.status === 'submitted');
-    const underReview = reviewJobs.filter(j => j.status === 'under_review');
-    const approved = reviewJobs.filter(j => j.status === 'approved');
+async function loadOpsReview() {
+    // 1) Local localStorage inspections (field staff submissions not yet in DB)
+    const localJobs = inspectionJobs.filter(j => j.status === 'submitted' || j.status === 'under_review' || j.status === 'approved');
+
+    // 2) Fetch all inspection-type jobs from the database
+    var dbJobs = [];
+    if (typeof JobsAPI !== 'undefined') {
+        try {
+            var data = await JobsAPI.list({ jobType: 'inspection', limit: 200 });
+            var jobs = data.jobs || [];
+            dbJobs = jobs.map(function(j) {
+                return {
+                    _fromDb: true,
+                    _apiId: j.id,
+                    jobNumber: j.jobNumber,
+                    status: j.status === 'completed' ? 'approved' : (j.status || 'submitted'),
+                    locationName: j.locationName || j.customerName || '',
+                    customerName: j.customerName || '',
+                    locationAddress: j.address || '',
+                    inspectionType: (j.metadata && j.metadata.inspectionType) || 'bleacher',
+                    inspectorName: (j.metadata && j.metadata.inspectorName) || '',
+                    inspectorCertificate: (j.metadata && j.metadata.inspectorCertificate) || '',
+                    banks: [],
+                    selectedParts: [],
+                    submittedAt: j.completedAt || j.createdAt,
+                    reviewedAt: j.completedAt,
+                    hasEstimate: !!(j.qbEstimateId || (j.childJobs && j.childJobs.length > 0)),
+                    description: j.description || ''
+                };
+            });
+            _opsDbInspections = dbJobs;
+        } catch (err) {
+            console.error('Failed to load DB inspections for ops review:', err);
+            dbJobs = _opsDbInspections; // use cache on error
+        }
+    }
+
+    // 3) Merge: DB jobs first, then local jobs not already in DB (by jobNumber)
+    var dbJobNumbers = {};
+    dbJobs.forEach(function(j) { dbJobNumbers[j.jobNumber] = true; });
+    var localOnly = localJobs.filter(function(j) { return !dbJobNumbers[j.jobNumber]; });
+    var allJobs = dbJobs.concat(localOnly);
+
+    const submitted = allJobs.filter(j => j.status === 'submitted');
+    const underReview = allJobs.filter(j => j.status === 'under_review');
+    const approved = allJobs.filter(j => j.status === 'approved');
 
     // Count approved sub-categories
     const awaitingEstimate = approved.filter(j => !j.hasEstimate);
@@ -28,9 +70,9 @@ function loadOpsReview() {
     }
 
     // Apply filter
-    let filteredJobs = reviewJobs;
+    let filteredJobs = allJobs;
     if (currentOpsFilter !== 'all') {
-        filteredJobs = reviewJobs.filter(j => j.status === currentOpsFilter);
+        filteredJobs = allJobs.filter(j => j.status === currentOpsFilter);
     }
 
     // Apply approved sub-filter
@@ -53,7 +95,6 @@ function loadOpsReview() {
     if (subFiltersContainer) {
         if (currentOpsFilter === 'approved') {
             subFiltersContainer.classList.remove('hidden');
-            // Update sub-filter counts and active states
             document.getElementById('subFilterAll').classList.toggle('active', currentApprovedSubFilter === 'all');
             document.getElementById('subFilterAwaitingEst').classList.toggle('active', currentApprovedSubFilter === 'awaiting_estimate');
             document.getElementById('subFilterComplete').classList.toggle('active', currentApprovedSubFilter === 'complete');
@@ -103,10 +144,15 @@ function loadOpsReview() {
         const partsCount = job.selectedParts?.length || 0;
 
         const submittedDate = job.submittedAt ? new Date(job.submittedAt).toLocaleDateString() : '';
-        const reviewedInfo = job.reviewedAt ? `<span style="font-size: 12px; color: #1565c0;">Reviewed ${new Date(job.reviewedAt).toLocaleDateString()}${job.reviewedBy ? ' by ' + job.reviewedBy : ''}</span>` : '';
+        const reviewedInfo = job.reviewedAt ? `<span style="font-size: 12px; color: #1565c0;">Reviewed ${new Date(job.reviewedAt).toLocaleDateString()}</span>` : '';
+
+        // DB-backed jobs open directly in unified detail view; local jobs use ops review detail
+        const clickHandler = job._fromDb && job._apiId
+            ? `viewWorkOrderDetail(${job._apiId}, 'opsReview')`
+            : `openOpsReviewJob(${job.jobNumber})`;
 
         return `
-        <div class="inspection-item" onclick="openOpsReviewJob(${job.jobNumber})" style="cursor: pointer; border-bottom: 1px solid #e9ecef; padding: 16px;">
+        <div class="inspection-item" onclick="${clickHandler}" style="cursor: pointer; border-bottom: 1px solid #e9ecef; padding: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div style="flex: 1;">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
@@ -115,11 +161,11 @@ function loadOpsReview() {
                     </div>
                     <div style="font-weight: 600; font-size: 15px;">${job.locationName}</div>
                     <div style="font-size: 13px; color: #6c757d; margin-top: 2px;">${job.customerName}</div>
-                    <div style="font-size: 13px; color: #6c757d; margin-top: 8px;">
-                        ${bankCount} bank${bankCount !== 1 ? 's' : ''} &bull; ${issueCount} issue${issueCount !== 1 ? 's' : ''} &bull; ${partsCount} part${partsCount !== 1 ? 's' : ''}
-                    </div>
-                    <div style="font-size: 12px; color: #999; margin-top: 4px;">
-                        Inspector: ${job.inspectorName || 'Unknown'} &bull; Submitted ${submittedDate}
+                    ${job.description ? `<div style="font-size: 13px; color: #495057; margin-top: 4px;">${job.description.substring(0, 80)}${job.description.length > 80 ? '...' : ''}</div>` : ''}
+                    <div style="font-size: 12px; color: #999; margin-top: 6px;">
+                        ${bankCount > 0 ? bankCount + ' bank' + (bankCount !== 1 ? 's' : '') + ' &bull; ' : ''}
+                        ${job.inspectorName ? 'Inspector: ' + job.inspectorName + ' &bull; ' : ''}
+                        ${submittedDate ? submittedDate : ''}
                     </div>
                     ${reviewedInfo ? `<div style="margin-top: 4px;">${reviewedInfo}</div>` : ''}
                 </div>
@@ -139,12 +185,12 @@ function filterOpsReview(filter) {
     if (filter !== 'approved') {
         currentApprovedSubFilter = 'all';
     }
-    loadOpsReview();
+    loadOpsReview().catch(function(err) { console.error('filterOpsReview error:', err); });
 }
 
 function filterApprovedSub(subFilter) {
     currentApprovedSubFilter = subFilter;
-    loadOpsReview();
+    loadOpsReview().catch(function(err) { console.error('filterApprovedSub error:', err); });
 }
 
 function openOpsReviewJob(jobNumber) {
