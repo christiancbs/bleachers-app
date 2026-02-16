@@ -810,6 +810,77 @@ function searchJobs() {
     }, 300);
 }
 
+// Sort/filter helpers
+function getJobsSort() {
+    return document.getElementById('jobsSortSelect')?.value || 'newest';
+}
+function getJobsTypeFilter() {
+    return document.getElementById('jobsTypeFilter')?.value || '';
+}
+function getJobsDateFilter() {
+    return document.getElementById('jobsDateFilter')?.value || '';
+}
+function getInspSort() {
+    return document.getElementById('inspSortSelect')?.value || 'newest';
+}
+function getInspDateFilter() {
+    return document.getElementById('inspDateFilter')?.value || '';
+}
+
+// Compute date range from filter value
+function getDateRange(filterValue) {
+    if (!filterValue) return {};
+    var now = new Date();
+    var gte;
+    if (filterValue === 'week') {
+        gte = new Date(now);
+        gte.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+        gte.setHours(0, 0, 0, 0);
+    } else if (filterValue === 'month') {
+        gte = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (filterValue === '30') {
+        gte = new Date(now);
+        gte.setDate(now.getDate() - 30);
+    } else if (filterValue === '90') {
+        gte = new Date(now);
+        gte.setDate(now.getDate() - 90);
+    } else if (filterValue === 'year') {
+        gte = new Date(now.getFullYear(), 0, 1);
+    }
+    return gte ? { scheduledDateGte: gte.toISOString().split('T')[0] } : {};
+}
+
+// Client-side sort function
+function sortJobs(jobs, sortKey) {
+    var sorted = jobs.slice();
+    if (sortKey === 'oldest') {
+        sorted.sort(function(a, b) { return new Date(a.createdAt || 0) - new Date(b.createdAt || 0); });
+    } else if (sortKey === 'newest') {
+        sorted.sort(function(a, b) { return new Date(b.createdAt || 0) - new Date(a.createdAt || 0); });
+    } else if (sortKey === 'jobNumber') {
+        sorted.sort(function(a, b) { return (a.jobNumber || '').localeCompare(b.jobNumber || '', undefined, { numeric: true }); });
+    } else if (sortKey === 'customer') {
+        sorted.sort(function(a, b) { return (a.customerName || '').localeCompare(b.customerName || ''); });
+    } else if (sortKey === 'amount') {
+        sorted.sort(function(a, b) { return (parseFloat(b.qbEstimateTotal) || 0) - (parseFloat(a.qbEstimateTotal) || 0); });
+    }
+    return sorted;
+}
+
+// Trigger reload when filters change
+function applyJobsSort() { renderTabContent(currentJobsTab, _lastJobsStatusFilter, _lastJobsSearch, _lastJobsTotal); }
+function applyJobsFilters() { switchJobsTab(currentJobsTab); }
+function applyInspectionsSort() { renderInspectionsTabContent(currentInspectionsTab, _lastInspStatusFilter, _lastInspSearch, _lastInspTotal); }
+function applyInspectionsFilters() { switchInspectionsTab(currentInspectionsTab); }
+
+// Track last render params for re-sort without re-fetch
+var _lastJobsStatusFilter = '';
+var _lastJobsSearch = '';
+var _lastJobsTotal = 0;
+var _lastInspStatusFilter = '';
+var _lastInspSearch = '';
+var _lastInspTotal = 0;
+
 // Track loaded jobs per tab for pagination
 const TAB_PAGE_SIZE = 100;
 let tabJobsData = {};
@@ -828,12 +899,19 @@ async function loadJobsTabContent(tabName, statusFilter = '') {
 
     container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading...</div>';
 
+    var typeFilter = getJobsTypeFilter();
+    var dateRange = getDateRange(getJobsDateFilter());
+
     try {
-        const data = await JobsAPI.list({
+        var listParams = {
             q: searchTerm,
             status: statusFilter,
             limit: TAB_PAGE_SIZE
-        });
+        };
+        if (typeFilter) listParams.jobType = typeFilter;
+        if (dateRange.scheduledDateGte) listParams.scheduledDateGte = dateRange.scheduledDateGte;
+
+        const data = await JobsAPI.list(listParams);
 
         const jobs = data.jobs || [];
         tabJobsData[tabName] = jobs;
@@ -855,14 +933,20 @@ async function loadJobsTabContent(tabName, statusFilter = '') {
 // Load more jobs for a tab
 async function loadMoreTabJobs(tabName, statusFilter = '') {
     const searchTerm = document.getElementById('jobsSearchInput')?.value || '';
+    var typeFilter = getJobsTypeFilter();
+    var dateRange = getDateRange(getJobsDateFilter());
 
     try {
-        const data = await JobsAPI.list({
+        var listParams = {
             q: searchTerm,
             status: statusFilter,
             limit: TAB_PAGE_SIZE,
             offset: tabJobsOffsets[tabName]
-        });
+        };
+        if (typeFilter) listParams.jobType = typeFilter;
+        if (dateRange.scheduledDateGte) listParams.scheduledDateGte = dateRange.scheduledDateGte;
+
+        const data = await JobsAPI.list(listParams);
 
         const newJobs = data.jobs || [];
         tabJobsData[tabName] = [...tabJobsData[tabName], ...newJobs];
@@ -879,6 +963,11 @@ function renderTabContent(tabName, statusFilter, searchTerm, totalCount) {
     const container = document.getElementById(`jobsList${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`);
     if (!container) return;
 
+    // Track for re-sort without re-fetch
+    _lastJobsStatusFilter = statusFilter;
+    _lastJobsSearch = searchTerm;
+    _lastJobsTotal = totalCount;
+
     const jobs = tabJobsData[tabName] || [];
 
     // Apply territory filter (client-side)
@@ -886,6 +975,9 @@ function renderTabContent(tabName, statusFilter, searchTerm, totalCount) {
     if (currentJobsTerritory !== 'all') {
         filteredJobs = jobs.filter(job => getJobTerritory(job) === currentJobsTerritory);
     }
+
+    // Apply client-side sort
+    filteredJobs = sortJobs(filteredJobs, getJobsSort());
 
     if (filteredJobs.length === 0) {
         const emptyMessages = {
@@ -1049,13 +1141,18 @@ async function loadInspectionsTabContent(tabName, statusFilter = '') {
 
     container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading...</div>';
 
+    var dateRange = getDateRange(getInspDateFilter());
+
     try {
-        const data = await JobsAPI.list({
+        var listParams = {
             q: searchTerm,
             status: statusFilter,
             jobType: 'inspection',
             limit: INSP_PAGE_SIZE
-        });
+        };
+        if (dateRange.scheduledDateGte) listParams.scheduledDateGte = dateRange.scheduledDateGte;
+
+        const data = await JobsAPI.list(listParams);
 
         const jobs = data.jobs || [];
         inspTabData[tabName] = jobs;
@@ -1076,15 +1173,19 @@ async function loadInspectionsTabContent(tabName, statusFilter = '') {
 
 async function loadMoreInspections(tabName, statusFilter) {
     const searchTerm = document.getElementById('inspectionsSearchInput')?.value || '';
+    var dateRange = getDateRange(getInspDateFilter());
 
     try {
-        const data = await JobsAPI.list({
+        var listParams = {
             q: searchTerm,
             status: statusFilter,
             jobType: 'inspection',
             limit: INSP_PAGE_SIZE,
             offset: inspTabOffsets[tabName]
-        });
+        };
+        if (dateRange.scheduledDateGte) listParams.scheduledDateGte = dateRange.scheduledDateGte;
+
+        const data = await JobsAPI.list(listParams);
 
         const newJobs = data.jobs || [];
         inspTabData[tabName] = [...inspTabData[tabName], ...newJobs];
@@ -1100,6 +1201,11 @@ function renderInspectionsTabContent(tabName, statusFilter, searchTerm, totalCou
     const container = document.getElementById(`inspList${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`);
     if (!container) return;
 
+    // Track for re-sort without re-fetch
+    _lastInspStatusFilter = statusFilter;
+    _lastInspSearch = searchTerm;
+    _lastInspTotal = totalCount;
+
     const jobs = inspTabData[tabName] || [];
 
     // Apply territory filter (client-side)
@@ -1107,6 +1213,9 @@ function renderInspectionsTabContent(tabName, statusFilter, searchTerm, totalCou
     if (currentInspectionsTerritory !== 'all') {
         filteredJobs = jobs.filter(job => getJobTerritory(job) === currentInspectionsTerritory);
     }
+
+    // Apply client-side sort
+    filteredJobs = sortJobs(filteredJobs, getInspSort());
 
     if (filteredJobs.length === 0) {
         const emptyMessages = {

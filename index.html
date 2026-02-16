@@ -320,9 +320,31 @@
                             <button class="btn btn-primary" onclick="showView('officeCreate')">+ Create Job</button>
                         </div>
 
-                        <!-- Search Bar -->
-                        <div style="margin-bottom: 16px;">
-                            <input type="text" id="jobsSearchInput" class="form-input" placeholder="Search jobs by number, customer, or location..." oninput="searchJobs()" style="max-width: 400px;">
+                        <!-- Search & Filters Row -->
+                        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px;">
+                            <input type="text" id="jobsSearchInput" class="form-input" placeholder="Search jobs..." oninput="searchJobs()" style="max-width: 280px;">
+                            <select id="jobsSortSelect" class="form-input" onchange="applyJobsSort()" style="width: 170px;">
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                                <option value="jobNumber">Job Number</option>
+                                <option value="customer">Customer A-Z</option>
+                                <option value="amount">Amount High-Low</option>
+                            </select>
+                            <select id="jobsTypeFilter" class="form-input" onchange="applyJobsFilters()" style="width: 150px;">
+                                <option value="">All Types</option>
+                                <option value="repair">Repair</option>
+                                <option value="inspection">Inspection</option>
+                                <option value="service_call">Service Call</option>
+                                <option value="go_see">Go-See</option>
+                            </select>
+                            <select id="jobsDateFilter" class="form-input" onchange="applyJobsFilters()" style="width: 160px;">
+                                <option value="">All Time</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="30">Last 30 Days</option>
+                                <option value="90">Last 90 Days</option>
+                                <option value="year">This Year</option>
+                            </select>
                         </div>
 
                         <!-- Territory Filter -->
@@ -793,9 +815,23 @@
                             </div>
                         </div>
 
-                        <!-- Search Bar -->
-                        <div style="margin-bottom: 16px;">
-                            <input type="text" id="inspectionsSearchInput" class="form-input" placeholder="Search inspections by number, customer, or location..." oninput="searchInspections()" style="max-width: 400px;">
+                        <!-- Search & Filters Row -->
+                        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px;">
+                            <input type="text" id="inspectionsSearchInput" class="form-input" placeholder="Search inspections..." oninput="searchInspections()" style="max-width: 280px;">
+                            <select id="inspSortSelect" class="form-input" onchange="applyInspectionsSort()" style="width: 170px;">
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                                <option value="jobNumber">Job Number</option>
+                                <option value="customer">Customer A-Z</option>
+                            </select>
+                            <select id="inspDateFilter" class="form-input" onchange="applyInspectionsFilters()" style="width: 160px;">
+                                <option value="">All Time</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="30">Last 30 Days</option>
+                                <option value="90">Last 90 Days</option>
+                                <option value="year">This Year</option>
+                            </select>
                         </div>
 
                         <!-- Territory Filter -->

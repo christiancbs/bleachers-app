@@ -29,6 +29,8 @@ const JobsAPI = {
         if (options.territory) params.set('territory', options.territory);
         if (options.scheduledDateGte) params.set('scheduled_date_gte', options.scheduledDateGte);
         if (options.scheduledDateLte) params.set('scheduled_date_lte', options.scheduledDateLte);
+        if (options.sort) params.set('sort', options.sort);
+        if (options.order) params.set('order', options.order);
         if (options.limit) params.set('limit', options.limit);
         if (options.offset) params.set('offset', options.offset);
 
