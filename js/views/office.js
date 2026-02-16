@@ -679,33 +679,34 @@ function renderWoInspectionBanks(job) {
     var banksHtml = job.inspectionBanks.map(function(bank) {
         var issues = bank.issues || [];
         var issueCount = issues.length;
+        var hasSafety = issues.some(function(i) { return i.severity === 'safety' || i.category === 'safety'; });
+
         var issuesDetail = issues.map(function(issue) {
-            return '<div style="font-size:13px;padding:4px 0;border-bottom:1px solid #f0f0f0;">' +
-                (issue.location ? '<span style="color:#e65100;">' + issue.location + '</span> - ' : '') +
+            return '<div style="font-size:12px;padding:3px 0;border-bottom:1px solid #f0f0f0;">' +
+                (issue.location ? '<span style="color:#e65100;">' + issue.location + '</span> — ' : '') +
                 (issue.description || issue.issueType || 'Issue') +
             '</div>';
         }).join('');
 
-        return '<div style="border:1px solid #e9ecef;border-radius:8px;padding:16px;margin-bottom:12px;">' +
-            '<div style="display:flex;justify-content:space-between;align-items:start;">' +
-                '<div>' +
-                    '<div style="font-weight:600;font-size:16px;">' + bank.bankName + '</div>' +
-                    '<div style="font-size:13px;color:#6c757d;margin-top:4px;">' +
-                        (bank.bleacherType || '') + (bank.status ? ' &bull; ' + bank.status : '') +
-                    '</div>' +
+        return '<details style="border:1px solid ' + (hasSafety ? '#ef9a9a' : '#e9ecef') + ';border-radius:10px;overflow:hidden;background:white;">' +
+            '<summary style="cursor:pointer;padding:12px;display:flex;align-items:center;gap:10px;list-style:none;">' +
+                '<div style="width:40px;height:40px;border-radius:8px;background:' + (issueCount > 0 ? (hasSafety ? '#ffebee' : '#fff3e0') : '#e8f5e9') + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                    '<span style="font-weight:700;font-size:16px;color:' + (issueCount > 0 ? (hasSafety ? '#c62828' : '#e65100') : '#2e7d32') + ';">' + issueCount + '</span>' +
                 '</div>' +
-                '<div style="background:' + (issueCount > 0 ? '#fff3e0' : '#e8f5e9') + ';padding:6px 12px;border-radius:4px;">' +
-                    '<span style="font-weight:600;color:' + (issueCount > 0 ? '#e65100' : '#2e7d32') + ';">' + issueCount + '</span>' +
-                    '<span style="font-size:12px;color:#6c757d;"> issues</span>' +
+                '<div style="flex:1;min-width:0;">' +
+                    '<div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + bank.bankName + '</div>' +
+                    '<div style="font-size:11px;color:#6c757d;">' + (bank.bleacherType || '') + (bank.status ? ' &bull; ' + bank.status : '') + '</div>' +
                 '</div>' +
-            '</div>' +
-            (issueCount > 0 ? '<details style="margin-top:12px;"><summary style="cursor:pointer;font-size:13px;color:#0066cc;">View ' + issueCount + ' issue' + (issueCount !== 1 ? 's' : '') + '</summary><div style="padding:12px 0;">' + issuesDetail + '</div></details>' : '') +
-        '</div>';
+                (hasSafety ? '<span style="font-size:10px;background:#c62828;color:white;padding:2px 6px;border-radius:4px;font-weight:600;">SAFETY</span>' : '') +
+                '<span style="font-size:18px;color:#aaa;transition:transform 0.2s;">▸</span>' +
+            '</summary>' +
+            (issueCount > 0 ? '<div style="padding:0 12px 12px;border-top:1px solid #f0f0f0;">' + issuesDetail + '</div>' : '') +
+        '</details>';
     }).join('');
 
     container.innerHTML =
         '<div class="card-header"><h2 class="card-title">Banks Inspected (' + job.inspectionBanks.length + ')</h2></div>' +
-        '<div class="card-body">' + banksHtml + '</div>';
+        '<div class="card-body" style="display:flex;flex-direction:column;gap:8px;">' + banksHtml + '</div>';
     container.classList.remove('hidden');
 }
 
