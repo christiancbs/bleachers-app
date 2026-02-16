@@ -671,7 +671,7 @@ function renderEstimateBuilder() {
     // Show source inspection info if pre-filling
     const sourceInfo = estimateBuilderState.sourceInspection ? `
         <div class="alert alert-info" style="margin-bottom: 20px;">
-            <strong>Pre-filling from Inspection #${estimateBuilderState.sourceInspection.jobNumber}</strong><br>
+            <strong>Pre-filling from Inspection ${estimateBuilderState.sourceInspection.jobNumber}</strong><br>
             ${estimateBuilderState.sourceInspection.customerName || ''} - ${estimateBuilderState.sourceInspection.locationName || ''}
         </div>
     ` : '';
@@ -954,7 +954,7 @@ async function submitEstimateToQb() {
         }
 
         // Success
-        alert(`Estimate created successfully!\nEstimate #${result.docNumber || result.id || 'N/A'}`);
+        alert(`Estimate created successfully!\nEstimate ${result.docNumber || result.id || 'N/A'}`);
 
         // Clear cache and refresh
         EstimatesAPI.clearCache();

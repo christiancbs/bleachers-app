@@ -613,6 +613,10 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
+        /* Bank details expand/collapse */
+        details summary::-webkit-details-marker { display: none; }
+        details[open] > summary span:last-child { transform: rotate(90deg); }
+
         /* Completion flow buttons */
         .wo-completion-btn {
             padding: 20px;

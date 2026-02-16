@@ -66,7 +66,7 @@ async function viewWorkOrderDetail(workOrderId, fromView) {
         currentWorkOrder = { ...wo, id: workOrderId };
 
         // Header
-        document.getElementById('woJobNumber').textContent = 'Job #' + wo.jobNumber;
+        document.getElementById('woJobNumber').textContent = 'Job ' + wo.jobNumber;
 
         // Job type badge
         const jobTypeBadge = document.getElementById('woJobTypeBadge');
@@ -182,7 +182,7 @@ async function viewWorkOrderDetail(workOrderId, fromView) {
                     <div style="padding: 14px 16px; background: #e3f2fd; border: 1px solid #90caf9; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <div style="font-size: 11px; color: #1565c0; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Parent Inspection</div>
-                            <div style="font-weight: 600; margin-top: 4px; color: #0d47a1;">Job #${p.jobNumber}</div>
+                            <div style="font-weight: 600; margin-top: 4px; color: #0d47a1;">Job ${p.jobNumber}</div>
                             <div style="font-size: 13px; color: #1565c0; margin-top: 2px;">${p.locationName || p.customerName || ''} ${pDate ? '&bull; ' + pDate : ''}</div>
                         </div>
                         <button class="btn btn-outline" onclick="viewWorkOrderDetail(${p.id}, 'workOrderDetail')" style="font-size: 12px; padding: 6px 14px; color: #1565c0; border-color: #1565c0;">View Inspection</button>
@@ -205,7 +205,7 @@ async function viewWorkOrderDetail(workOrderId, fromView) {
                     const color = statusColors[cStatus] || '#6c757d';
                     return `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #fff3e0;">
                         <div>
-                            <span style="font-weight: 600;">Job #${c.jobNumber}</span>
+                            <span style="font-weight: 600;">Job ${c.jobNumber}</span>
                             <span style="font-size: 12px; color: ${color}; margin-left: 8px;">${cStatus.replace('_', ' ')}</span>
                             <div style="font-size: 13px; color: #6c757d;">${c.locationName || ''}</div>
                         </div>
@@ -583,42 +583,35 @@ function resetOfficeCompletionForm() {
     woWrongPartSentPhoto = null;
     woMoreWorkPhoto = null;
 
+    // Helper for safe element access
+    function _el(id) { return document.getElementById(id); }
+
     // Reset photo previews
-    document.getElementById('woPhotoPreview').innerHTML = '';
-    document.getElementById('woPhotoPreview').classList.add('hidden');
-    document.getElementById('woPhotoUploadArea').style.display = 'block';
-    document.getElementById('woPhotoInput').value = '';
-    document.getElementById('woAdditionalPhotosPreview').innerHTML = '';
+    if (_el('woPhotoPreview')) { _el('woPhotoPreview').innerHTML = ''; _el('woPhotoPreview').classList.add('hidden'); }
+    if (_el('woPhotoUploadArea')) _el('woPhotoUploadArea').style.display = 'block';
+    if (_el('woPhotoInput')) _el('woPhotoInput').value = '';
 
     // Reset completion notes
-    document.getElementById('woCompletionNotes').value = '';
+    if (_el('woCompletionNotes')) _el('woCompletionNotes').value = '';
 
     // Reset not completed section
-    document.getElementById('woNotCompletedReason').value = '';
-    document.getElementById('woReasonButtons').classList.remove('hidden');
-    document.getElementById('woReasonDetails').classList.add('hidden');
-    document.querySelectorAll('#woReasonButtons .reason-btn').forEach(btn => {
-        btn.style.borderColor = '#dee2e6';
-        btn.style.background = 'white';
-    });
+    if (_el('woNotCompletedReason')) _el('woNotCompletedReason').value = '';
 
     // Reset wrong part section
-    document.getElementById('woWrongPartMeasurements').value = '';
-    document.getElementById('woWrongPartPhotoPreview').innerHTML = '';
-    document.getElementById('woWrongPartPhotoPreview').classList.add('hidden');
-    document.getElementById('woWrongPartPhotoArea').style.display = 'block';
-    document.getElementById('woWrongPartPhotoInput').value = '';
-    document.getElementById('woWrongPartSentPhotoPreview').innerHTML = '';
-    document.getElementById('woWrongPartSentPhotoInput').value = '';
+    if (_el('woWrongPartMeasurements')) _el('woWrongPartMeasurements').value = '';
+    if (_el('woWrongPartPhotoPreview')) { _el('woWrongPartPhotoPreview').innerHTML = ''; _el('woWrongPartPhotoPreview').classList.add('hidden'); }
+    if (_el('woWrongPartPhotoArea')) _el('woWrongPartPhotoArea').style.display = 'block';
+    if (_el('woWrongPartPhotoInput')) _el('woWrongPartPhotoInput').value = '';
+    if (_el('woWrongPartSentPhotoPreview')) _el('woWrongPartSentPhotoPreview').innerHTML = '';
+    if (_el('woWrongPartSentPhotoInput')) _el('woWrongPartSentPhotoInput').value = '';
 
     // Reset more work section
-    document.getElementById('woMoreWorkPhotoPreview').innerHTML = '';
-    document.getElementById('woMoreWorkPhotoPreview').classList.add('hidden');
-    document.getElementById('woMoreWorkPhotoArea').style.display = 'block';
-    document.getElementById('woMoreWorkPhotoInput').value = '';
+    if (_el('woMoreWorkPhotoPreview')) { _el('woMoreWorkPhotoPreview').innerHTML = ''; _el('woMoreWorkPhotoPreview').classList.add('hidden'); }
+    if (_el('woMoreWorkPhotoArea')) _el('woMoreWorkPhotoArea').style.display = 'block';
+    if (_el('woMoreWorkPhotoInput')) _el('woMoreWorkPhotoInput').value = '';
 
     // Reset notes
-    document.getElementById('woNotCompletedDetails').value = '';
+    if (_el('woNotCompletedDetails')) _el('woNotCompletedDetails').value = '';
 
     // Reset new completion panels
     var el;
@@ -792,7 +785,8 @@ function populatePinkReasons() {
     if (!grid || grid.children.length > 0) return;
 
     grid.innerHTML = PINK_REASONS.map(function(reason) {
-        return '<button type="button" class="pink-reason-btn" onclick="selectPinkReason(\'' + reason.value + '\', this)" data-reason="' + reason.value + '">' +
+        var safeValue = reason.value.replace(/'/g, "\\'");
+        return '<button type="button" class="pink-reason-btn" onclick="selectPinkReason(\'' + safeValue + '\', this)" data-reason="' + reason.value.replace(/'/g, '&#39;') + '">' +
             '<span class="reason-icon">' + reason.icon + '</span>' +
             '<span class="reason-label">' + reason.label + '</span>' +
         '</button>';

@@ -110,7 +110,7 @@ function loadOpsReview() {
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div style="flex: 1;">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                        <span style="font-weight: 700; color: #0066cc; font-size: 15px;">#${job.jobNumber}</span>
+                        <span style="font-weight: 700; color: #0066cc; font-size: 15px;">${job.jobNumber}</span>
                         <span style="font-size: 12px; color: #6c757d;">${typeIcon} ${typeLabel}</span>
                     </div>
                     <div style="font-weight: 600; font-size: 15px;">${job.locationName}</div>
@@ -188,82 +188,70 @@ function renderOpsReviewDetail(job) {
         totalIssues += (bank.topSideIssues?.length || 0) + (bank.understructureIssues?.length || 0);
     });
 
-    // Build banks HTML
-    const banksHTML = job.banks.map(bank => {
+    // Build banks HTML — compact thumbnail cards in a grid
+    const banksHTML = job.banks.map((bank, idx) => {
         const underIssues = bank.understructureIssues || [];
         const topIssues = bank.topSideIssues || [];
         const bankTotal = underIssues.length + topIssues.length;
+        const hasSafety = !!bank.safetyIssues;
 
-        let issuesHTML = '';
+        // Build expandable detail content
+        let detailHTML = '';
         if (bank.safetyIssues) {
-            issuesHTML += `<div style="background: #ffebee; padding: 8px 12px; border-radius: 4px; margin-top: 8px; border-left: 3px solid #c62828;">
-                <div style="font-size: 11px; font-weight: 600; color: #c62828; text-transform: uppercase;">Safety Issues</div>
-                <div style="font-size: 13px; margin-top: 4px;">${bank.safetyIssues}</div>
+            detailHTML += `<div style="background: #ffebee; padding: 6px 10px; border-radius: 4px; margin-top: 8px; border-left: 3px solid #c62828;">
+                <div style="font-size: 11px; font-weight: 600; color: #c62828;">SAFETY</div>
+                <div style="font-size: 12px; margin-top: 2px;">${bank.safetyIssues}</div>
             </div>`;
         }
         if (bank.functionalIssues) {
-            issuesHTML += `<div style="background: #fff3e0; padding: 8px 12px; border-radius: 4px; margin-top: 8px; border-left: 3px solid #e65100;">
-                <div style="font-size: 11px; font-weight: 600; color: #e65100; text-transform: uppercase;">Functional/Mechanical</div>
-                <div style="font-size: 13px; margin-top: 4px;">${bank.functionalIssues}</div>
+            detailHTML += `<div style="background: #fff3e0; padding: 6px 10px; border-radius: 4px; margin-top: 4px; border-left: 3px solid #e65100;">
+                <div style="font-size: 11px; font-weight: 600; color: #e65100;">FUNCTIONAL</div>
+                <div style="font-size: 12px; margin-top: 2px;">${bank.functionalIssues}</div>
             </div>`;
         }
         if (bank.cosmeticIssues) {
-            issuesHTML += `<div style="background: #e3f2fd; padding: 8px 12px; border-radius: 4px; margin-top: 8px; border-left: 3px solid #1565c0;">
-                <div style="font-size: 11px; font-weight: 600; color: #1565c0; text-transform: uppercase;">Cosmetic</div>
-                <div style="font-size: 13px; margin-top: 4px;">${bank.cosmeticIssues}</div>
+            detailHTML += `<div style="background: #e3f2fd; padding: 6px 10px; border-radius: 4px; margin-top: 4px; border-left: 3px solid #1565c0;">
+                <div style="font-size: 11px; font-weight: 600; color: #1565c0;">COSMETIC</div>
+                <div style="font-size: 12px; margin-top: 2px;">${bank.cosmeticIssues}</div>
             </div>`;
         }
-
-        // Individual issues detail
         if (underIssues.length > 0 || topIssues.length > 0) {
-            issuesHTML += `<details style="margin-top: 12px;">
-                <summary style="cursor: pointer; font-size: 13px; color: #0066cc;">View ${bankTotal} detailed issue${bankTotal !== 1 ? 's' : ''}</summary>
-                <div style="padding: 12px 0;">`;
-
-            if (underIssues.length > 0) {
-                issuesHTML += `<div style="font-size: 11px; font-weight: 600; color: #6c757d; text-transform: uppercase; margin-bottom: 4px;">Understructure</div>`;
-                underIssues.forEach(issue => {
-                    issuesHTML += `<div style="font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f0f0;">
-                        ${issue.frame ? `<span style="color: #e65100;">Frame ${issue.frame}</span>` : ''}
-                        ${issue.tier ? `<span style="color: #6c757d;"> Tier ${issue.tier}</span>` : ''}
-                        ${issue.frame || issue.tier ? ' - ' : ''}${issue.description}
-                    </div>`;
-                });
-            }
-
-            if (topIssues.length > 0) {
-                issuesHTML += `<div style="font-size: 11px; font-weight: 600; color: #6c757d; text-transform: uppercase; margin: 12px 0 4px;">Top Side</div>`;
-                topIssues.forEach(issue => {
-                    issuesHTML += `<div style="font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f0f0;">
-                        ${issue.section ? `<span style="color: #0066cc;">Section ${issue.section}</span>` : ''}
-                        ${issue.row ? `<span style="color: #6c757d;"> Row ${issue.row}</span>` : ''}
-                        ${issue.section || issue.row ? ' - ' : ''}${issue.description}
-                    </div>`;
-                });
-            }
-
-            issuesHTML += `</div></details>`;
+            detailHTML += `<div style="margin-top: 8px; font-size: 12px;">`;
+            underIssues.forEach(issue => {
+                detailHTML += `<div style="padding: 3px 0; border-bottom: 1px solid #f0f0f0;">
+                    ${issue.frame ? `<span style="color: #e65100;">F${issue.frame}</span>` : ''}
+                    ${issue.tier ? `<span style="color: #6c757d;"> T${issue.tier}</span>` : ''}
+                    ${issue.frame || issue.tier ? ' — ' : ''}${issue.description}
+                </div>`;
+            });
+            topIssues.forEach(issue => {
+                detailHTML += `<div style="padding: 3px 0; border-bottom: 1px solid #f0f0f0;">
+                    ${issue.section ? `<span style="color: #0066cc;">S${issue.section}</span>` : ''}
+                    ${issue.row ? `<span style="color: #6c757d;"> R${issue.row}</span>` : ''}
+                    ${issue.section || issue.row ? ' — ' : ''}${issue.description}
+                </div>`;
+            });
+            detailHTML += `</div>`;
         }
 
         return `
-        <div style="border: 1px solid #e9ecef; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-                <div>
-                    <div style="font-weight: 600; font-size: 16px;">${bank.name}</div>
-                    <div style="font-size: 13px; color: #6c757d; margin-top: 4px;">
-                        ${bank.bleacherType || 'Unknown'} &bull; ${bank.tiers || '?'} tiers &bull; ${bank.sections || '?'} sections &bull; ${bank.aisles || '?'} aisles
-                    </div>
-                    <div style="font-size: 12px; color: #999; margin-top: 2px;">
-                        ${bank.numberOfMotors || '?'} motors &bull; ${bank.wheelType || 'Unknown wheels'}
-                    </div>
+        <details style="border: 1px solid ${hasSafety ? '#ef9a9a' : '#e9ecef'}; border-radius: 10px; overflow: hidden; background: white;">
+            <summary style="cursor: pointer; padding: 12px; display: flex; align-items: center; gap: 10px; list-style: none;">
+                <div style="width: 40px; height: 40px; border-radius: 8px; background: ${bankTotal > 0 ? (hasSafety ? '#ffebee' : '#fff3e0') : '#e8f5e9'}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span style="font-weight: 700; font-size: 16px; color: ${bankTotal > 0 ? (hasSafety ? '#c62828' : '#e65100') : '#2e7d32'};">${bankTotal}</span>
                 </div>
-                <div style="background: ${bankTotal > 0 ? '#fff3e0' : '#e8f5e9'}; padding: 6px 12px; border-radius: 4px;">
-                    <span style="font-weight: 600; color: ${bankTotal > 0 ? '#e65100' : '#2e7d32'};">${bankTotal}</span>
-                    <span style="font-size: 12px; color: #6c757d;"> issues</span>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${bank.name}</div>
+                    <div style="font-size: 11px; color: #6c757d;">${bank.bleacherType || 'Unknown'} &bull; ${bank.tiers || '?'}T &bull; ${bank.sections || '?'}S &bull; ${bank.aisles || '?'}A</div>
                 </div>
+                ${hasSafety ? '<span style="font-size: 10px; background: #c62828; color: white; padding: 2px 6px; border-radius: 4px; font-weight: 600;">SAFETY</span>' : ''}
+                <span style="font-size: 18px; color: #aaa; transition: transform 0.2s;">▸</span>
+            </summary>
+            <div style="padding: 0 12px 12px; border-top: 1px solid #f0f0f0;">
+                <div style="font-size: 11px; color: #999; margin: 8px 0 4px;">${bank.numberOfMotors || '?'} motors &bull; ${bank.wheelType || 'Unknown wheels'}</div>
+                ${detailHTML}
             </div>
-            ${issuesHTML}
-        </div>`;
+        </details>`;
     }).join('');
 
     // Parts HTML
@@ -355,7 +343,7 @@ function renderOpsReviewDetail(job) {
     container.innerHTML = `
         <div class="card" style="border-left: 4px solid #4CAF50;">
             <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 class="card-title">Job #${job.jobNumber}</h2>
+                <h2 class="card-title">Job ${job.jobNumber}</h2>
                 ${statusBadge}
             </div>
             <div class="card-body">
@@ -397,9 +385,9 @@ function renderOpsReviewDetail(job) {
 
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">Banks Inspected</h2>
+                <h2 class="card-title">Banks Inspected (${job.banks.length})</h2>
             </div>
-            <div class="card-body">${banksHTML}</div>
+            <div class="card-body" style="display: flex; flex-direction: column; gap: 8px;">${banksHTML}</div>
         </div>
 
         <div class="card">
@@ -521,7 +509,7 @@ async function approveInspectionOnly() {
     }
 
     const message = `Approve this inspection?\n\n` +
-        `Job #${currentJob.jobNumber}\n` +
+        `Job ${currentJob.jobNumber}\n` +
         `${currentJob.locationName}\n` +
         `${currentJob.banks?.length || 0} bank(s) inspected\n\n` +
         `This will save the inspection to the database as a billable job.`;
@@ -541,10 +529,10 @@ async function approveInspectionOnly() {
     // Persist to DB as an independent billable job
     try {
         await persistInspectionToDB(currentJob);
-        alert(`Inspection #${currentJob.jobNumber} approved and saved to database!`);
+        alert(`Inspection ${currentJob.jobNumber} approved and saved to database!`);
     } catch (err) {
         console.error('Failed to persist inspection to DB:', err);
-        alert(`Inspection #${currentJob.jobNumber} approved locally.\n\nWarning: Could not save to database. You can retry from the detail view.`);
+        alert(`Inspection ${currentJob.jobNumber} approved locally.\n\nWarning: Could not save to database. You can retry from the detail view.`);
     }
 
     // Refresh the view to show updated status

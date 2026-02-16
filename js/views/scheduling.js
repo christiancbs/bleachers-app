@@ -483,7 +483,7 @@ async function renderPlanningSchedule() {
                             <span style="font-size: 18px;">📋</span>
                             <strong style="color: #e65100;">Ready to Place</strong>
                         </div>
-                        <div style="font-weight: 600; color: #007bff; margin-bottom: 4px;">#${job.jobNumber}</div>
+                        <div style="font-weight: 600; color: #007bff; margin-bottom: 4px;">${job.jobNumber}</div>
                         <div style="font-weight: 500;">${job.customerName || 'No customer'}</div>
                         <div style="font-size: 13px; color: #6c757d;">${job.title || job.locationName || ''}</div>
                         ${job.qbEstimateTotal ? `<div style="font-weight: 600; color: #28a745; margin-top: 4px;">$${parseFloat(job.qbEstimateTotal).toLocaleString()}</div>` : ''}
@@ -952,7 +952,7 @@ function renderJobsListHtml(jobs) {
             " onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'">
                 <div style="flex: 1; min-width: 0;">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
-                        <span style="font-weight: 600; color: #007bff;">#${job.jobNumber}</span>
+                        <span style="font-weight: 600; color: #007bff;">${job.jobNumber}</span>
                         <span class="badge" style="background: ${statusColor}20; color: ${statusColor}; font-size: 11px; padding: 2px 8px;">
                             ${job.status.replace('_', ' ')}
                         </span>
@@ -1187,7 +1187,7 @@ function renderInspectionsListHtml(jobs, tabName) {
             " onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'">
                 <div style="flex: 1; min-width: 0;">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
-                        <span style="font-weight: 600; color: #007bff;">#${job.jobNumber}</span>
+                        <span style="font-weight: 600; color: #007bff;">${job.jobNumber}</span>
                         <span class="badge" style="background: ${statusColor}20; color: ${statusColor}; font-size: 11px; padding: 2px 8px;">
                             ${job.status.replace('_', ' ')}
                         </span>
@@ -1292,7 +1292,7 @@ async function generateCustomerReport(jobId) {
             <p style="font-size: 13px; color: #666;">Inspection Report</p>
         </div>
         <div style="text-align: right; font-size: 13px; color: #666;">
-            <div>Job #${job.jobNumber}</div>
+            <div>Job ${job.jobNumber}</div>
             <div>${inspDate}</div>
         </div>
     </div>
@@ -1783,7 +1783,7 @@ function renderJobsList() {
             " onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'">
                 <div style="flex: 1; min-width: 0;">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                        <span style="font-weight: 600; color: #007bff;">#${job.jobNumber}</span>
+                        <span style="font-weight: 600; color: #007bff;">${job.jobNumber}</span>
                         <span class="badge" style="background: ${statusColor}20; color: ${statusColor}; font-size: 11px; padding: 2px 8px;">
                             ${job.status.replace('_', ' ')}
                         </span>
@@ -1841,7 +1841,7 @@ function showJobDetailModal(job) {
             <div class="modal" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
                 <div class="modal-header">
                     <div>
-                        <h2 style="margin: 0;">Job #${job.jobNumber}</h2>
+                        <h2 style="margin: 0;">Job ${job.jobNumber}</h2>
                         <div style="margin-top: 8px; display: flex; gap: 8px;">
                             <span class="badge" style="background: ${statusColor}20; color: ${statusColor};">${job.status.replace('_', ' ')}</span>
                             <span class="badge" style="background: #e9ecef; color: #495057;">${typeLabel}</span>
@@ -1890,7 +1890,7 @@ function showJobDetailModal(job) {
                             <div>
                                 <label style="font-size: 11px; color: #0c5460; text-transform: uppercase; margin: 0;">Parent Estimate</label>
                                 <p style="margin: 4px 0 0; font-weight: 500; color: #0c5460;">
-                                    ${job.metadata?.sourceEstimate?.docNumber ? 'Estimate #' + job.metadata.sourceEstimate.docNumber : 'QB Estimate ' + job.qbEstimateId}
+                                    ${job.metadata?.sourceEstimate?.docNumber ? 'Estimate ' + job.metadata.sourceEstimate.docNumber : 'QB Estimate ' + job.qbEstimateId}
                                     ${job.qbEstimateTotal ? ' — $' + parseFloat(job.qbEstimateTotal).toLocaleString() : ''}
                                 </p>
                             </div>
@@ -1906,7 +1906,7 @@ function showJobDetailModal(job) {
                             <div>
                                 <label style="font-size: 11px; color: #1565c0; text-transform: uppercase; margin: 0; font-weight: 600;">Parent Inspection</label>
                                 <p style="margin: 4px 0 0; font-weight: 500; color: #0d47a1;">
-                                    Job #${job.parentJob.jobNumber}
+                                    Job ${job.parentJob.jobNumber}
                                     ${job.parentJob.locationName ? ' — ' + job.parentJob.locationName : ''}
                                 </p>
                             </div>
@@ -1920,7 +1920,7 @@ function showJobDetailModal(job) {
                             ${job.childJobs.map(c => `
                                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #fff3e0;">
                                     <div>
-                                        <span style="font-weight: 500;">Job #${c.jobNumber}</span>
+                                        <span style="font-weight: 500;">Job ${c.jobNumber}</span>
                                         <span style="font-size: 12px; color: #6c757d; margin-left: 8px;">${(c.status || 'draft').replace('_', ' ')}</span>
                                     </div>
                                     <button class="btn btn-outline" onclick="closeJobDetailModal(); openJobDetail(${c.id})" style="font-size: 11px; padding: 4px 10px;">View</button>
@@ -2316,7 +2316,7 @@ async function showQbSyncModal() {
                     ${data.available.slice(0, 20).map(e => `
                         <div style="padding: 12px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between;">
                             <div>
-                                <span style="font-weight: 500;">#${e.docNumber}</span>
+                                <span style="font-weight: 500;">${e.docNumber}</span>
                                 <span style="color: #6c757d; margin-left: 8px;">${e.customerName}</span>
                             </div>
                             <span style="color: #28a745; font-weight: 500;">$${e.totalAmount?.toLocaleString() || 0}</span>

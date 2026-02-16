@@ -8,7 +8,7 @@ function showTechWorkOrderDetail(workOrderId) {
     if (!wo) return;
 
     // Populate the detail view with work order data
-    document.getElementById('twoJobNumber').textContent = `Job #${wo.jobNumber}`;
+    document.getElementById('twoJobNumber').textContent = `Job ${wo.jobNumber}`;
     document.getElementById('twoJobTypeBadge').textContent = wo.jobType;
     document.getElementById('twoLocationName').textContent = wo.locationName;
     document.getElementById('twoAddress').textContent = wo.address;

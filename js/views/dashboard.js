@@ -395,7 +395,7 @@ function renderEstimatesList(list, estimates, searchTerm) {
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div style="flex: 1; min-width: 0;">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                            <span style="font-weight: 600; color: #007bff;">#${est.docNumber}</span>
+                            <span style="font-weight: 600; color: #007bff;">${est.docNumber}</span>
                             <span class="badge" style="background: ${statusStyle.bg}; color: ${statusStyle.color};">${est.status}</span>
                         </div>
                         <strong style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${est.customerName}</strong>
@@ -441,7 +441,7 @@ function loadEstimatesPending() {
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div style="flex: 1; min-width: 0;">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                            <span style="font-weight: 600; color: #007bff;">#${est.docNumber}</span>
+                            <span style="font-weight: 600; color: #007bff;">${est.docNumber}</span>
                         </div>
                         <strong style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${est.customerName}</strong>
                         <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">
@@ -611,7 +611,7 @@ function generateEstimate(inspectionId, total) {
     const locationDisplay = inspection.locationName || inspection.customerName;
     const customerDisplay = inspection.customerName || 'Unknown Customer';
 
-    if (confirm(`Generate QuickBooks estimate for ${customerDisplay}?\n\nLocation: ${locationDisplay}\nJob #: ${jobNumber}\nTotal: $${total.toFixed(2)}\n\nThis will:\n• Create estimate #${jobNumber} in QuickBooks\n• Add job to Pipeline\n• Send to Operations Review queue`)) {
+    if (confirm(`Generate QuickBooks estimate for ${customerDisplay}?\n\nLocation: ${locationDisplay}\nJob: ${jobNumber}\nTotal: $${total.toFixed(2)}\n\nThis will:\n• Create estimate ${jobNumber} in QuickBooks\n• Add job to Pipeline\n• Send to Operations Review queue`)) {
         const job = {
             id: 'JOB-' + Date.now(),
             jobNumber: jobNumber,
@@ -658,7 +658,7 @@ function generateEstimate(inspectionId, total) {
         jobs.push(job);
         localStorage.setItem('jobs', JSON.stringify(jobs));
 
-        alert(`✅ SUCCESS!\n\nQuickBooks Estimate Created:\n• Job #: ${jobNumber}\n• Customer: ${customerDisplay}\n• Location: ${locationDisplay}\n• Total: $${total.toFixed(2)}\n\nJob added to Pipeline!\n\n⏱️ Time saved: 30+ minutes of manual entry`);
+        alert(`✅ SUCCESS!\n\nQuickBooks Estimate Created:\n• Job: ${jobNumber}\n• Customer: ${customerDisplay}\n• Location: ${locationDisplay}\n• Total: $${total.toFixed(2)}\n\nJob added to Pipeline!\n\n⏱️ Time saved: 30+ minutes of manual entry`);
 
         showView('projects');
     }
@@ -693,7 +693,7 @@ function loadEstimatesAccepted() {
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div style="flex: 1; min-width: 0;">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                            <span style="font-weight: 600; color: #007bff;">#${est.docNumber}</span>
+                            <span style="font-weight: 600; color: #007bff;">${est.docNumber}</span>
                         </div>
                         <strong style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${est.customerName}</strong>
                         <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">
@@ -771,7 +771,7 @@ async function viewQbEstimate(estimateId) {
         <div class="card" style="margin-bottom: 24px;">
             <div class="card-header">
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <h2 class="card-title" style="margin: 0;">Estimate #${est.docNumber}</h2>
+                    <h2 class="card-title" style="margin: 0;">Estimate ${est.docNumber}</h2>
                     <span class="badge" style="background: ${statusStyle.bg}; color: ${statusStyle.color}; font-size: 14px; padding: 6px 12px;">${est.status}</span>
                 </div>
             </div>
@@ -975,7 +975,7 @@ async function createWorkOrderFromEstimate(evt, estimateId) {
         customerId: est.customerId,
         customerName: est.customerName,
         contactEmail: est.email,
-        title: `Work Order from Estimate #${est.docNumber}`,
+        title: `Work Order from Estimate ${est.docNumber}`,
         description: description || 'See estimate for details',
         qbEstimateId: estimateId,
         qbEstimateTotal: est.totalAmount,
@@ -1199,7 +1199,7 @@ function loadSalesPipeline() {
         html += '<div style="padding: 40px; text-align: center; color: #6c757d;">No deals in pipeline</div>';
     } else {
         html += '<div style="overflow-x: auto;"><table class="data-table" style="margin: 0;">';
-        html += '<thead><tr><th style="width: 80px;">Job #</th><th style="width: 50px;">Grade</th><th>Customer</th><th>Location</th><th>Description</th><th style="width: 95px;">Est. Date</th><th style="width: 130px;">Status</th><th style="width: 90px; text-align: right;">Value</th></tr></thead>';
+        html += '<thead><tr><th style="width: 80px;">Job</th><th style="width: 50px;">Grade</th><th>Customer</th><th>Location</th><th>Description</th><th style="width: 95px;">Est. Date</th><th style="width: 130px;">Status</th><th style="width: 90px; text-align: right;">Value</th></tr></thead>';
         html += '<tbody>';
         filtered.forEach(function(job) {
             var stageInfo = salesStages.find(function(s) { return s.key === (job.salesStatus || job.status); }) || salesStages[0];
@@ -1381,7 +1381,7 @@ function loadPipeline() {
         pipelineHtml += '<div style="padding: 40px; text-align: center; color: #6c757d;">No jobs match the current filter</div>';
     } else {
         pipelineHtml += '<div style="overflow-x: auto;"><table class="data-table" style="margin: 0;">';
-        pipelineHtml += '<thead><tr><th style="width: 80px;">Job #</th><th style="width: 70px;">Type</th><th>Customer</th><th>Location</th><th>Description</th><th style="width: 95px;">PO Received</th><th style="width: 95px;">Target Date</th><th style="width: 120px;">Status</th><th style="width: 90px; text-align: right;">Labor</th><th style="width: 90px; text-align: right;">Total</th></tr></thead>';
+        pipelineHtml += '<thead><tr><th style="width: 80px;">Job</th><th style="width: 70px;">Type</th><th>Customer</th><th>Location</th><th>Description</th><th style="width: 95px;">PO Received</th><th style="width: 95px;">Target Date</th><th style="width: 120px;">Status</th><th style="width: 90px; text-align: right;">Labor</th><th style="width: 90px; text-align: right;">Total</th></tr></thead>';
         pipelineHtml += '<tbody>';
         filtered.forEach(function(job) {
             var stageInfo = stages.find(function(s) { return s.key === job.status; }) || stages[0];

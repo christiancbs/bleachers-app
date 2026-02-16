@@ -705,7 +705,7 @@ function submitJob() {
     }
     localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
 
-    alert(`✅ Job #${currentJob.jobNumber} submitted successfully!\n\n🎉 ${currentJob.banks.length} bank(s) inspected.\n\nOffice staff can now review and generate a QuickBooks estimate.`);
+    alert(`✅ Job ${currentJob.jobNumber} submitted successfully!\n\n🎉 ${currentJob.banks.length} bank(s) inspected.\n\nOffice staff can now review and generate a QuickBooks estimate.`);
 
     currentJob = null;
     goBackFromInspection();
@@ -737,7 +737,7 @@ function generateEstimateFromJob() {
     const issueCount = issueLines.length;
 
     let message = `Generate QuickBooks Estimate?\n\n`;
-    message += `Job #${currentJob.jobNumber}\n`;
+    message += `Job ${currentJob.jobNumber}\n`;
     message += `Customer: ${currentJob.locationName}\n`;
     message += `Address: ${currentJob.locationAddress}\n\n`;
     message += `Banks: ${currentJob.banks.length}\n`;
@@ -789,7 +789,7 @@ function generateEstimateFromJob() {
     workOrders.push(newWorkOrder);
     localStorage.setItem('appWorkOrders', JSON.stringify(workOrders));
 
-    alert(`Estimate generated for Job #${currentJob.jobNumber}\n\n` +
+    alert(`Estimate generated for Job ${currentJob.jobNumber}\n\n` +
           `Customer: ${currentJob.locationName}\n` +
           `Status: Approved\n` +
           `Work order created.\n\n` +
@@ -850,7 +850,7 @@ function loadInspectionJobs() {
         inProgressContainer.innerHTML = inProgress.map(job => `
             <div onclick="resumeJob(${job.jobNumber})" style="padding: 16px; border-bottom: 1px solid #e9ecef; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <div style="font-weight: 600;">Job #${job.jobNumber}</div>
+                    <div style="font-weight: 600;">Job ${job.jobNumber}</div>
                     <div style="font-size: 14px; color: #6c757d;">${job.locationName}</div>
                     <div style="font-size: 12px; color: #e65100;">${job.banks?.length || 0} bank(s) • ${new Date(job.createdAt).toLocaleDateString()}</div>
                 </div>
@@ -865,7 +865,7 @@ function loadInspectionJobs() {
         submittedContainer.innerHTML = submitted.map(job => `
             <div onclick="viewSubmittedJob(${job.jobNumber})" style="padding: 16px; border-bottom: 1px solid #e9ecef; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <div style="font-weight: 600;">Job #${job.jobNumber}</div>
+                    <div style="font-weight: 600;">Job ${job.jobNumber}</div>
                     <div style="font-size: 14px; color: #6c757d;">${job.locationName}</div>
                     <div style="font-size: 12px; color: #2e7d32;">${job.banks?.length || 0} bank(s) • Submitted ${new Date(job.submittedAt).toLocaleDateString()}</div>
                 </div>

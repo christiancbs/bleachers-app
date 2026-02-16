@@ -507,7 +507,7 @@ async function openInspectionReferenceModal(parentJobId) {
                 <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
                     <div class="modal-header">
                         <div>
-                            <h2 style="margin: 0;">Inspection #${job.jobNumber}</h2>
+                            <h2 style="margin: 0;">Inspection ${job.jobNumber}</h2>
                             <div style="font-size: 13px; color: #6c757d; margin-top: 4px;">${job.locationName || job.customerName || ''}</div>
                         </div>
                         <button onclick="closeInspectionRefModal()" style="background:none;border:none;font-size:24px;cursor:pointer;">&times;</button>
