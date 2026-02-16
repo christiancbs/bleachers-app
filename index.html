@@ -1668,21 +1668,6 @@
                             </div>
                         </div>
 
-                        <!-- Parent Inspection Card (shown when job has a parent) -->
-                        <div id="woParentInspectionCard" class="hidden" style="margin-bottom: 16px;"></div>
-
-                        <!-- Child Work Orders Card (shown when job has children) -->
-                        <div id="woChildJobsCard" class="hidden" style="margin-bottom: 16px;"></div>
-
-                        <!-- Attachments Section (populated from API) -->
-                        <div id="woAttachmentsSection" class="card hidden" style="margin-bottom: 16px;"></div>
-
-                        <!-- Inspection Banks Section (populated from API for inspection-type jobs) -->
-                        <div id="woInspectionBanksSection" class="card hidden" style="margin-bottom: 16px;"></div>
-
-                        <!-- Parts Tracking / Procurement / Stock Section (populated from API) -->
-                        <div id="woPartsTrackingSection" class="hidden" style="margin-bottom: 16px;"></div>
-
                         <div>
                                 <!-- Job Info Card (Read-Only - matches Field Staff layout) -->
                                 <div class="card" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
@@ -1800,6 +1785,18 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <!-- Parent Inspection Card (shown when job has a parent) -->
+                                <div id="woParentInspectionCard" class="hidden" style="margin-bottom: 16px;"></div>
+
+                                <!-- Child Work Orders Card (shown when job has children) -->
+                                <div id="woChildJobsCard" class="hidden" style="margin-bottom: 16px;"></div>
+
+                                <!-- Inspection Banks Section (populated from API for inspection-type jobs) -->
+                                <div id="woInspectionBanksSection" class="card hidden" style="margin-bottom: 16px;"></div>
+
+                                <!-- Parts Tracking / Procurement / Stock Section (populated from API) -->
+                                <div id="woPartsTrackingSection" class="hidden" style="margin-bottom: 16px;"></div>
 
                                 <!-- Scheduling & Assignment Card -->
                                 <div class="card">
@@ -1933,6 +1930,9 @@
                                                 <button class="btn btn-secondary btn-sm" onclick="cancelEditSection('completionSummary')">Cancel</button>
                                             </div>
                                         </div>
+
+                                        <!-- Attachments / Completion Photos (populated from API) -->
+                                        <div id="woAttachmentsSection" class="hidden" style="margin-top: 16px;"></div>
                                     </div>
                                 </div>
 

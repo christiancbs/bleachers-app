@@ -661,8 +661,8 @@ function renderWoAttachments(job) {
     }).join('');
 
     container.innerHTML =
-        '<div class="card-header"><h2 class="card-title">Attachments (' + job.attachments.length + ')</h2></div>' +
-        '<div class="card-body"><div style="display:flex;gap:12px;flex-wrap:wrap;">' + thumbnails + '</div></div>';
+        '<p style="font-size:12px;color:#6c757d;margin-bottom:8px;text-transform:uppercase;font-weight:600;">Photos & Attachments (' + job.attachments.length + ')</p>' +
+        '<div style="display:flex;gap:12px;flex-wrap:wrap;">' + thumbnails + '</div>';
     container.classList.remove('hidden');
 }
 
