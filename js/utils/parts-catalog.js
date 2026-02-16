@@ -105,18 +105,18 @@ function updateCustomerInfo() {
 
 async function searchParts() {
     const searchTerm = document.getElementById('partSearch').value.trim();
-    const category = document.getElementById('vendorFilter').value;
+    const vendor = document.getElementById('vendorFilter').value;
     const results = document.getElementById('partsResults');
 
-    if (!searchTerm && !category) {
-        results.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">Enter a search term or select a category</div>';
+    if (!searchTerm && !vendor) {
+        results.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">Enter a search term or select a vendor</div>';
         return;
     }
 
     results.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Searching parts catalog...</div>';
 
     try {
-        const data = await PartsAPI.search(searchTerm, category, null, 50);
+        const data = await PartsAPI.search(searchTerm || null, null, vendor || null, 100);
 
         // Store results for selection
         searchResults = {};
@@ -162,17 +162,47 @@ async function searchParts() {
     }
 }
 
+// ─── Client-side sort for parts results ─────────────────────
+let _lastTechParts = [];
+let _lastOfficeParts = [];
+
+function sortPartsArray(parts, sortKey) {
+    const sorted = [...parts];
+    switch (sortKey) {
+        case 'name_asc':
+            sorted.sort((a, b) => (a.productName || '').localeCompare(b.productName || ''));
+            break;
+        case 'name_desc':
+            sorted.sort((a, b) => (b.productName || '').localeCompare(a.productName || ''));
+            break;
+        case 'part_number':
+            sorted.sort((a, b) => (a.partNumber || '').localeCompare(b.partNumber || ''));
+            break;
+        case 'price_asc':
+            sorted.sort((a, b) => (parseFloat(a.price) || 99999) - (parseFloat(b.price) || 99999));
+            break;
+        case 'price_desc':
+            sorted.sort((a, b) => (parseFloat(b.price) || 0) - (parseFloat(a.price) || 0));
+            break;
+        case 'vendor':
+            sorted.sort((a, b) => (a.vendor || '').localeCompare(b.vendor || '') || (a.productName || '').localeCompare(b.productName || ''));
+            break;
+    }
+    return sorted;
+}
+
 // Tech/Field parts catalog search (read-only, no selection)
 async function searchTechParts() {
     const searchTerm = document.getElementById('techPartSearchInput').value.trim();
+    const vendor = document.getElementById('techPartVendorFilter')?.value || '';
     const results = document.getElementById('techPartSearchResults');
 
-    if (!searchTerm) {
+    if (!searchTerm && !vendor) {
         results.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">Enter a part name, number, or description to search</div>';
         return;
     }
 
-    if (searchTerm.length < 2) {
+    if (searchTerm && searchTerm.length < 2) {
         results.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">Enter at least 2 characters</div>';
         return;
     }
@@ -180,57 +210,70 @@ async function searchTechParts() {
     results.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Searching parts catalog...</div>';
 
     try {
-        const data = await PartsAPI.search(searchTerm, null, null, 30);
-
-        if (data.parts.length === 0) {
-            results.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">No parts found matching your search</div>';
-        } else {
-            results.innerHTML = `
-                <p style="font-size: 12px; color: #6c757d; margin: 12px 0;">Found ${data.parts.length} parts</p>
-                ${data.parts.map(part => {
-                    const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'");
-                    const safeProductName = (part.productName || '').replace(/'/g, "\\'");
-                    const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'");
-                    const clickHandler = part.imageUrl ? `onclick="showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${safeVendor}')"` : '';
-                    const imageHtml = part.imageUrl
-                        ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px;">`
-                        : '';
-                    return `
-                        <div class="part-result" ${clickHandler} style="cursor: ${part.imageUrl ? 'pointer' : 'default'}; display: flex; align-items: flex-start;">
-                            ${imageHtml}
-                            <div style="flex: 1;">
-                                <div style="margin-bottom: 8px;">
-                                    <span class="part-number">${part.partNumber || '—'}</span>
-                                    <span class="part-vendor">${part.vendor || 'Hussey Seating Co'}</span>
-                                    ${part.imageUrl ? '<span style="color: #0066cc; font-size: 11px; margin-left: 8px;">📷 Tap to view</span>' : ''}
-                                </div>
-                                <div class="part-description">${part.productName || 'Unknown Part'}</div>
-                                <div class="part-meta">
-                                    <span class="part-category">${part.category || ''}</span>
-                                </div>
-                                ${part.productLine ? `<div style="font-size: 11px; color: #888; margin-top: 4px;">${part.productLine}</div>` : ''}
-                            </div>
-                        </div>
-                    `;
-                }).join('')}
-            `;
-        }
+        const data = await PartsAPI.search(searchTerm || null, null, vendor || null, 100);
+        _lastTechParts = data.parts;
+        const sortKey = document.getElementById('techPartSortSelect')?.value || 'name_asc';
+        renderTechParts(sortPartsArray(_lastTechParts, sortKey), results);
     } catch (err) {
         results.innerHTML = `<div style="text-align: center; padding: 20px; color: #dc3545;">Search failed: ${err.message}</div>`;
     }
 }
 
+function sortTechParts() {
+    if (!_lastTechParts.length) return;
+    const sortKey = document.getElementById('techPartSortSelect')?.value || 'name_asc';
+    const results = document.getElementById('techPartSearchResults');
+    renderTechParts(sortPartsArray(_lastTechParts, sortKey), results);
+}
+
+function renderTechParts(parts, container) {
+    if (parts.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">No parts found matching your search</div>';
+        return;
+    }
+    container.innerHTML = `
+        <p style="font-size: 12px; color: #6c757d; margin: 12px 0;">Found ${parts.length} parts</p>
+        ${parts.map(part => {
+            const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'");
+            const safeProductName = (part.productName || '').replace(/'/g, "\\'");
+            const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'");
+            const clickHandler = part.imageUrl ? `onclick="showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${safeVendor}')"` : '';
+            const imageHtml = part.imageUrl
+                ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px;">`
+                : '';
+            return `
+                <div class="part-result" ${clickHandler} style="cursor: ${part.imageUrl ? 'pointer' : 'default'}; display: flex; align-items: flex-start;">
+                    ${imageHtml}
+                    <div style="flex: 1;">
+                        <div style="margin-bottom: 8px;">
+                            <span class="part-number">${part.partNumber || '—'}</span>
+                            <span class="part-vendor">${part.vendor || 'Hussey Seating Co'}</span>
+                            ${part.imageUrl ? '<span style="color: #0066cc; font-size: 11px; margin-left: 8px;">Tap to view</span>' : ''}
+                        </div>
+                        <div class="part-description">${part.productName || 'Unknown Part'}</div>
+                        <div class="part-meta">
+                            <span class="part-category">${part.category || ''}</span>
+                        </div>
+                        ${part.productLine ? `<div style="font-size: 11px; color: #888; margin-top: 4px;">${part.productLine}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('')}
+    `;
+}
+
 // Office parts catalog search (read-only directory)
 async function searchOfficeParts() {
     const searchTerm = document.getElementById('officePartSearchInput').value.trim();
+    const vendor = document.getElementById('officePartVendorFilter')?.value || '';
     const results = document.getElementById('officePartSearchResults');
 
-    if (!searchTerm) {
+    if (!searchTerm && !vendor) {
         results.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Enter a part name, number, or description to search the catalog</div>';
         return;
     }
 
-    if (searchTerm.length < 2) {
+    if (searchTerm && searchTerm.length < 2) {
         results.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">Enter at least 2 characters</div>';
         return;
     }
@@ -238,48 +281,60 @@ async function searchOfficeParts() {
     results.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Searching parts catalog...</div>';
 
     try {
-        const data = await PartsAPI.search(searchTerm, null, null, 50);
-
-        if (data.parts.length === 0) {
-            results.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">No parts found matching your search</div>';
-        } else {
-            results.innerHTML = `
-                <p style="font-size: 12px; color: #6c757d; margin: 12px 0;">Found ${data.parts.length} parts</p>
-                ${data.parts.map(part => {
-                    const price = parseFloat(part.price) || 0;
-                    const priceDisplay = part.priceNote || (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
-                    const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'");
-                    const safeProductName = (part.productName || '').replace(/'/g, "\\'");
-                    const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'");
-                    const clickHandler = part.imageUrl ? `onclick="showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${price}', '${safeVendor}')"` : '';
-                    const imageHtml = part.imageUrl
-                        ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px;">`
-                        : '';
-                    return `
-                        <div class="part-result" ${clickHandler} style="cursor: ${part.imageUrl ? 'pointer' : 'default'}; display: flex; align-items: flex-start;">
-                            ${imageHtml}
-                            <div style="flex: 1;">
-                                <div style="margin-bottom: 8px;">
-                                    <span class="part-number">${part.partNumber || '—'}</span>
-                                    <span class="part-vendor">${part.vendor || 'Hussey Seating Co'}</span>
-                                    ${part.imageUrl ? '<span style="color: #0066cc; font-size: 11px; margin-left: 8px;">📷 Tap to view</span>' : ''}
-                                </div>
-                                <div class="part-description">${part.productName || 'Unknown Part'}</div>
-                                <div class="part-meta">
-                                    <span class="part-category">${part.category || ''}</span>
-                                    <span class="part-price">${priceDisplay}</span>
-                                </div>
-                                ${part.productLine ? `<div style="font-size: 11px; color: #888; margin-top: 4px;">${part.productLine}</div>` : ''}
-                                ${part.description ? `<div style="font-size: 12px; color: #666; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">${part.description}</div>` : ''}
-                            </div>
-                        </div>
-                    `;
-                }).join('')}
-            `;
-        }
+        const data = await PartsAPI.search(searchTerm || null, null, vendor || null, 100);
+        _lastOfficeParts = data.parts;
+        const sortKey = document.getElementById('officePartSortSelect')?.value || 'name_asc';
+        renderOfficeParts(sortPartsArray(_lastOfficeParts, sortKey), results);
     } catch (err) {
         results.innerHTML = `<div style="text-align: center; padding: 20px; color: #dc3545;">Search failed: ${err.message}</div>`;
     }
+}
+
+function sortOfficeParts() {
+    if (!_lastOfficeParts.length) return;
+    const sortKey = document.getElementById('officePartSortSelect')?.value || 'name_asc';
+    const results = document.getElementById('officePartSearchResults');
+    renderOfficeParts(sortPartsArray(_lastOfficeParts, sortKey), results);
+}
+
+function renderOfficeParts(parts, container) {
+    if (parts.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">No parts found matching your search</div>';
+        return;
+    }
+    container.innerHTML = `
+        <p style="font-size: 12px; color: #6c757d; margin: 12px 0;">Found ${parts.length} parts</p>
+        ${parts.map(part => {
+            const price = parseFloat(part.price) || 0;
+            const priceDisplay = part.priceNote || (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
+            const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'");
+            const safeProductName = (part.productName || '').replace(/'/g, "\\'");
+            const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'");
+            const clickHandler = part.imageUrl ? `onclick="showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${price}', '${safeVendor}')"` : '';
+            const imageHtml = part.imageUrl
+                ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px;">`
+                : '';
+            return `
+                <div class="part-result" ${clickHandler} style="cursor: ${part.imageUrl ? 'pointer' : 'default'}; display: flex; align-items: flex-start;">
+                    ${imageHtml}
+                    <div style="flex: 1;">
+                        <div style="margin-bottom: 8px;">
+                            <span class="part-number">${part.partNumber || '—'}</span>
+                            <span class="part-vendor">${part.vendor || 'Hussey Seating Co'}</span>
+                            ${part.imageUrl ? '<span style="color: #0066cc; font-size: 11px; margin-left: 8px;">Tap to view</span>' : ''}
+                        </div>
+                        <div class="part-description">${part.productName || 'Unknown Part'}</div>
+                        <div class="part-meta">
+                            <span class="part-category">${part.category || ''}</span>
+                            <span class="part-price">${priceDisplay}</span>
+                        </div>
+                        ${part.productLine ? `<div style="font-size: 11px; color: #888; margin-top: 4px;">${part.productLine}</div>` : ''}
+                        ${part.description ? `<div style="font-size: 12px; color: #666; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">${part.description}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('')}
+    `;
 }
 
 function selectPart(recordId) {

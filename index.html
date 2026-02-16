@@ -269,17 +269,34 @@
                     <div id="partsView" class="hidden">
                         <div class="page-header">
                             <h1 class="page-title">Parts Catalog</h1>
-                            <p class="page-subtitle">Search parts across all vendors for pricing and info</p>
+                            <p class="page-subtitle">Search 5,000+ parts across 9 vendors</p>
                         </div>
 
                         <div class="card">
                             <div class="card-body">
-                                <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                                <div style="display: flex; gap: 12px; margin-bottom: 12px;">
                                     <input type="text" id="officePartSearchInput" class="form-input" placeholder="Search by part name, number, or description..." style="font-size: 16px; padding: 14px 16px; flex: 1;" oninput="searchOfficeParts()">
-                                    <select id="officePartVendorFilter" class="form-input" style="width: 200px;" onchange="searchOfficeParts()">
+                                </div>
+                                <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                                    <select id="officePartVendorFilter" class="form-select" style="flex: 1;" onchange="searchOfficeParts()">
                                         <option value="">All Vendors</option>
-                                        <option value="Hussey">Hussey Seating Co</option>
-                                        <option value="Draper">Draper (coming soon)</option>
+                                        <option value="Hussey Seating Co">Hussey</option>
+                                        <option value="NRS">NRS</option>
+                                        <option value="Draper">Draper</option>
+                                        <option value="Gared-PSS">Gared / PSS</option>
+                                        <option value="Interkal">Interkal</option>
+                                        <option value="Irwin">Irwin</option>
+                                        <option value="Kodiak">Kodiak</option>
+                                        <option value="Southern Bleacher">Southern Bleacher</option>
+                                        <option value="Aluminum">Aluminum</option>
+                                    </select>
+                                    <select id="officePartSortSelect" class="form-select" style="flex: 1;" onchange="sortOfficeParts()">
+                                        <option value="name_asc">Name A-Z</option>
+                                        <option value="name_desc">Name Z-A</option>
+                                        <option value="part_number">Part Number</option>
+                                        <option value="price_asc">Price: Low to High</option>
+                                        <option value="price_desc">Price: High to Low</option>
+                                        <option value="vendor">Vendor A-Z</option>
                                     </select>
                                 </div>
                                 <div id="officePartSearchResults" style="margin-top: 16px;">
@@ -2399,13 +2416,35 @@
                     <div id="techPartsView" class="hidden">
                         <div class="page-header">
                             <h1 class="page-title">Parts Catalog</h1>
-                            <p class="page-subtitle">Search parts across all vendors</p>
+                            <p class="page-subtitle">Search 5,000+ parts across 9 vendors</p>
                         </div>
 
                         <div class="card">
                             <div class="card-body">
                                 <div class="form-group">
                                     <input type="text" id="techPartSearchInput" class="form-input" placeholder="Search by part name, number, or description..." style="font-size: 16px; padding: 14px 16px;" oninput="searchTechParts()">
+                                </div>
+                                <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                                    <select id="techPartVendorFilter" class="form-select" style="flex: 1;" onchange="searchTechParts()">
+                                        <option value="">All Vendors</option>
+                                        <option value="Hussey Seating Co">Hussey</option>
+                                        <option value="NRS">NRS</option>
+                                        <option value="Draper">Draper</option>
+                                        <option value="Gared-PSS">Gared / PSS</option>
+                                        <option value="Interkal">Interkal</option>
+                                        <option value="Irwin">Irwin</option>
+                                        <option value="Kodiak">Kodiak</option>
+                                        <option value="Southern Bleacher">Southern Bleacher</option>
+                                        <option value="Aluminum">Aluminum</option>
+                                    </select>
+                                    <select id="techPartSortSelect" class="form-select" style="flex: 1;" onchange="sortTechParts()">
+                                        <option value="name_asc">Name A-Z</option>
+                                        <option value="name_desc">Name Z-A</option>
+                                        <option value="part_number">Part Number</option>
+                                        <option value="price_asc">Price: Low to High</option>
+                                        <option value="price_desc">Price: High to Low</option>
+                                        <option value="vendor">Vendor A-Z</option>
+                                    </select>
                                 </div>
                                 <div id="techPartSearchResults" style="margin-top: 16px;"></div>
                             </div>
@@ -3451,7 +3490,7 @@
                             <div class="card">
                                 <div class="card-header">
                                     <h2 class="card-title">Search & Add Parts</h2>
-                                    <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">Search 2,142 Hussey parts by name, part number, or category</p>
+                                    <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">Search 5,000+ parts across 9 vendors by name, number, or category</p>
                                 </div>
                                 <div class="card-body">
                                     <div class="form-group">
@@ -3463,9 +3502,18 @@
                                     </div>
 
                                     <div class="form-group">
-                                        <label class="form-label">Filter by Category (Optional)</label>
+                                        <label class="form-label">Filter by Vendor (Optional)</label>
                                         <select id="vendorFilter" class="form-select" onchange="searchParts()">
-                                            <option value="">All Categories</option>
+                                            <option value="">All Vendors</option>
+                                            <option value="Hussey Seating Co">Hussey</option>
+                                            <option value="NRS">NRS</option>
+                                            <option value="Draper">Draper</option>
+                                            <option value="Gared-PSS">Gared / PSS</option>
+                                            <option value="Interkal">Interkal</option>
+                                            <option value="Irwin">Irwin</option>
+                                            <option value="Kodiak">Kodiak</option>
+                                            <option value="Southern Bleacher">Southern Bleacher</option>
+                                            <option value="Aluminum">Aluminum</option>
                                         </select>
                                     </div>
 
