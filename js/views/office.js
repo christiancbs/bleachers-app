@@ -237,6 +237,8 @@ async function viewWorkOrderDetail(workOrderId, fromView) {
     }
 
     showView('workOrderDetail');
+    var scrollContainer = document.querySelector('.content-area');
+    if (scrollContainer) scrollContainer.scrollTop = 0;
     window.scrollTo(0, 0);
 }
 
