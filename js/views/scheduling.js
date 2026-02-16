@@ -1814,19 +1814,20 @@ function renderJobsList() {
 
 // Open job detail
 async function openJobDetail(jobId) {
-    try {
-        const data = await JobsAPI.get(jobId);
-        const job = data.job;
+    // Determine which view the user came from for back button
+    var fromView = getCurrentActiveView();
+    viewWorkOrderDetail(jobId, fromView);
+}
 
-        // Store for editing
-        window.currentApiJob = job;
-
-        // Show in a modal or navigate to detail view
-        showJobDetailModal(job);
-    } catch (err) {
-        console.error('Failed to load job:', err);
-        alert('Failed to load job details: ' + err.message);
-    }
+function getCurrentActiveView() {
+    // Check which section is currently visible to set the correct back target
+    var jobsView = document.getElementById('jobsView');
+    if (jobsView && !jobsView.classList.contains('hidden')) return 'jobs';
+    var inspView = document.getElementById('inspectionsView');
+    if (inspView && !inspView.classList.contains('hidden')) return 'inspections';
+    var schedView = document.getElementById('schedulingView');
+    if (schedView && !schedView.classList.contains('hidden')) return 'scheduling';
+    return 'jobs';
 }
 
 // Show job detail modal
@@ -2261,9 +2262,9 @@ async function editPartsTracking(jobId) {
         await JobsAPI.update(jobId, { metadata: updatedMetadata });
         alert('Parts tracking updated!');
 
-        // Refresh the modal
+        // Refresh the view
         closeJobDetailModal();
-        openJobDetail(jobId);
+        viewWorkOrderDetail(jobId, _woBackTarget);
     } catch (err) {
         console.error('Failed to update parts tracking:', err);
         alert('Failed to update: ' + err.message);

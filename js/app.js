@@ -292,7 +292,9 @@ function showView(view) {
         setActiveNav('estimates');
     } else if (view === 'workOrderDetail') {
         document.getElementById('workOrderDetailView').classList.remove('hidden');
-        setActiveNav('opsReview');
+        // Highlight nav based on where user came from
+        var navMap = { jobs: 'jobs', inspections: 'inspections', scheduling: 'scheduling', opsReview: 'opsReview', home: 'home', officeSearch: 'officeSearch', estimateDetail: 'estimates' };
+        setActiveNav(navMap[_woBackTarget] || _woBackTarget || 'jobs');
     } else if (view === 'customerDetail') {
         document.getElementById('customerDetailView').classList.remove('hidden');
         setActiveNav('accounts');

@@ -385,6 +385,13 @@ function renderOpsReviewDetail(job) {
                     ${job.inspectorCertificate ? ` &bull; Cert: ${job.inspectorCertificate}` : ''}
                     &bull; Submitted ${job.submittedAt ? new Date(job.submittedAt).toLocaleDateString() : 'N/A'}
                 </div>
+                ${job._apiId ? `
+                <div style="margin-top: 16px;">
+                    <button class="btn btn-outline" onclick="viewWorkOrderDetail(${job._apiId}, 'opsReview')" style="font-size: 13px; padding: 8px 16px;">
+                        View Full Job Detail
+                    </button>
+                </div>
+                ` : ''}
             </div>
         </div>
 

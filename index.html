@@ -1655,6 +1655,17 @@
                                 <span id="woJobTypeBadge" class="badge badge-info">Repair</span>
                                 <span id="woStatusBadge" class="badge badge-success">Parts Received</span>
                             </div>
+                            <!-- Action buttons (square icon boxes) -->
+                            <div id="woActionButtons" style="display: flex; gap: 8px; margin-top: 12px;">
+                                <button class="wo-action-btn" onclick="printWorkOrder()" title="Print Work Order">
+                                    <span style="font-size: 18px;">📄</span>
+                                    <span style="font-size: 10px;">Print</span>
+                                </button>
+                                <button class="wo-action-btn" onclick="emailToTech()" title="Email to Tech">
+                                    <span style="font-size: 18px;">📧</span>
+                                    <span style="font-size: 10px;">Email</span>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Parent Inspection Card (shown when job has a parent) -->
@@ -1662,6 +1673,15 @@
 
                         <!-- Child Work Orders Card (shown when job has children) -->
                         <div id="woChildJobsCard" class="hidden" style="margin-bottom: 16px;"></div>
+
+                        <!-- Attachments Section (populated from API) -->
+                        <div id="woAttachmentsSection" class="card hidden" style="margin-bottom: 16px;"></div>
+
+                        <!-- Inspection Banks Section (populated from API for inspection-type jobs) -->
+                        <div id="woInspectionBanksSection" class="card hidden" style="margin-bottom: 16px;"></div>
+
+                        <!-- Parts Tracking / Procurement / Stock Section (populated from API) -->
+                        <div id="woPartsTrackingSection" class="hidden" style="margin-bottom: 16px;"></div>
 
                         <div style="display: grid; grid-template-columns: 1fr 300px; gap: 24px;">
                             <!-- Main Column -->
@@ -1875,7 +1895,6 @@
                                         <button class="btn btn-sm" onclick="toggleEditSection('completionSummary')" style="padding: 4px 12px; font-size: 12px;" id="woCompletionSummaryEditBtn">Edit</button>
                                     </div>
                                     <div class="card-body">
-                                        <!-- Read-only view -->
                                         <div id="woCompletionSummaryDisplay">
                                             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
                                                 <div>
@@ -1892,7 +1911,6 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <!-- Edit view -->
                                         <div id="woCompletionSummaryEdit" class="hidden">
                                             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
                                                 <div class="form-group">
@@ -1920,166 +1938,133 @@
                                     </div>
                                 </div>
 
-                                <!-- Completion Photos Card (Matches Field Staff) -->
-                                <div class="card">
-                                    <div class="card-header" style="background: #4CAF50; color: white;">
-                                        <h2 class="card-title" style="color: white; margin: 0;">📷 Completion Photos & Notes</h2>
-                                    </div>
-                                    <div class="card-body">
-                                        <!-- Required Photo Upload -->
-                                        <div class="form-group">
-                                            <label class="form-label" style="font-weight: 700;">
-                                                📷 Completed Work Photo <span style="color: #dc3545;">*Required</span>
-                                            </label>
-                                            <p style="font-size: 13px; color: #6c757d; margin-bottom: 12px;">Photo showing the completed work</p>
-                                            <div id="woPhotoUploadArea" style="border: 2px dashed #dee2e6; border-radius: 8px; padding: 40px; text-align: center; cursor: pointer; background: #f8f9fa;"
-                                                 onclick="document.getElementById('woPhotoInput').click()">
-                                                <div style="font-size: 48px; margin-bottom: 12px;">📷</div>
-                                                <p style="font-weight: 600; color: #495057;">Click to upload photo</p>
-                                                <input type="file" id="woPhotoInput" accept="image/*" style="display: none;" onchange="handleOfficePhotoUpload(event, 'main')">
-                                            </div>
-                                            <div id="woPhotoPreview" class="hidden" style="margin-top: 12px;"></div>
-                                        </div>
-
-                                        <!-- Additional Photos -->
-                                        <div class="form-group" style="margin-top: 20px;">
-                                            <label class="form-label">📷 Additional Photos (Optional)</label>
-                                            <p style="font-size: 13px; color: #6c757d; margin-bottom: 12px;">Add more photos if needed (issues found, before/after, etc.)</p>
-                                            <div style="border: 2px dashed #dee2e6; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; background: #f8f9fa;"
-                                                 onclick="document.getElementById('woAdditionalPhotos').click()">
-                                                <p style="color: #6c757d;">+ Add more photos</p>
-                                                <input type="file" id="woAdditionalPhotos" accept="image/*" multiple style="display: none;" onchange="handleOfficePhotoUpload(event, 'additional')">
-                                            </div>
-                                            <div id="woAdditionalPhotosPreview" style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px;"></div>
-                                        </div>
-
-                                        <!-- Required Notes -->
-                                        <div class="form-group" style="margin-top: 20px;">
-                                            <label class="form-label" style="font-weight: 700;">
-                                                📝 Completion Notes <span style="color: #dc3545;">*Required</span>
-                                            </label>
-                                            <p style="font-size: 13px; color: #6c757d; margin-bottom: 12px;">Describe work completed</p>
-                                            <textarea id="woCompletionNotes" class="form-input" rows="4"
-                                                      placeholder="Example: Installed safety strap on Goal 5. Tested operation - working properly. No additional issues found."
-                                                      style="font-size: 16px;"></textarea>
-                                        </div>
-
-                                        <!-- Action Buttons -->
-                                        <div style="margin-top: 24px;">
-                                            <button class="btn btn-primary btn-lg" onclick="submitOfficeJobCompleted()"
-                                                    style="width: 100%; padding: 16px; font-size: 16px; background: #4CAF50; border-color: #4CAF50;">
-                                                ✅ Mark Job Completed
+                                <!-- New Completion Flow: Two side-by-side buttons -->
+                                <div class="card" id="woCompletionFlowCard">
+                                    <div class="card-body" style="padding: 24px;">
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                            <button id="woJobCompleteBtn" class="wo-completion-btn wo-completion-btn-complete" onclick="toggleCompletionPanel('complete')">
+                                                Job Complete
+                                            </button>
+                                            <button id="woJobNotCompleteBtn" class="wo-completion-btn wo-completion-btn-incomplete" onclick="toggleCompletionPanel('notComplete')">
+                                                Job Not Complete
                                             </button>
                                         </div>
-                                    </div>
-                                </div>
 
-                                <!-- Not Completed Section (Matches Field Staff) -->
-                                <div class="card">
-                                    <div class="card-header" style="background: #dc3545; color: white;">
-                                        <h2 class="card-title" style="color: white; margin: 0;">❌ Job Not Completed</h2>
-                                    </div>
-                                    <div class="card-body">
-                                        <p style="font-size: 14px; color: #6c757d; margin-bottom: 16px;">If the job couldn't be completed, document what happened:</p>
+                                        <!-- Job Complete Dropdown Panel -->
+                                        <div id="woCompletePanel" class="hidden" style="margin-top: 20px; padding: 20px; background: #f0fdf4; border: 2px solid #4CAF50; border-radius: 12px;">
+                                            <h3 style="font-size: 16px; font-weight: 700; color: #2e7d32; margin-bottom: 16px;">Complete This Job</h3>
 
-                                        <!-- Reason Buttons -->
-                                        <div id="woReasonButtons" style="display: flex; flex-direction: column; gap: 10px;">
-                                            <button type="button" onclick="selectOfficeNotCompletedReason('wrong_part')" class="reason-btn"
-                                                    style="padding: 16px 20px; border: 2px solid #dee2e6; border-radius: 8px; background: white; text-align: left; cursor: pointer; font-size: 15px; transition: all 0.15s;">
-                                                <span style="font-size: 20px; margin-right: 12px;">🔧</span>
-                                                <strong>Wrong or Missing Part</strong>
-                                            </button>
-                                            <button type="button" onclick="selectOfficeNotCompletedReason('access')" class="reason-btn"
-                                                    style="padding: 16px 20px; border: 2px solid #dee2e6; border-radius: 8px; background: white; text-align: left; cursor: pointer; font-size: 15px; transition: all 0.15s;">
-                                                <span style="font-size: 20px; margin-right: 12px;">🚪</span>
-                                                <strong>Can't Access Site</strong>
-                                            </button>
-                                            <button type="button" onclick="selectOfficeNotCompletedReason('more_work')" class="reason-btn"
-                                                    style="padding: 16px 20px; border: 2px solid #dee2e6; border-radius: 8px; background: white; text-align: left; cursor: pointer; font-size: 15px; transition: all 0.15s;">
-                                                <span style="font-size: 20px; margin-right: 12px;">⚠️</span>
-                                                <strong>Additional Work Needed</strong>
-                                            </button>
-                                            <button type="button" onclick="selectOfficeNotCompletedReason('equipment')" class="reason-btn"
-                                                    style="padding: 16px 20px; border: 2px solid #dee2e6; border-radius: 8px; background: white; text-align: left; cursor: pointer; font-size: 15px; transition: all 0.15s;">
-                                                <span style="font-size: 20px; margin-right: 12px;">🏗️</span>
-                                                <strong>Equipment Issue</strong>
-                                            </button>
-                                            <button type="button" onclick="selectOfficeNotCompletedReason('other')" class="reason-btn"
-                                                    style="padding: 16px 20px; border: 2px solid #dee2e6; border-radius: 8px; background: white; text-align: left; cursor: pointer; font-size: 15px; transition: all 0.15s;">
-                                                <span style="font-size: 20px; margin-right: 12px;">📝</span>
-                                                <strong>Other</strong>
-                                            </button>
-                                        </div>
-                                        <input type="hidden" id="woNotCompletedReason" value="">
-
-                                        <!-- Details Section (shown after reason selected) -->
-                                        <div id="woReasonDetails" class="hidden" style="margin-top: 20px;">
-
-                                            <!-- Selected reason header -->
-                                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 12px; background: #ffebee; border-radius: 8px;">
-                                                <span id="woSelectedReasonText" style="font-weight: 600; color: #c62828;"></span>
-                                                <button type="button" onclick="changeOfficeReason()" style="background: none; border: none; color: #1976d2; cursor: pointer; font-size: 14px;">Change</button>
-                                            </div>
-
-                                            <!-- Wrong Part Section -->
-                                            <div id="woWrongPartSection" class="hidden" style="margin-bottom: 16px; padding: 16px; background: #fff8e1; border-radius: 8px; border: 2px solid #ff9800;">
-                                                <h4 style="font-size: 15px; font-weight: 700; color: #e65100; margin-bottom: 16px;">📐 Measurements & Photo Required</h4>
-
-                                                <div class="form-group">
-                                                    <label class="form-label" style="font-weight: 600;">Measurements of Correct Part</label>
-                                                    <textarea id="woWrongPartMeasurements" class="form-input" rows="3"
-                                                              placeholder="Length, width, thickness, hole spacing, bolt size..."
-                                                              style="font-size: 16px;"></textarea>
-                                                </div>
-
-                                                <div class="form-group" style="margin-top: 16px;">
-                                                    <label class="form-label" style="font-weight: 600;">📷 Photo of a CORRECT Part</label>
-                                                    <p style="font-size: 12px; color: #6c757d; margin-bottom: 8px;">Photo of a working part that needs to be matched</p>
-                                                    <div id="woWrongPartPhotoArea" style="border: 2px dashed #ff9800; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; background: white;"
-                                                         onclick="document.getElementById('woWrongPartPhotoInput').click()">
-                                                        <span style="font-size: 28px;">📷</span>
-                                                        <p style="font-weight: 600; color: #e65100; margin-top: 8px;">Click to upload photo of working part</p>
-                                                        <input type="file" id="woWrongPartPhotoInput" accept="image/*" style="display: none;" onchange="handleOfficeWrongPartPhoto(event, 'correct')">
-                                                    </div>
-                                                    <div id="woWrongPartPhotoPreview" class="hidden" style="margin-top: 12px;"></div>
-                                                </div>
-
-                                                <div class="form-group" style="margin-top: 12px;">
-                                                    <div style="border: 1px dashed #dee2e6; border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; background: white;"
-                                                         onclick="document.getElementById('woWrongPartSentPhotoInput').click()">
-                                                        <span style="color: #6c757d; font-size: 14px;">+ Photo of wrong part sent (optional)</span>
-                                                        <input type="file" id="woWrongPartSentPhotoInput" accept="image/*" style="display: none;" onchange="handleOfficeWrongPartPhoto(event, 'wrong')">
-                                                    </div>
-                                                    <div id="woWrongPartSentPhotoPreview" style="margin-top: 8px;"></div>
-                                                </div>
-                                            </div>
-
-                                            <!-- More Work Section - needs a photo -->
-                                            <div id="woMoreWorkSection" class="hidden" style="margin-bottom: 16px; padding: 16px; background: #e3f2fd; border-radius: 8px; border: 2px solid #2196f3;">
-                                                <h4 style="font-size: 15px; font-weight: 700; color: #1565c0; margin-bottom: 12px;">📷 Photo of the Issue</h4>
-                                                <div id="woMoreWorkPhotoArea" style="border: 2px dashed #2196f3; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; background: white;"
-                                                     onclick="document.getElementById('woMoreWorkPhotoInput').click()">
-                                                    <span style="font-size: 28px;">📷</span>
-                                                    <p style="font-weight: 600; color: #1565c0; margin-top: 8px;">Click to upload photo of the damage/issue</p>
-                                                    <input type="file" id="woMoreWorkPhotoInput" accept="image/*" style="display: none;" onchange="handleOfficeMoreWorkPhoto(event)">
-                                                </div>
-                                                <div id="woMoreWorkPhotoPreview" class="hidden" style="margin-top: 12px;"></div>
-                                            </div>
-
-                                            <!-- Notes field -->
-                                            <div class="form-group">
-                                                <label class="form-label" style="font-weight: 600;">
-                                                    Notes <span id="woNotesRequired" style="color: #dc3545;">*Required</span>
+                                            <!-- Additional work found toggle -->
+                                            <div style="margin-bottom: 16px;">
+                                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                                    <input type="checkbox" id="woAdditionalWorkFound" onchange="toggleAdditionalWorkArea()" style="width: 18px; height: 18px;">
+                                                    <span style="font-weight: 600; font-size: 15px;">Additional work found</span>
                                                 </label>
-                                                <textarea id="woNotCompletedDetails" class="form-input" rows="3"
-                                                          placeholder="Explain what happened..."
-                                                          style="font-size: 16px;"></textarea>
                                             </div>
 
-                                            <button class="btn" onclick="submitOfficeJobNotCompleted()"
-                                                    style="width: 100%; padding: 16px; font-size: 16px; background: #c62828; border-color: #c62828; color: white; margin-top: 16px;">
-                                                Mark as Pink Job
+                                            <!-- Additional work text area (shown when checkbox checked) -->
+                                            <div id="woAdditionalWorkArea" class="hidden" style="margin-bottom: 16px;">
+                                                <textarea id="woAdditionalWorkNotes" class="form-input" rows="3"
+                                                    placeholder="Describe the additional work found..."
+                                                    style="font-size: 15px; border-color: #4CAF50;"></textarea>
+                                            </div>
+
+                                            <!-- Photo Upload (optional completion photo) -->
+                                            <div class="form-group" style="margin-bottom: 16px;">
+                                                <label class="form-label">Completion Photo (Optional)</label>
+                                                <div id="woPhotoUploadArea" style="border: 2px dashed #4CAF50; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; background: white;"
+                                                     onclick="document.getElementById('woPhotoInput').click()">
+                                                    <p style="color: #2e7d32;">+ Add photo</p>
+                                                    <input type="file" id="woPhotoInput" accept="image/*" style="display: none;" onchange="handleOfficePhotoUpload(event, 'main')">
+                                                </div>
+                                                <div id="woPhotoPreview" class="hidden" style="margin-top: 12px;"></div>
+                                            </div>
+
+                                            <!-- Completion Notes -->
+                                            <div class="form-group" style="margin-bottom: 16px;">
+                                                <label class="form-label">Completion Notes</label>
+                                                <textarea id="woCompletionNotes" class="form-input" rows="3"
+                                                    placeholder="Describe work completed..."
+                                                    style="font-size: 15px;"></textarea>
+                                            </div>
+
+                                            <button class="btn btn-primary btn-lg" onclick="submitOfficeJobCompleted()"
+                                                style="width: 100%; padding: 16px; font-size: 16px; background: #4CAF50; border-color: #4CAF50;">
+                                                Submit - Mark Completed
                                             </button>
+                                        </div>
+
+                                        <!-- Job Not Complete Dropdown Panel -->
+                                        <div id="woNotCompletePanel" class="hidden" style="margin-top: 20px; padding: 20px; background: #fef2f2; border: 2px solid #dc3545; border-radius: 12px;">
+                                            <h3 style="font-size: 16px; font-weight: 700; color: #c62828; margin-bottom: 16px;">Pink Job - Select Reason</h3>
+                                            <p style="font-size: 13px; color: #6c757d; margin-bottom: 16px;">Select a reason and fill in required details before submitting.</p>
+
+                                            <input type="hidden" id="woNotCompletedReason" value="">
+
+                                            <!-- Pink reason buttons grid - populated by JS from PINK_REASONS -->
+                                            <div id="woPinkReasonGrid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;"></div>
+
+                                            <!-- Selected reason details (shown after selecting) -->
+                                            <div id="woPinkReasonDetails" class="hidden" style="margin-top: 20px;">
+                                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 12px; background: #ffebee; border-radius: 8px;">
+                                                    <span id="woPinkSelectedReason" style="font-weight: 600; color: #c62828;"></span>
+                                                    <button type="button" onclick="changePinkReason()" style="background: none; border: none; color: #1976d2; cursor: pointer; font-size: 14px;">Change</button>
+                                                </div>
+
+                                                <!-- Wrong Part section (conditional) -->
+                                                <div id="woWrongPartSection" class="hidden" style="margin-bottom: 16px; padding: 16px; background: #fff8e1; border-radius: 8px; border: 2px solid #ff9800;">
+                                                    <h4 style="font-size: 15px; font-weight: 700; color: #e65100; margin-bottom: 16px;">Measurements & Photo Required</h4>
+                                                    <div class="form-group">
+                                                        <label class="form-label" style="font-weight: 600;">Measurements of Correct Part <span style="color: #dc3545;">*</span></label>
+                                                        <textarea id="woWrongPartMeasurements" class="form-input" rows="3"
+                                                                  placeholder="Length, width, thickness, hole spacing, bolt size..."
+                                                                  style="font-size: 15px;"></textarea>
+                                                    </div>
+                                                    <div class="form-group" style="margin-top: 16px;">
+                                                        <label class="form-label" style="font-weight: 600;">Photo of a CORRECT Part</label>
+                                                        <div id="woWrongPartPhotoArea" style="border: 2px dashed #ff9800; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; background: white;"
+                                                             onclick="document.getElementById('woWrongPartPhotoInput').click()">
+                                                            <p style="font-weight: 600; color: #e65100;">+ Upload photo of working part</p>
+                                                            <input type="file" id="woWrongPartPhotoInput" accept="image/*" style="display: none;" onchange="handleOfficeWrongPartPhoto(event, 'correct')">
+                                                        </div>
+                                                        <div id="woWrongPartPhotoPreview" class="hidden" style="margin-top: 12px;"></div>
+                                                    </div>
+                                                    <div class="form-group" style="margin-top: 12px;">
+                                                        <div style="border: 1px dashed #dee2e6; border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; background: white;"
+                                                             onclick="document.getElementById('woWrongPartSentPhotoInput').click()">
+                                                            <span style="color: #6c757d; font-size: 14px;">+ Photo of wrong part sent (optional)</span>
+                                                            <input type="file" id="woWrongPartSentPhotoInput" accept="image/*" style="display: none;" onchange="handleOfficeWrongPartPhoto(event, 'wrong')">
+                                                        </div>
+                                                        <div id="woWrongPartSentPhotoPreview" style="margin-top: 8px;"></div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- More Work section (conditional) -->
+                                                <div id="woMoreWorkSection" class="hidden" style="margin-bottom: 16px; padding: 16px; background: #e3f2fd; border-radius: 8px; border: 2px solid #2196f3;">
+                                                    <h4 style="font-size: 15px; font-weight: 700; color: #1565c0; margin-bottom: 12px;">Photo of the Issue</h4>
+                                                    <div id="woMoreWorkPhotoArea" style="border: 2px dashed #2196f3; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; background: white;"
+                                                         onclick="document.getElementById('woMoreWorkPhotoInput').click()">
+                                                        <p style="font-weight: 600; color: #1565c0;">+ Upload photo of the damage/issue</p>
+                                                        <input type="file" id="woMoreWorkPhotoInput" accept="image/*" style="display: none;" onchange="handleOfficeMoreWorkPhoto(event)">
+                                                    </div>
+                                                    <div id="woMoreWorkPhotoPreview" class="hidden" style="margin-top: 12px;"></div>
+                                                </div>
+
+                                                <!-- Required notes -->
+                                                <div class="form-group" style="margin-bottom: 16px;">
+                                                    <label class="form-label" style="font-weight: 600;">
+                                                        Notes <span style="color: #dc3545;">*Required</span>
+                                                    </label>
+                                                    <textarea id="woNotCompletedDetails" class="form-input" rows="3"
+                                                        placeholder="Explain what happened - this is required..."
+                                                        style="font-size: 15px;"></textarea>
+                                                </div>
+
+                                                <button class="btn btn-lg" onclick="submitPinkJob()"
+                                                    style="width: 100%; padding: 16px; font-size: 16px; background: #c62828; border-color: #c62828; color: white;">
+                                                    Submit as Pink Job
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -2087,59 +2072,6 @@
 
                             <!-- Right Column -->
                             <div>
-                                <!-- Actions Card -->
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h2 class="card-title">Actions</h2>
-                                    </div>
-                                    <div class="card-body">
-                                        <button class="btn btn-outline" style="width: 100%; margin-bottom: 12px;">📄 Print Work Order</button>
-                                        <button class="btn btn-outline" style="width: 100%; margin-bottom: 12px;">📧 Email to Tech</button>
-                                        <button class="btn btn-secondary" style="width: 100%;">✅ Mark Complete</button>
-                                    </div>
-                                </div>
-
-                                <!-- Timeline Card -->
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h2 class="card-title">Timeline</h2>
-                                    </div>
-                                    <div class="card-body" style="font-size: 13px;">
-                                        <div style="border-left: 2px solid #e9ecef; padding-left: 16px; margin-left: 8px;">
-                                            <div style="margin-bottom: 16px; position: relative;">
-                                                <div style="position: absolute; left: -22px; top: 0; width: 12px; height: 12px; background: #4CAF50; border-radius: 50%;"></div>
-                                                <div style="font-weight: 600;">Estimate Created</div>
-                                                <div style="color: #6c757d;">Jan 15, 2026 • Lisa</div>
-                                            </div>
-                                            <div style="margin-bottom: 16px; position: relative;">
-                                                <div style="position: absolute; left: -22px; top: 0; width: 12px; height: 12px; background: #4CAF50; border-radius: 50%;"></div>
-                                                <div style="font-weight: 600;">Customer Accepted</div>
-                                                <div style="color: #6c757d;">Jan 18, 2026</div>
-                                            </div>
-                                            <div style="margin-bottom: 16px; position: relative;">
-                                                <div style="position: absolute; left: -22px; top: 0; width: 12px; height: 12px; background: #4CAF50; border-radius: 50%;"></div>
-                                                <div style="font-weight: 600;">Parts Ordered</div>
-                                                <div style="color: #6c757d;">Jan 19, 2026 • Charles</div>
-                                            </div>
-                                            <div style="margin-bottom: 16px; position: relative;">
-                                                <div style="position: absolute; left: -22px; top: 0; width: 12px; height: 12px; background: #4CAF50; border-radius: 50%;"></div>
-                                                <div style="font-weight: 600;">Parts Received</div>
-                                                <div style="color: #6c757d;">Jan 21, 2026 • Samantha</div>
-                                            </div>
-                                            <div style="margin-bottom: 16px; position: relative;">
-                                                <div style="position: absolute; left: -22px; top: 0; width: 12px; height: 12px; background: #2196F3; border-radius: 50%;"></div>
-                                                <div style="font-weight: 600;">Job Confirmed</div>
-                                                <div style="color: #6c757d;">Jan 23, 2026 • Savannah</div>
-                                            </div>
-                                            <div style="position: relative;">
-                                                <div style="position: absolute; left: -22px; top: 0; width: 12px; height: 12px; background: #e9ecef; border-radius: 50%; border: 2px solid #2196F3;"></div>
-                                                <div style="font-weight: 600; color: #2196F3;">Scheduled</div>
-                                                <div style="color: #6c757d;">Jan 22, 2026</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <!-- Related Docs Card -->
                                 <div class="card">
                                     <div class="card-header">

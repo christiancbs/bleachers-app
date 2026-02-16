@@ -30,6 +30,7 @@ async function viewWorkOrderDetail(workOrderId, fromView) {
         try {
             var jobData = await JobsAPI.get(workOrderId);
             var job = jobData.job || jobData;
+            window.currentApiJob = job;
             wo = {
                 jobNumber: job.jobNumber,
                 jobType: job.jobType || 'repair',
@@ -168,12 +169,14 @@ async function viewWorkOrderDetail(workOrderId, fromView) {
         // Reset the completion form
         resetOfficeCompletionForm();
 
+        // Use stored API job for relationship rendering
+        const apiJob = window.currentApiJob;
+
         // Render parent inspection card
         const parentCard = document.getElementById('woParentInspectionCard');
         if (parentCard) {
-            if (wo._fromApi && job && job.parentJob) {
-                const p = job.parentJob;
-                const pStatus = p.status || 'completed';
+            if (wo._fromApi && apiJob && apiJob.parentJob) {
+                const p = apiJob.parentJob;
                 const pDate = p.completedAt ? new Date(p.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
                 parentCard.innerHTML = `
                     <div style="padding: 14px 16px; background: #e3f2fd; border: 1px solid #90caf9; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
@@ -195,8 +198,8 @@ async function viewWorkOrderDetail(workOrderId, fromView) {
         // Render child work orders card
         const childCard = document.getElementById('woChildJobsCard');
         if (childCard) {
-            if (wo._fromApi && job && job.childJobs && job.childJobs.length > 0) {
-                const childRows = job.childJobs.map(c => {
+            if (wo._fromApi && apiJob && apiJob.childJobs && apiJob.childJobs.length > 0) {
+                const childRows = apiJob.childJobs.map(c => {
                     const cStatus = c.status || 'draft';
                     const statusColors = { draft: '#6c757d', scheduled: '#f57c00', in_progress: '#1976d2', completed: '#2e7d32' };
                     const color = statusColors[cStatus] || '#6c757d';
@@ -211,7 +214,7 @@ async function viewWorkOrderDetail(workOrderId, fromView) {
                 }).join('');
                 childCard.innerHTML = `
                     <div style="padding: 14px 16px; background: #fff8e1; border: 1px solid #ffe082; border-radius: 10px;">
-                        <div style="font-size: 11px; color: #f57f17; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px;">Child Work Orders (${job.childJobs.length})</div>
+                        <div style="font-size: 11px; color: #f57f17; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px;">Child Work Orders (${apiJob.childJobs.length})</div>
                         ${childRows}
                     </div>
                 `;
@@ -220,6 +223,16 @@ async function viewWorkOrderDetail(workOrderId, fromView) {
                 childCard.innerHTML = '';
                 childCard.classList.add('hidden');
             }
+        }
+
+        // Render additional API-backed sections
+        if (wo._fromApi && apiJob) {
+            renderWoAttachments(apiJob);
+            renderWoInspectionBanks(apiJob);
+            renderWoPartsTracking(apiJob);
+        } else {
+            var secIds = ['woAttachmentsSection', 'woInspectionBanksSection', 'woPartsTrackingSection'];
+            secIds.forEach(function(id) { var el = document.getElementById(id); if (el) el.classList.add('hidden'); });
         }
     }
 
@@ -507,8 +520,9 @@ function changeOfficeReason() {
 }
 
 function submitOfficeJobCompleted() {
-    // Office staff can close jobs without any conditions (full override permissions)
     const notes = document.getElementById('woCompletionNotes').value.trim();
+    const additionalWork = document.getElementById('woAdditionalWorkFound') && document.getElementById('woAdditionalWorkFound').checked;
+    const additionalNotes = document.getElementById('woAdditionalWorkNotes') ? document.getElementById('woAdditionalWorkNotes').value.trim() : '';
 
     // Update the completion summary display
     document.getElementById('woCompletedDisplay').textContent = 'Completed';
@@ -516,12 +530,13 @@ function submitOfficeJobCompleted() {
 
     const jobNumber = document.getElementById('woJobNumber').textContent;
     let confirmMsg = `${jobNumber} marked as COMPLETED!`;
+    if (additionalWork && additionalNotes) confirmMsg += `\n\nAdditional work found: ${additionalNotes}`;
     if (woMainPhoto) confirmMsg += '\nPhoto: ✓';
     if (notes) confirmMsg += `\nNotes: ${notes}`;
     confirmMsg += '\n\nJob saved.';
     alert(confirmMsg);
 
-    showPage('officeWorkOrders');
+    goBackFromWorkOrder();
 }
 
 function submitOfficeJobNotCompleted() {
@@ -557,7 +572,7 @@ function submitOfficeJobNotCompleted() {
     confirmMsg += '\n\nJob saved as Pink Job.';
     alert(confirmMsg);
 
-    showPage('officeWorkOrders');
+    goBackFromWorkOrder();
 }
 
 function resetOfficeCompletionForm() {
@@ -604,6 +619,235 @@ function resetOfficeCompletionForm() {
 
     // Reset notes
     document.getElementById('woNotCompletedDetails').value = '';
+
+    // Reset new completion panels
+    var el;
+    el = document.getElementById('woCompletePanel'); if (el) el.classList.add('hidden');
+    el = document.getElementById('woNotCompletePanel'); if (el) el.classList.add('hidden');
+    el = document.getElementById('woJobCompleteBtn'); if (el) el.classList.remove('active');
+    el = document.getElementById('woJobNotCompleteBtn'); if (el) el.classList.remove('active');
+    el = document.getElementById('woAdditionalWorkFound'); if (el) el.checked = false;
+    el = document.getElementById('woAdditionalWorkArea'); if (el) el.classList.add('hidden');
+    el = document.getElementById('woAdditionalWorkNotes'); if (el) el.value = '';
+    el = document.getElementById('woPinkReasonGrid'); if (el) el.innerHTML = '';
+    el = document.getElementById('woPinkReasonDetails'); if (el) el.classList.add('hidden');
+    el = document.getElementById('woPinkNotes'); if (el) el.value = '';
+}
+
+// ==========================================
+// ATTACHMENTS RENDERING
+// ==========================================
+
+function renderWoAttachments(job) {
+    var container = document.getElementById('woAttachmentsSection');
+    if (!container) return;
+
+    if (!job || !job.attachments || job.attachments.length === 0) {
+        container.classList.add('hidden');
+        return;
+    }
+
+    var imageUrls = job.attachments
+        .filter(function(a) { return a.contentType && a.contentType.startsWith('image/'); })
+        .map(function(a) { return a.blobUrl; });
+    window._jobImageUrls = imageUrls;
+
+    var thumbnails = job.attachments.map(function(a) {
+        if (a.contentType && a.contentType.startsWith('image/')) {
+            var idx = imageUrls.indexOf(a.blobUrl);
+            return '<div onclick="expandJobImage(' + idx + ')" style="width:100px;height:100px;border-radius:8px;overflow:hidden;border:1px solid #dee2e6;cursor:pointer;">' +
+                '<img src="' + a.blobUrl + '" style="width:100%;height:100%;object-fit:cover;" loading="lazy">' +
+            '</div>';
+        }
+        return '<div onclick="window.open(\'' + a.blobUrl + '\',\'_blank\')" style="width:100px;height:100px;border-radius:8px;overflow:hidden;border:1px solid #dee2e6;cursor:pointer;display:flex;align-items:center;justify-content:center;background:#f8f9fa;">' +
+            '<span style="font-size:32px;">📄</span>' +
+        '</div>';
+    }).join('');
+
+    container.innerHTML =
+        '<div class="card-header"><h2 class="card-title">Attachments (' + job.attachments.length + ')</h2></div>' +
+        '<div class="card-body"><div style="display:flex;gap:12px;flex-wrap:wrap;">' + thumbnails + '</div></div>';
+    container.classList.remove('hidden');
+}
+
+// ==========================================
+// INSPECTION BANKS RENDERING
+// ==========================================
+
+function renderWoInspectionBanks(job) {
+    var container = document.getElementById('woInspectionBanksSection');
+    if (!container) return;
+
+    if (!job || !job.inspectionBanks || job.inspectionBanks.length === 0) {
+        container.classList.add('hidden');
+        return;
+    }
+
+    var banksHtml = job.inspectionBanks.map(function(bank) {
+        var issues = bank.issues || [];
+        var issueCount = issues.length;
+        var issuesDetail = issues.map(function(issue) {
+            return '<div style="font-size:13px;padding:4px 0;border-bottom:1px solid #f0f0f0;">' +
+                (issue.location ? '<span style="color:#e65100;">' + issue.location + '</span> - ' : '') +
+                (issue.description || issue.issueType || 'Issue') +
+            '</div>';
+        }).join('');
+
+        return '<div style="border:1px solid #e9ecef;border-radius:8px;padding:16px;margin-bottom:12px;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:start;">' +
+                '<div>' +
+                    '<div style="font-weight:600;font-size:16px;">' + bank.bankName + '</div>' +
+                    '<div style="font-size:13px;color:#6c757d;margin-top:4px;">' +
+                        (bank.bleacherType || '') + (bank.status ? ' &bull; ' + bank.status : '') +
+                    '</div>' +
+                '</div>' +
+                '<div style="background:' + (issueCount > 0 ? '#fff3e0' : '#e8f5e9') + ';padding:6px 12px;border-radius:4px;">' +
+                    '<span style="font-weight:600;color:' + (issueCount > 0 ? '#e65100' : '#2e7d32') + ';">' + issueCount + '</span>' +
+                    '<span style="font-size:12px;color:#6c757d;"> issues</span>' +
+                '</div>' +
+            '</div>' +
+            (issueCount > 0 ? '<details style="margin-top:12px;"><summary style="cursor:pointer;font-size:13px;color:#0066cc;">View ' + issueCount + ' issue' + (issueCount !== 1 ? 's' : '') + '</summary><div style="padding:12px 0;">' + issuesDetail + '</div></details>' : '') +
+        '</div>';
+    }).join('');
+
+    container.innerHTML =
+        '<div class="card-header"><h2 class="card-title">Banks Inspected (' + job.inspectionBanks.length + ')</h2></div>' +
+        '<div class="card-body">' + banksHtml + '</div>';
+    container.classList.remove('hidden');
+}
+
+// ==========================================
+// PARTS TRACKING / PROCUREMENT / STOCK RENDERING
+// ==========================================
+
+function renderWoPartsTracking(job) {
+    var container = document.getElementById('woPartsTrackingSection');
+    if (!container) return;
+
+    var meta = job && job.metadata;
+    var hasPartsTracking = meta && meta.partsTracking && Object.keys(meta.partsTracking).length > 0;
+    var hasProcurement = meta && meta.procurementNotes && meta.procurementNotes.length > 0;
+    var hasStock = meta && meta.stockParts && meta.stockParts.length > 0;
+
+    if (!hasPartsTracking && !hasProcurement && !hasStock) {
+        container.classList.add('hidden');
+        return;
+    }
+
+    var html = '';
+    if (hasPartsTracking && typeof renderPartsTrackingFields === 'function') {
+        html += '<div style="margin-bottom:20px;border:1px solid #e9ecef;border-radius:8px;overflow:hidden;">' +
+            '<div style="background:#f8f9fa;padding:12px 16px;border-bottom:1px solid #e9ecef;display:flex;justify-content:space-between;align-items:center;">' +
+                '<label style="font-size:12px;color:#6c757d;text-transform:uppercase;margin:0;">Parts Tracking</label>' +
+                '<button class="btn btn-outline" onclick="editPartsTracking(' + job.id + ')" style="font-size:11px;padding:4px 8px;">Edit</button>' +
+            '</div>' +
+            '<div style="padding:16px;">' + renderPartsTrackingFields(meta.partsTracking) + '</div>' +
+        '</div>';
+    }
+    if (typeof renderProcurementNotesSection === 'function') {
+        html += renderProcurementNotesSection(meta);
+    }
+    if (typeof renderStockPartsSection === 'function') {
+        html += renderStockPartsSection(meta);
+    }
+
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+}
+
+// ==========================================
+// COMPLETION FLOW FUNCTIONS
+// ==========================================
+
+function toggleCompletionPanel(panel) {
+    var completePanel = document.getElementById('woCompletePanel');
+    var notCompletePanel = document.getElementById('woNotCompletePanel');
+    var completeBtn = document.getElementById('woJobCompleteBtn');
+    var notCompleteBtn = document.getElementById('woJobNotCompleteBtn');
+
+    if (panel === 'complete') {
+        var isOpen = !completePanel.classList.contains('hidden');
+        completePanel.classList.toggle('hidden');
+        notCompletePanel.classList.add('hidden');
+        completeBtn.classList.toggle('active', !isOpen);
+        notCompleteBtn.classList.remove('active');
+    } else {
+        var isOpen2 = !notCompletePanel.classList.contains('hidden');
+        notCompletePanel.classList.toggle('hidden');
+        completePanel.classList.add('hidden');
+        notCompleteBtn.classList.toggle('active', !isOpen2);
+        completeBtn.classList.remove('active');
+        if (!isOpen2) populatePinkReasons();
+    }
+}
+
+function toggleAdditionalWorkArea() {
+    var checkbox = document.getElementById('woAdditionalWorkFound');
+    var area = document.getElementById('woAdditionalWorkArea');
+    area.classList.toggle('hidden', !checkbox.checked);
+}
+
+function populatePinkReasons() {
+    var grid = document.getElementById('woPinkReasonGrid');
+    if (!grid || grid.children.length > 0) return;
+
+    grid.innerHTML = PINK_REASONS.map(function(reason) {
+        return '<button type="button" class="pink-reason-btn" onclick="selectPinkReason(\'' + reason.value + '\', this)" data-reason="' + reason.value + '">' +
+            '<span class="reason-icon">' + reason.icon + '</span>' +
+            '<span class="reason-label">' + reason.label + '</span>' +
+        '</button>';
+    }).join('');
+}
+
+function selectPinkReason(reasonValue, btn) {
+    document.querySelectorAll('.pink-reason-btn').forEach(function(b) { b.classList.remove('selected'); });
+    btn.classList.add('selected');
+
+    document.getElementById('woNotCompletedReason').value = reasonValue;
+
+    var reason = PINK_REASONS.find(function(r) { return r.value === reasonValue; });
+    document.getElementById('woPinkSelectedReason').textContent = reason ? reason.icon + ' ' + reason.label : reasonValue;
+
+    var wrongPartSection = document.getElementById('woWrongPartSection');
+    var moreWorkSection = document.getElementById('woMoreWorkSection');
+    if (wrongPartSection) wrongPartSection.classList.toggle('hidden', reasonValue !== 'Wrong Part');
+    if (moreWorkSection) moreWorkSection.classList.toggle('hidden', reasonValue !== 'Additional Work');
+
+    document.getElementById('woPinkReasonGrid').classList.add('hidden');
+    document.getElementById('woPinkReasonDetails').classList.remove('hidden');
+}
+
+function changePinkReason() {
+    document.getElementById('woPinkReasonGrid').classList.remove('hidden');
+    document.getElementById('woPinkReasonDetails').classList.add('hidden');
+    document.querySelectorAll('.pink-reason-btn').forEach(function(b) { b.classList.remove('selected'); });
+    document.getElementById('woNotCompletedReason').value = '';
+}
+
+function submitPinkJob() {
+    var reason = document.getElementById('woNotCompletedReason').value;
+    if (!reason) {
+        alert('Please select a reason.');
+        return;
+    }
+
+    var notes = document.getElementById('woNotCompletedDetails').value.trim();
+    if (!notes) {
+        alert('Notes are required for a Pink Job. Please describe what happened.');
+        document.getElementById('woNotCompletedDetails').focus();
+        return;
+    }
+
+    if (reason === 'Wrong Part') {
+        var measurements = document.getElementById('woWrongPartMeasurements');
+        if (measurements && !measurements.value.trim()) {
+            alert('Measurements are required for Wrong Part.');
+            measurements.focus();
+            return;
+        }
+    }
+
+    submitOfficeJobNotCompleted();
 }
 
 function populateOfficeWorkOrderCustomerDropdown() {
@@ -642,36 +886,6 @@ function updateOfficeWorkOrderLocation() {
 }
 
 function viewJobDetail(jobId) {
-    // Find the job and show its details
-    const job = jobs.find(j => j.id === jobId);
-    if (job) {
-        // Populate the customer dropdown first
-        populateOfficeWorkOrderCustomerDropdown();
-        resetAllEditSections();
-        resetOfficeCompletionForm();
-
-        // Header
-        document.getElementById('woJobNumber').textContent = 'Job #' + (job.jobNumber || job.estimateNumber);
-
-        // Job type badge
-        const jobTypeBadge = document.getElementById('woJobTypeBadge');
-        jobTypeBadge.textContent = job.jobType || 'Repair';
-        jobTypeBadge.className = 'badge badge-info';
-
-        // Status badge
-        const statusBadge = document.getElementById('woStatusBadge');
-        statusBadge.textContent = job.status || 'New';
-        const statusClass = job.status === 'Completed' ? 'badge-success' :
-                           job.status === 'Pink' ? 'badge-danger' :
-                           job.status === 'Parts Received' ? 'badge-success' : 'badge-info';
-        statusBadge.className = `badge ${statusClass}`;
-
-        // Populate display fields
-        document.getElementById('woLocationName').textContent = job.locationName || job.customerLocation || 'N/A';
-        document.getElementById('woLocationAddress').textContent = job.locationAddress || '';
-        document.getElementById('woDescription').textContent = job.description || 'N/A';
-
-        showView('workOrderDetail');
-    }
+    viewWorkOrderDetail(jobId, _woBackTarget || 'home');
 }
 
