@@ -561,11 +561,9 @@ async function browseCreateJob(jobType) {
             locationAddress: location.address || ''
         };
         localStorage.setItem('nextJobNumber', '' + (nextNum + 1));
-        window.currentBankIndex = 0;
-        window.currentJob.banks.push(createNewBank('East Side'));
 
-        // Show inspection form (showBankInspection handles its own view switching)
-        showBankInspection();
+        // Show job overview (empty — user adds forms from there)
+        showJobOverview('search');
     } else {
         // Navigate to create form with pre-filled customer/location
         var prefilledCustomer = {

@@ -111,7 +111,7 @@ function updateJobCustomerInfo() {
     }
 }
 
-// Create job and add first bank
+// Create job and show overview
 function createJobAndAddBank() {
     if (!currentJob.locationId) {
         alert('Please select a customer/location');
@@ -125,18 +125,15 @@ function createJobAndAddBank() {
     nextJobNumber++;
     localStorage.setItem('nextJobNumber', nextJobNumber);
 
-    // Add first bank
-    currentBankIndex = 0;
-    currentJob.banks.push(createNewBank('East Side'));
-
-    // Show bank inspection view
-    showBankInspection();
+    // Show job overview (empty — user adds forms from there)
+    showJobOverview();
 }
 
-// Create a new bank object
-function createNewBank(name) {
+// Create a new bank object with optional form type
+function createNewBank(name, formType) {
     return {
         name: name,
+        formType: formType || 'indoor_bleacher',
         bleacherType: '',
         tiers: '',
         seatType: '',
@@ -156,6 +153,208 @@ function createNewBank(name) {
         cosmeticIssues: '',
         tagAffixed: 'yes'
     };
+}
+
+// ==========================================
+// JOB OVERVIEW
+// "Folder" view — shows school header + form cards
+// ==========================================
+
+var _jobOverviewReturnView = null; // Where to go when exiting
+
+function showJobOverview(returnView) {
+    if (returnView) _jobOverviewReturnView = returnView;
+    hideAllViews();
+    document.getElementById('jobOverviewView').classList.remove('hidden');
+
+    if (!currentJob) return;
+
+    // Header
+    document.getElementById('overviewLocationName').textContent = currentJob.locationName || '';
+    document.getElementById('overviewCustomerName').textContent = currentJob.customerName || '';
+    document.getElementById('overviewAddress').textContent = currentJob.locationAddress || '';
+    document.getElementById('overviewJobBadge').textContent = 'Job ' + currentJob.jobNumber;
+    document.getElementById('overviewDateBadge').textContent = currentJob.inspectionDate || new Date().toISOString().split('T')[0];
+
+    var statusBadge = document.getElementById('overviewStatusBadge');
+    var st = currentJob.status || 'in_progress';
+    if (st === 'in_progress') {
+        statusBadge.textContent = 'In Progress';
+        statusBadge.style.background = '#fff3e0';
+        statusBadge.style.color = '#e65100';
+    } else if (st === 'submitted') {
+        statusBadge.textContent = 'Submitted';
+        statusBadge.style.background = '#c8e6c9';
+        statusBadge.style.color = '#2e7d32';
+    } else {
+        statusBadge.textContent = st.replace(/_/g, ' ');
+        statusBadge.style.background = '#f8f9fa';
+        statusBadge.style.color = '#495057';
+    }
+
+    // Show/hide review button based on banks
+    var actionsEl = document.getElementById('overviewActions');
+    actionsEl.style.display = currentJob.banks.length > 0 ? 'flex' : 'none';
+
+    renderOverviewCards();
+}
+
+function renderOverviewCards() {
+    var container = document.getElementById('overviewFormCards');
+    var banks = currentJob.banks || [];
+
+    if (banks.length === 0) {
+        container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #6c757d; background: #f8f9fa; border-radius: 12px; border: 2px dashed #dee2e6;">' +
+            '<div style="font-size: 40px; margin-bottom: 12px;">📋</div>' +
+            '<p style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">No inspection forms yet</p>' +
+            '<p style="font-size: 14px;">Tap <strong>+ Add Form</strong> to begin inspecting</p>' +
+        '</div>';
+        return;
+    }
+
+    var formTypeLabels = {
+        indoor_bleacher: 'Indoor Bleacher',
+        basketball: 'Basketball Goals',
+        outdoor: 'Outdoor Bleacher'
+    };
+    var formTypeColors = {
+        indoor_bleacher: { bg: '#e3f2fd', color: '#1565c0' },
+        basketball: { bg: '#fce4ec', color: '#c62828' },
+        outdoor: { bg: '#e8f5e9', color: '#2e7d32' }
+    };
+
+    container.innerHTML = banks.map(function(bank, idx) {
+        var ft = bank.formType || 'indoor_bleacher';
+        var ftLabel = formTypeLabels[ft] || ft;
+        var ftColor = formTypeColors[ft] || formTypeColors.indoor_bleacher;
+
+        var issueCount = (bank.topSideIssues || []).length + (bank.understructureIssues || []).length;
+        var hasData = bank.bleacherType || bank.tiers || bank.sections || issueCount > 0;
+
+        var statusLabel = hasData ? 'In Progress' : 'Not Started';
+        var statusBg = hasData ? '#fff3e0' : '#f8f9fa';
+        var statusColor = hasData ? '#e65100' : '#6c757d';
+
+        return '<div class="job-overview-card" onclick="openBankForm(' + idx + ')" style="cursor: pointer; border: 2px solid #e9ecef; border-radius: 12px; padding: 20px; background: white; transition: all 0.15s; position: relative;" onmouseover="this.style.borderColor=\'#007bff\'; this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.1)\'" onmouseout="this.style.borderColor=\'#e9ecef\'; this.style.boxShadow=\'none\'">' +
+            '<div style="display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; background: ' + statusBg + '; color: ' + statusColor + '; margin-bottom: 12px;">' + statusLabel + '</div>' +
+            '<div style="font-weight: 700; font-size: 18px; margin-bottom: 6px;">' + (bank.name || 'Form ' + (idx + 1)) + '</div>' +
+            '<div style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; background: ' + ftColor.bg + '; color: ' + ftColor.color + ';">' + ftLabel + '</div>' +
+            (bank.bleacherType ? '<div style="font-size: 13px; color: #6c757d; margin-top: 8px;">' + bank.bleacherType + (bank.tiers ? ' &bull; ' + bank.tiers + ' tiers' : '') + '</div>' : '') +
+            (issueCount > 0 ? '<div style="margin-top: 8px;"><span style="display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: #fff3e0; color: #e65100;">' + issueCount + ' issue' + (issueCount !== 1 ? 's' : '') + '</span></div>' : '') +
+            '<div style="position: absolute; top: 16px; right: 16px;"><button onclick="event.stopPropagation(); deleteFormFromJob(' + idx + ')" style="background: none; border: none; font-size: 16px; cursor: pointer; color: #dc3545; padding: 4px;" title="Remove">&times;</button></div>' +
+        '</div>';
+    }).join('');
+}
+
+function showAddFormSelector() {
+    document.getElementById('addFormSelector').classList.remove('hidden');
+}
+
+function hideAddFormSelector() {
+    document.getElementById('addFormSelector').classList.add('hidden');
+}
+
+function addFormToJob(formType) {
+    hideAddFormSelector();
+
+    var typeLabels = {
+        indoor_bleacher: 'Bleacher Bank',
+        basketball: 'Basketball Goals',
+        outdoor: 'Outdoor Bleacher'
+    };
+
+    // Suggest a name based on common naming
+    var bankNames = {
+        indoor_bleacher: ['East Side', 'West Side', 'Facing Logo', 'Behind Logo', 'North Side', 'South Side'],
+        basketball: ['Main Gym Goals', 'Aux Gym Goals', 'Practice Gym Goals'],
+        outdoor: ['Home Side', 'Visitor Side', 'North Bleachers', 'South Bleachers']
+    };
+
+    var names = bankNames[formType] || bankNames.indoor_bleacher;
+    var usedNames = currentJob.banks.map(function(b) { return b.name; });
+    var suggested = names.find(function(n) { return !usedNames.includes(n); }) || typeLabels[formType] + ' ' + (currentJob.banks.length + 1);
+
+    var name = prompt('Name this form:', suggested);
+    if (!name) return;
+
+    currentJob.banks.push(createNewBank(name, formType));
+
+    // Save to localStorage
+    var existingIndex = inspectionJobs.findIndex(function(j) { return j.jobNumber === currentJob.jobNumber; });
+    if (existingIndex >= 0) {
+        inspectionJobs[existingIndex] = currentJob;
+    } else {
+        inspectionJobs.push(currentJob);
+    }
+    localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
+
+    renderOverviewCards();
+
+    // Show review button now that we have banks
+    document.getElementById('overviewActions').style.display = 'flex';
+}
+
+function deleteFormFromJob(idx) {
+    if (!confirm('Remove "' + currentJob.banks[idx].name + '"?')) return;
+    currentJob.banks.splice(idx, 1);
+
+    // Save
+    var existingIndex = inspectionJobs.findIndex(function(j) { return j.jobNumber === currentJob.jobNumber; });
+    if (existingIndex >= 0) inspectionJobs[existingIndex] = currentJob;
+    localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
+
+    renderOverviewCards();
+    if (currentJob.banks.length === 0) {
+        document.getElementById('overviewActions').style.display = 'none';
+    }
+}
+
+function openBankForm(bankIndex) {
+    currentBankIndex = bankIndex;
+    showBankInspection();
+}
+
+function goBackToJobOverview() {
+    if (currentJob && currentJob.banks.length > 0 && currentBankIndex < currentJob.banks.length) {
+        saveBankData();
+    }
+    // Save in-progress job
+    if (currentJob) {
+        var existingIndex = inspectionJobs.findIndex(function(j) { return j.jobNumber === currentJob.jobNumber; });
+        if (existingIndex >= 0) {
+            inspectionJobs[existingIndex] = currentJob;
+        } else {
+            inspectionJobs.push(currentJob);
+        }
+        localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
+    }
+    showJobOverview();
+}
+
+function exitJobOverview() {
+    // Save job before leaving
+    if (currentJob) {
+        var existingIndex = inspectionJobs.findIndex(function(j) { return j.jobNumber === currentJob.jobNumber; });
+        if (existingIndex >= 0) {
+            inspectionJobs[existingIndex] = currentJob;
+        } else {
+            inspectionJobs.push(currentJob);
+        }
+        localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
+    }
+    currentJob = null;
+
+    if (_jobOverviewReturnView === 'myjobs') {
+        showTechView('myjobs');
+    } else if (_jobOverviewReturnView === 'search') {
+        showTechView('search');
+    } else if (_jobOverviewReturnView === 'office') {
+        document.getElementById('techDashboard').classList.add('hidden');
+        document.getElementById('officeDashboard').classList.remove('hidden');
+        showView('home');
+    } else {
+        showTechView('myjobs');
+    }
 }
 
 // ==========================================
@@ -686,7 +885,7 @@ function renderSummaryParts() {
 
 // Back to inspection from summary
 function backToInspection() {
-    showBankInspection();
+    showJobOverview();
 }
 
 // Submit job
@@ -879,8 +1078,7 @@ function loadInspectionJobs() {
 function resumeJob(jobNumber) {
     currentJob = inspectionJobs.find(j => j.jobNumber === jobNumber);
     if (currentJob) {
-        currentBankIndex = currentJob.banks.length - 1; // Go to last bank
-        showBankInspection();
+        showJobOverview('myjobs');
     }
 }
 
@@ -904,7 +1102,7 @@ function viewSubmittedJob(jobNumber) {
 
 // Hide all views helper
 function hideAllViews() {
-    const views = ['techInspectionsView', 'techCreateView', 'newJobSetupView', 'bankInspectionView', 'jobSummaryView', 'newInspectionView', 'fieldCreateView', 'techHomeView', 'techSearchView', 'techMyJobsView', 'techTeamScheduleView'];
+    const views = ['techInspectionsView', 'techCreateView', 'newJobSetupView', 'bankInspectionView', 'jobSummaryView', 'newInspectionView', 'fieldCreateView', 'techHomeView', 'techSearchView', 'techMyJobsView', 'techTeamScheduleView', 'jobOverviewView'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if (el) el.classList.add('hidden');

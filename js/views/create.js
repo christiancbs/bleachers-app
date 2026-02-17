@@ -237,15 +237,12 @@ function submitFieldCreate() {
         nextJobNumber++;
         localStorage.setItem('nextJobNumber', nextJobNumber);
 
-        currentBankIndex = 0;
-        currentJob.banks.push(createNewBank('East Side'));
-
         // Hide the create form and reset it before transitioning
         document.getElementById('fieldCreateView').classList.add('hidden');
         initFieldCreateForm();
 
-        // Switch to bank inspection form
-        showBankInspection();
+        // Show job overview (empty — user adds forms from there)
+        showJobOverview('myjobs');
 
     } else if (type === 'work_order' || type === 'service_call' || type === 'go_see' || type === 'field_check' || type === 'custom') {
         var desc = document.getElementById('fieldCreateDescription').value.trim();
@@ -519,17 +516,16 @@ function submitOfficeCreate() {
         nextJobNumber++;
         localStorage.setItem('nextJobNumber', nextJobNumber);
 
-        currentBankIndex = 0;
-        currentJob.banks.push(createNewBank('East Side'));
-
         // Hide the create form and reset it before transitioning
         document.getElementById('officeCreateView').classList.add('hidden');
         initOfficeCreateForm();
 
-        // For office, switch to tech dashboard to use bank inspection form
+        // For office, switch to tech dashboard to use inspection views
         document.getElementById('officeDashboard').classList.add('hidden');
         document.getElementById('techDashboard').classList.remove('hidden');
-        showBankInspection();
+
+        // Show job overview (empty — user adds forms from there)
+        showJobOverview('office');
 
     } else if (type === 'work_order' || type === 'service_call' || type === 'go_see' || type === 'field_check' || type === 'custom') {
         var desc = document.getElementById('officeCreateDescription').value.trim();

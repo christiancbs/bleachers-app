@@ -606,9 +606,8 @@ function submitCreate() {
         nextJobNumber++;
         localStorage.setItem('nextJobNumber', nextJobNumber);
 
-        currentBankIndex = 0;
-        currentJob.banks.push(createNewBank('East Side'));
-        showBankInspection();
+        // Show job overview (empty — user adds forms from there)
+        showJobOverview('myjobs');
 
     } else if (type === 'work_order' || type === 'service_call' || type === 'go_see' || type === 'field_check' || type === 'custom') {
         var desc = document.getElementById('createDescription').value.trim();

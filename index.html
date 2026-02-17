@@ -2872,7 +2872,7 @@
                             </div>
                             <div style="text-align: right;">
                                 <div style="font-size: 12px; opacity: 0.7;">Banks: <span id="bankCount">0</span></div>
-                                <button class="btn btn-outline" onclick="goBackToJobList()" style="color: white; border-color: rgba(255,255,255,0.3); margin-top: 4px; font-size: 12px; padding: 6px 12px;">Save & Exit</button>
+                                <button class="btn btn-outline" onclick="goBackToJobOverview()" style="color: white; border-color: rgba(255,255,255,0.3); margin-top: 4px; font-size: 12px; padding: 6px 12px;">Save & Back</button>
                             </div>
                         </div>
 
@@ -3160,6 +3160,67 @@
                             </div>
                             <div style="padding: 20px; border-top: 1px solid #e9ecef;">
                                 <button class="btn btn-primary btn-lg" onclick="saveIssue()" style="width: 100%;">Save Issue</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Job Overview View (folder for inspection forms) -->
+                    <div id="jobOverviewView" class="hidden">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                            <button class="btn btn-secondary" onclick="exitJobOverview()" style="padding: 8px 16px; font-size: 14px;">← Back</button>
+                        </div>
+
+                        <!-- Location/School header -->
+                        <div style="margin-bottom: 24px;">
+                            <div id="overviewCustomerName" style="font-size: 13px; color: #6c757d; margin-bottom: 4px;"></div>
+                            <h1 id="overviewLocationName" style="font-size: 24px; font-weight: 700; margin: 0;"></h1>
+                            <div id="overviewAddress" style="font-size: 14px; color: #6c757d; margin-top: 4px;"></div>
+                            <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+                                <span id="overviewJobBadge" class="badge" style="background: #e3f2fd; color: #1565c0; font-size: 13px; padding: 4px 12px;"></span>
+                                <span id="overviewDateBadge" class="badge" style="background: #f8f9fa; color: #495057; font-size: 13px; padding: 4px 12px;"></span>
+                                <span id="overviewStatusBadge" class="badge" style="font-size: 13px; padding: 4px 12px;"></span>
+                            </div>
+                        </div>
+
+                        <!-- Forms heading + add button -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h2 style="font-size: 18px; font-weight: 600; margin: 0;">Inspection Forms</h2>
+                            <button class="btn btn-primary" onclick="showAddFormSelector()" style="padding: 8px 20px;">+ Add Form</button>
+                        </div>
+
+                        <!-- Form cards container -->
+                        <div id="overviewFormCards" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
+                        </div>
+
+                        <!-- Actions -->
+                        <div id="overviewActions" style="margin-top: 32px; display: flex; gap: 12px;">
+                            <button class="btn btn-primary btn-lg" onclick="showJobSummary()" style="flex: 1; padding: 14px;">Review & Submit</button>
+                        </div>
+
+                        <!-- Add Form Type Selector (hidden by default) -->
+                        <div id="addFormSelector" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; align-items: center; justify-content: center;">
+                            <div style="background: white; border-radius: 16px; width: 90%; max-width: 400px; overflow: hidden;">
+                                <div style="padding: 20px; border-bottom: 1px solid #e9ecef;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <h3 style="margin: 0; font-size: 18px;">Add Inspection Form</h3>
+                                        <button onclick="hideAddFormSelector()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6c757d;">&times;</button>
+                                    </div>
+                                    <p style="margin: 8px 0 0; font-size: 13px; color: #6c757d;">Choose the type of inspection form to add</p>
+                                </div>
+                                <div style="padding: 12px;">
+                                    <div onclick="addFormToJob('indoor_bleacher')" style="padding: 16px; cursor: pointer; border-radius: 8px; margin-bottom: 8px; border: 2px solid #e9ecef; transition: all 0.15s;" onmouseover="this.style.borderColor='#007bff'; this.style.background='#f8f9fa'" onmouseout="this.style.borderColor='#e9ecef'; this.style.background='white'">
+                                        <div style="font-weight: 600; font-size: 16px;">Indoor Bleacher Bank</div>
+                                        <div style="font-size: 13px; color: #6c757d; margin-top: 4px;">Telescopic bleacher inspection — top side + understructure</div>
+                                    </div>
+                                    <div onclick="addFormToJob('basketball')" style="padding: 16px; cursor: pointer; border-radius: 8px; margin-bottom: 8px; border: 2px solid #e9ecef; transition: all 0.15s;" onmouseover="this.style.borderColor='#007bff'; this.style.background='#f8f9fa'" onmouseout="this.style.borderColor='#e9ecef'; this.style.background='white'">
+                                        <div style="font-weight: 600; font-size: 16px;">Basketball Goals</div>
+                                        <div style="font-size: 13px; color: #6c757d; margin-top: 4px;">Wall-mounted or ceiling-mounted basketball goal inspection</div>
+                                    </div>
+                                    <div onclick="addFormToJob('outdoor')" style="padding: 16px; cursor: pointer; border-radius: 8px; border: 2px solid #e9ecef; transition: all 0.15s;" onmouseover="this.style.borderColor='#007bff'; this.style.background='#f8f9fa'" onmouseout="this.style.borderColor='#e9ecef'; this.style.background='white'">
+                                        <div style="font-weight: 600; font-size: 16px;">Outdoor Bleacher</div>
+                                        <div style="font-size: 13px; color: #6c757d; margin-top: 4px;">Aluminum outdoor bleacher inspection</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
