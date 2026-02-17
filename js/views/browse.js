@@ -564,12 +564,8 @@ async function browseCreateJob(jobType) {
         window.currentBankIndex = 0;
         window.currentJob.banks.push(createNewBank('East Side'));
 
-        // Show inspection form
-        if (browseContext === 'field') {
-            showTechView('inspectionForm');
-        } else {
-            showBankInspection();
-        }
+        // Show inspection form (showBankInspection handles its own view switching)
+        showBankInspection();
     } else {
         // Navigate to create form with pre-filled customer/location
         var prefilledCustomer = {
