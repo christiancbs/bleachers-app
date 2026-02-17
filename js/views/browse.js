@@ -93,7 +93,7 @@ async function loadBrowseDistricts() {
     var listEl = document.getElementById('browseDistrictsList' + suffix);
     var countEl = document.getElementById('browseCount' + suffix);
 
-    listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Loading districts...</div>';
+    listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Loading customers...</div>';
 
     try {
         // Use cached CUSTOMERS global if already loaded, otherwise fetch
@@ -111,8 +111,8 @@ async function loadBrowseDistricts() {
 
         renderDistrictList(browseCustomersCache);
     } catch (err) {
-        console.error('Failed to load districts:', err);
-        listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: #dc3545;">Failed to load districts. Please try again.</div>';
+        console.error('Failed to load customers:', err);
+        listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: #dc3545;">Failed to load customers. Please try again.</div>';
     }
 }
 
@@ -121,10 +121,10 @@ function renderDistrictList(customers) {
     var listEl = document.getElementById('browseDistrictsList' + suffix);
     var countEl = document.getElementById('browseCount' + suffix);
 
-    if (countEl) countEl.textContent = customers.length + ' district' + (customers.length !== 1 ? 's' : '');
+    if (countEl) countEl.textContent = customers.length + ' customer' + (customers.length !== 1 ? 's' : '');
 
     if (customers.length === 0) {
-        listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">No districts found.</div>';
+        listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">No customers found.</div>';
         return;
     }
 
@@ -232,7 +232,7 @@ async function browseDrillDistrict(customerId, isBack) {
     schoolCountEl.textContent = locations.length + ' location' + (locations.length !== 1 ? 's' : '');
 
     if (locations.length === 0) {
-        schoolListEl.innerHTML = '<div style="padding: 20px; text-align: center; color: #6c757d;">No locations found for this district.</div>';
+        schoolListEl.innerHTML = '<div style="padding: 20px; text-align: center; color: #6c757d;">No locations found for this customer.</div>';
         return;
     }
 
