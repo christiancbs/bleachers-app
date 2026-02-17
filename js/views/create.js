@@ -240,6 +240,10 @@ function submitFieldCreate() {
         currentBankIndex = 0;
         currentJob.banks.push(createNewBank('East Side'));
 
+        // Hide the create form and reset it before transitioning
+        document.getElementById('fieldCreateView').classList.add('hidden');
+        initFieldCreateForm();
+
         // Switch to bank inspection form
         showBankInspection();
 
@@ -517,6 +521,10 @@ function submitOfficeCreate() {
 
         currentBankIndex = 0;
         currentJob.banks.push(createNewBank('East Side'));
+
+        // Hide the create form and reset it before transitioning
+        document.getElementById('officeCreateView').classList.add('hidden');
+        initOfficeCreateForm();
 
         // For office, switch to tech dashboard to use bank inspection form
         document.getElementById('officeDashboard').classList.add('hidden');

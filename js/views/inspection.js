@@ -904,7 +904,7 @@ function viewSubmittedJob(jobNumber) {
 
 // Hide all views helper
 function hideAllViews() {
-    const views = ['techInspectionsView', 'techCreateView', 'newJobSetupView', 'bankInspectionView', 'jobSummaryView', 'newInspectionView'];
+    const views = ['techInspectionsView', 'techCreateView', 'newJobSetupView', 'bankInspectionView', 'jobSummaryView', 'newInspectionView', 'fieldCreateView', 'techHomeView', 'techSearchView', 'techMyJobsView', 'techTeamScheduleView'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if (el) el.classList.add('hidden');
