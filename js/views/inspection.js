@@ -372,53 +372,12 @@ function showBankInspection() {
     document.getElementById('bankCustomerName').textContent = currentJob.locationName;
     document.getElementById('bankCount').textContent = currentJob.banks.length;
 
-    // Render bank tabs
-    renderBankTabs();
-
     // Load current bank data
     loadBankData();
 
     // Render checklists
     renderChecklist('topSideChecklist', CHECKLISTS.bleacherTopSide);
     renderChecklist('understructureChecklist', CHECKLISTS.bleacherUnderstructure);
-}
-
-// Render bank tabs
-function renderBankTabs() {
-    const container = document.getElementById('bankTabs');
-    container.innerHTML = currentJob.banks.map((bank, i) => `
-        <button class="btn ${i === currentBankIndex ? 'btn-primary' : 'btn-outline'}"
-                onclick="switchToBank(${i})"
-                style="font-size: 13px; padding: 8px 16px;">
-            ${bank.name}
-        </button>
-    `).join('') + `
-        <button class="btn btn-outline" onclick="addNewBank()" style="font-size: 13px; padding: 8px 16px; border-style: dashed;">
-            + Add Bank
-        </button>
-    `;
-}
-
-// Switch to a different bank
-function switchToBank(index) {
-    saveBankData(); // Save current first
-    currentBankIndex = index;
-    loadBankData();
-    renderBankTabs();
-}
-
-// Add new bank
-function addNewBank() {
-    saveBankData();
-    const bankNames = ['East Side', 'West Side', 'Facing Logo', 'Behind Logo', 'North Side', 'South Side'];
-    const usedNames = currentJob.banks.map(b => b.name);
-    const nextName = bankNames.find(n => !usedNames.includes(n)) || `Bank ${currentJob.banks.length + 1}`;
-
-    currentJob.banks.push(createNewBank(nextName));
-    currentBankIndex = currentJob.banks.length - 1;
-    loadBankData();
-    renderBankTabs();
-    document.getElementById('bankCount').textContent = currentJob.banks.length;
 }
 
 // ==========================================
@@ -502,7 +461,6 @@ function updateBankName() {
     nameEl.style.display = 'inline';
     editBtn.style.display = 'inline';
 
-    renderBankTabs();
 }
 
 // Toggle section visibility
@@ -716,10 +674,10 @@ function deleteUnderstructureIssue(index) {
     renderUnderstructureIssues();
 }
 
-// Save bank and add another
+// Save bank and go back to overview
 function saveBankAndAddAnother() {
     saveBankData();
-    addNewBank();
+    goBackToJobOverview();
 }
 
 // Save bank and finish job
