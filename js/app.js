@@ -268,6 +268,7 @@ function showView(view) {
     } else if (view === 'parts') {
         document.getElementById('partsView').classList.remove('hidden');
         setActiveNav('parts');
+        initOfficePartsCatalog();
     } else if (view === 'opsReview') {
         document.getElementById('opsReviewView').classList.remove('hidden');
         setActiveNav('opsReview');
@@ -372,6 +373,7 @@ function showTechView(view) {
     } else if (view === 'parts') {
         document.getElementById('techPartsView').classList.remove('hidden');
         setActiveNav('parts');
+        initTechPartsCatalog();
     } else if (view === 'resources') {
         document.getElementById('techResourcesView').classList.remove('hidden');
         setActiveNav('resources');

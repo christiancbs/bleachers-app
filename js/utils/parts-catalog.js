@@ -191,48 +191,144 @@ function sortPartsArray(parts, sortKey) {
     return sorted;
 }
 
-// Tech/Field parts catalog search (read-only, no selection)
+// ─── Pagination state ─────────────────────────────────────────
+const PARTS_PAGE_SIZE = 50;
+let _techPage = 0;
+let _techTotal = 0;
+let _techIsSearch = false;
+let _officePage = 0;
+let _officeTotal = 0;
+let _officeIsSearch = false;
+
+function renderPagination(prefix, currentPage, total, onPageFn) {
+    const totalPages = Math.ceil(total / PARTS_PAGE_SIZE);
+    if (totalPages <= 1) return '';
+
+    const start = currentPage * PARTS_PAGE_SIZE + 1;
+    const end = Math.min((currentPage + 1) * PARTS_PAGE_SIZE, total);
+
+    let pageButtons = '';
+    // Show up to 5 page buttons centered on current page
+    let startPage = Math.max(0, currentPage - 2);
+    let endPage = Math.min(totalPages - 1, startPage + 4);
+    if (endPage - startPage < 4) startPage = Math.max(0, endPage - 4);
+
+    for (let i = startPage; i <= endPage; i++) {
+        const active = i === currentPage;
+        pageButtons += `<button onclick="${onPageFn}(${i})" style="
+            padding: 6px 12px; border: 1px solid ${active ? '#2d3748' : '#dee2e6'}; border-radius: 6px;
+            background: ${active ? '#2d3748' : '#fff'}; color: ${active ? '#fff' : '#495057'};
+            cursor: pointer; font-size: 13px; font-weight: ${active ? '600' : '400'};
+        ">${i + 1}</button>`;
+    }
+
+    return `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-top: 1px solid #eee; margin-top: 8px;">
+            <span style="font-size: 12px; color: #6c757d;">${start}–${end} of ${total.toLocaleString()} parts</span>
+            <div style="display: flex; gap: 4px; align-items: center;">
+                <button onclick="${onPageFn}(${currentPage - 1})" ${currentPage === 0 ? 'disabled' : ''} style="
+                    padding: 6px 10px; border: 1px solid #dee2e6; border-radius: 6px; background: #fff;
+                    cursor: ${currentPage === 0 ? 'default' : 'pointer'}; opacity: ${currentPage === 0 ? '0.4' : '1'}; font-size: 13px;
+                ">Prev</button>
+                ${pageButtons}
+                <button onclick="${onPageFn}(${currentPage + 1})" ${currentPage >= totalPages - 1 ? 'disabled' : ''} style="
+                    padding: 6px 10px; border: 1px solid #dee2e6; border-radius: 6px; background: #fff;
+                    cursor: ${currentPage >= totalPages - 1 ? 'default' : 'pointer'}; opacity: ${currentPage >= totalPages - 1 ? '0.4' : '1'}; font-size: 13px;
+                ">Next</button>
+            </div>
+        </div>
+    `;
+}
+
+// ─── Tech/Field parts catalog ─────────────────────────────────
+
+// Auto-load parts with photos when view opens
+async function initTechPartsCatalog() {
+    _techPage = 0;
+    _techIsSearch = false;
+    document.getElementById('techPartSearchInput').value = '';
+    if (document.getElementById('techPartVendorFilter')) document.getElementById('techPartVendorFilter').value = '';
+    await loadTechPartsPage(0);
+}
+
+async function loadTechPartsPage(page) {
+    _techPage = page;
+    const results = document.getElementById('techPartSearchResults');
+    const searchTerm = document.getElementById('techPartSearchInput').value.trim();
+    const vendor = document.getElementById('techPartVendorFilter')?.value || '';
+    const isSearch = !!(searchTerm || vendor);
+
+    results.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Loading parts...</div>';
+
+    try {
+        const offset = page * PARTS_PAGE_SIZE;
+        const data = await PartsAPI.search(
+            searchTerm || null, null, vendor || null,
+            PARTS_PAGE_SIZE, offset, !isSearch // has_image=true only for browse mode
+        );
+        _lastTechParts = data.parts;
+        _techTotal = data.total || data.parts.length;
+        _techIsSearch = isSearch;
+
+        renderTechParts(_lastTechParts, results, page, _techTotal, isSearch);
+    } catch (err) {
+        results.innerHTML = `<div style="text-align: center; padding: 20px; color: #dc3545;">Failed to load parts: ${err.message}</div>`;
+    }
+}
+
+function goToTechPage(page) {
+    const totalPages = Math.ceil(_techTotal / PARTS_PAGE_SIZE);
+    if (page < 0 || page >= totalPages) return;
+    loadTechPartsPage(page);
+    // Scroll results into view
+    document.getElementById('techPartSearchResults')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 async function searchTechParts() {
     const searchTerm = document.getElementById('techPartSearchInput').value.trim();
     const vendor = document.getElementById('techPartVendorFilter')?.value || '';
-    const results = document.getElementById('techPartSearchResults');
 
     if (!searchTerm && !vendor) {
-        results.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">Enter a part name, number, or description to search</div>';
+        // Reset to browse mode (parts with photos)
+        _techPage = 0;
+        _techIsSearch = false;
+        await loadTechPartsPage(0);
         return;
     }
 
     if (searchTerm && searchTerm.length < 2) {
-        results.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">Enter at least 2 characters</div>';
+        document.getElementById('techPartSearchResults').innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">Enter at least 2 characters</div>';
         return;
     }
 
-    results.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Searching parts catalog...</div>';
-
-    try {
-        const data = await PartsAPI.search(searchTerm || null, null, vendor || null, 100);
-        _lastTechParts = data.parts;
-        const sortKey = document.getElementById('techPartSortSelect')?.value || 'name_asc';
-        renderTechParts(sortPartsArray(_lastTechParts, sortKey), results);
-    } catch (err) {
-        results.innerHTML = `<div style="text-align: center; padding: 20px; color: #dc3545;">Search failed: ${err.message}</div>`;
-    }
+    _techPage = 0;
+    _techIsSearch = true;
+    await loadTechPartsPage(0);
 }
 
 function sortTechParts() {
     if (!_lastTechParts.length) return;
     const sortKey = document.getElementById('techPartSortSelect')?.value || 'name_asc';
     const results = document.getElementById('techPartSearchResults');
-    renderTechParts(sortPartsArray(_lastTechParts, sortKey), results);
+    renderTechParts(sortPartsArray(_lastTechParts, sortKey), results, _techPage, _techTotal, _techIsSearch);
 }
 
-function renderTechParts(parts, container) {
+function renderTechParts(parts, container, currentPage, total, isSearch) {
+    // Support old call signature (parts, container) for backward compat
+    if (currentPage === undefined) { currentPage = 0; total = parts.length; isSearch = true; }
+
     if (parts.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">No parts found matching your search</div>';
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">No parts found</div>';
         return;
     }
+
+    const label = isSearch
+        ? `Found ${total.toLocaleString()} parts`
+        : `Browsing ${total.toLocaleString()} parts with photos`;
+
     container.innerHTML = `
-        <p style="font-size: 12px; color: #6c757d; margin: 12px 0;">Found ${parts.length} parts</p>
+        <p style="font-size: 12px; color: #6c757d; margin: 12px 0;">${label}</p>
+        ${renderPagination('tech', currentPage, total, 'goToTechPage')}
         ${parts.map(part => {
             const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'");
             const safeProductName = (part.productName || '').replace(/'/g, "\\'");
@@ -259,51 +355,98 @@ function renderTechParts(parts, container) {
                 </div>
             `;
         }).join('')}
+        ${renderPagination('tech', currentPage, total, 'goToTechPage')}
     `;
 }
 
-// Office parts catalog search (read-only directory)
+// ─── Office parts catalog ─────────────────────────────────────
+
+// Auto-load parts with photos when view opens
+async function initOfficePartsCatalog() {
+    _officePage = 0;
+    _officeIsSearch = false;
+    document.getElementById('officePartSearchInput').value = '';
+    if (document.getElementById('officePartVendorFilter')) document.getElementById('officePartVendorFilter').value = '';
+    await loadOfficePartsPage(0);
+}
+
+async function loadOfficePartsPage(page) {
+    _officePage = page;
+    const results = document.getElementById('officePartSearchResults');
+    const searchTerm = document.getElementById('officePartSearchInput').value.trim();
+    const vendor = document.getElementById('officePartVendorFilter')?.value || '';
+    const isSearch = !!(searchTerm || vendor);
+
+    results.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Loading parts...</div>';
+
+    try {
+        const offset = page * PARTS_PAGE_SIZE;
+        const data = await PartsAPI.search(
+            searchTerm || null, null, vendor || null,
+            PARTS_PAGE_SIZE, offset, !isSearch // has_image=true only for browse mode
+        );
+        _lastOfficeParts = data.parts;
+        _officeTotal = data.total || data.parts.length;
+        _officeIsSearch = isSearch;
+
+        renderOfficeParts(_lastOfficeParts, results, page, _officeTotal, isSearch);
+    } catch (err) {
+        results.innerHTML = `<div style="text-align: center; padding: 20px; color: #dc3545;">Failed to load parts: ${err.message}</div>`;
+    }
+}
+
+function goToOfficePage(page) {
+    const totalPages = Math.ceil(_officeTotal / PARTS_PAGE_SIZE);
+    if (page < 0 || page >= totalPages) return;
+    loadOfficePartsPage(page);
+    document.getElementById('officePartSearchResults')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 async function searchOfficeParts() {
     const searchTerm = document.getElementById('officePartSearchInput').value.trim();
     const vendor = document.getElementById('officePartVendorFilter')?.value || '';
-    const results = document.getElementById('officePartSearchResults');
 
     if (!searchTerm && !vendor) {
-        results.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Enter a part name, number, or description to search the catalog</div>';
+        // Reset to browse mode (parts with photos)
+        _officePage = 0;
+        _officeIsSearch = false;
+        await loadOfficePartsPage(0);
         return;
     }
 
     if (searchTerm && searchTerm.length < 2) {
-        results.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">Enter at least 2 characters</div>';
+        document.getElementById('officePartSearchResults').innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">Enter at least 2 characters</div>';
         return;
     }
 
-    results.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Searching parts catalog...</div>';
-
-    try {
-        const data = await PartsAPI.search(searchTerm || null, null, vendor || null, 100);
-        _lastOfficeParts = data.parts;
-        const sortKey = document.getElementById('officePartSortSelect')?.value || 'name_asc';
-        renderOfficeParts(sortPartsArray(_lastOfficeParts, sortKey), results);
-    } catch (err) {
-        results.innerHTML = `<div style="text-align: center; padding: 20px; color: #dc3545;">Search failed: ${err.message}</div>`;
-    }
+    _officePage = 0;
+    _officeIsSearch = true;
+    await loadOfficePartsPage(0);
 }
 
 function sortOfficeParts() {
     if (!_lastOfficeParts.length) return;
     const sortKey = document.getElementById('officePartSortSelect')?.value || 'name_asc';
     const results = document.getElementById('officePartSearchResults');
-    renderOfficeParts(sortPartsArray(_lastOfficeParts, sortKey), results);
+    renderOfficeParts(sortPartsArray(_lastOfficeParts, sortKey), results, _officePage, _officeTotal, _officeIsSearch);
 }
 
-function renderOfficeParts(parts, container) {
+function renderOfficeParts(parts, container, currentPage, total, isSearch) {
+    // Support old call signature (parts, container) for backward compat
+    if (currentPage === undefined) { currentPage = 0; total = parts.length; isSearch = true; }
+
     if (parts.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">No parts found matching your search</div>';
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">No parts found</div>';
         return;
     }
+
+    const label = isSearch
+        ? `Found ${total.toLocaleString()} parts`
+        : `Browsing ${total.toLocaleString()} parts with photos`;
+
     container.innerHTML = `
-        <p style="font-size: 12px; color: #6c757d; margin: 12px 0;">Found ${parts.length} parts</p>
+        <p style="font-size: 12px; color: #6c757d; margin: 12px 0;">${label}</p>
+        ${renderPagination('office', currentPage, total, 'goToOfficePage')}
         ${parts.map(part => {
             const price = parseFloat(part.price) || 0;
             const priceDisplay = part.priceNote || (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
@@ -334,6 +477,7 @@ function renderOfficeParts(parts, container) {
                 </div>
             `;
         }).join('')}
+        ${renderPagination('office', currentPage, total, 'goToOfficePage')}
     `;
 }
 

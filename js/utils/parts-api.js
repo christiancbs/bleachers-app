@@ -19,12 +19,14 @@ const PartsAPI = {
     },
 
     // Search parts catalog
-    async search(query, category, vendor, limit = 50) {
+    async search(query, category, vendor, limit = 50, offset = 0, hasImage = false) {
         const params = new URLSearchParams();
         if (query) params.set('q', query);
         if (category) params.set('category', category);
         if (vendor) params.set('vendor', vendor);
+        if (hasImage) params.set('has_image', 'true');
         params.set('limit', limit);
+        if (offset) params.set('offset', offset);
 
         const response = await fetch(`${PARTS_API_BASE}/search?${params}`, {
             headers: await this.getHeaders()
