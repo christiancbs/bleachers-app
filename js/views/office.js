@@ -227,11 +227,12 @@ async function viewWorkOrderDetail(workOrderId, fromView) {
 
         // Render additional API-backed sections
         if (wo._fromApi && apiJob) {
+            renderWoRelatedEstimate(apiJob);
             renderWoAttachments(apiJob);
             renderWoInspectionBanks(apiJob);
             renderWoPartsTracking(apiJob);
         } else {
-            var secIds = ['woAttachmentsSection', 'woInspectionBanksSection', 'woPartsTrackingSection'];
+            var secIds = ['woRelatedEstimateCard', 'woAttachmentsSection', 'woInspectionBanksSection', 'woPartsTrackingSection'];
             secIds.forEach(function(id) { var el = document.getElementById(id); if (el) el.classList.add('hidden'); });
         }
     }
@@ -628,6 +629,45 @@ function resetOfficeCompletionForm() {
     el = document.getElementById('woPinkReasonGrid'); if (el) el.innerHTML = '';
     el = document.getElementById('woPinkReasonDetails'); if (el) el.classList.add('hidden');
     el = document.getElementById('woPinkNotes'); if (el) el.value = '';
+}
+
+// ==========================================
+// RELATED ESTIMATE RENDERING
+// ==========================================
+
+function renderWoRelatedEstimate(job) {
+    var container = document.getElementById('woRelatedEstimateCard');
+    if (!container) return;
+
+    if (!job || !job.qbEstimateId) {
+        container.innerHTML = '';
+        container.classList.add('hidden');
+        return;
+    }
+
+    var docNumber = job.qbEstimateId;
+    var total = job.qbEstimateTotal ? ' — $' + parseFloat(job.qbEstimateTotal).toLocaleString() : '';
+    var statusBg = '#e3f2fd';
+    var statusColor = '#1565c0';
+
+    container.innerHTML =
+        '<div class="card">' +
+            '<div class="card-header">' +
+                '<h2 class="card-title">Related Estimate</h2>' +
+            '</div>' +
+            '<div class="card-body" style="padding: 0;">' +
+                '<div style="cursor: pointer; border-bottom: 1px solid #e9ecef; padding: 16px;" onclick="navigateToEstimate(\'' + docNumber + '\')">' +
+                    '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+                        '<div>' +
+                            '<strong style="color: #007bff;">Estimate ' + docNumber + '</strong>' +
+                            (total ? '<span style="margin-left: 8px; color: #6c757d;">' + total + '</span>' : '') +
+                        '</div>' +
+                        '<div style="font-size: 13px; color: #007bff;">View →</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    container.classList.remove('hidden');
 }
 
 // ==========================================
