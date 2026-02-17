@@ -134,7 +134,7 @@ async function searchParts() {
                     const safeProductName = (part.productName || '').replace(/'/g, "\\'");
                     const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'");
                     const imageHtml = part.imageUrl
-                        ? `<img src="${part.imageUrl}" onclick="event.stopPropagation(); showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${price}', '${safeVendor}')" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px; cursor: pointer;" title="Tap image to enlarge">`
+                        ? `<img src="${part.imageUrl}" onclick="event.stopPropagation(); showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${price}', '${safeVendor}')" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px; cursor: pointer; background: #fff;" title="Tap image to enlarge">`
                         : '';
                     return `
                         <div class="part-result" onclick="selectPart('${part.id}')" style="display: flex; align-items: flex-start;">
@@ -335,7 +335,7 @@ function renderTechParts(parts, container, currentPage, total, isSearch) {
             const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'");
             const clickHandler = part.imageUrl ? `onclick="showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${safeVendor}')"` : '';
             const imageHtml = part.imageUrl
-                ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px;">`
+                ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px; background: #fff;">`
                 : '';
             return `
                 <div class="part-result" ${clickHandler} style="cursor: ${part.imageUrl ? 'pointer' : 'default'}; display: flex; align-items: flex-start;">
@@ -455,7 +455,7 @@ function renderOfficeParts(parts, container, currentPage, total, isSearch) {
             const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'");
             const clickHandler = part.imageUrl ? `onclick="showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${price}', '${safeVendor}')"` : '';
             const imageHtml = part.imageUrl
-                ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px;">`
+                ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px; background: #fff;">`
                 : '';
             return `
                 <div class="part-result" ${clickHandler} style="cursor: ${part.imageUrl ? 'pointer' : 'default'}; display: flex; align-items: flex-start;">

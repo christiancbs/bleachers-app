@@ -402,7 +402,7 @@ function showPartImage(imageUrl, partNumber, productName, price, vendor) {
     var hasImage = imageUrl && imageUrl !== 'undefined' && imageUrl !== 'null';
 
     overlay.innerHTML =
-        (hasImage ? '<img src="' + imageUrl + '" style="max-width: 90vw; max-height: 65vh; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);">' : '<div style="font-size: 100px;">📦</div>') +
+        (hasImage ? '<img src="' + imageUrl + '" style="max-width: 90vw; max-height: 65vh; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); background: #fff;">' : '<div style="font-size: 100px;">📦</div>') +
         '<div style="background: rgba(255,255,255,0.95); padding: 12px 32px; border-radius: 50px; margin-top: 20px; display: flex; align-items: center; gap: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">' +
             '<span style="color: #0066cc; font-family: monospace; font-size: 15px; font-weight: 700;">' + (partNumber || '—') + '</span>' +
             '<span style="color: #333; font-size: 14px; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' + (productName || '') + '</span>' +
@@ -417,7 +417,7 @@ function renderAdminPartsTable(parts) {
     var tbody = document.getElementById('dmPartsTableBody');
     var html = '';
     parts.slice(0, 100).forEach(function(p) {
-        var imgHtml = p.imageUrl ? '<img src="' + p.imageUrl + '" onclick="event.stopPropagation(); showPartImage(\'' + p.imageUrl + '\', \'' + (p.partNumber || '').replace(/'/g, "\\'") + '\')" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px; margin-right: 8px; vertical-align: middle; cursor: pointer;" title="Click to enlarge">' : '';
+        var imgHtml = p.imageUrl ? '<img src="' + p.imageUrl + '" onclick="event.stopPropagation(); showPartImage(\'' + p.imageUrl + '\', \'' + (p.partNumber || '').replace(/'/g, "\\'") + '\')" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px; margin-right: 8px; vertical-align: middle; cursor: pointer; background: #fff;" title="Click to enlarge">' : '';
         html += '<tr style="border-bottom: 1px solid #f0f2f5;">' +
             '<td style="padding: 10px 12px; font-family: monospace; font-size: 12px;">' + (p.partNumber || '—') + '</td>' +
             '<td style="padding: 10px 12px; font-weight: 500;">' + imgHtml + (p.productName || '') + '</td>' +
