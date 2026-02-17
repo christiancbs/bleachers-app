@@ -393,22 +393,31 @@ async function filterAdminParts() {
 }
 
 function showPartImage(imageUrl, partNumber, productName, price, vendor) {
+    // Tech catalog passes (url, partNum, name, vendor) — detect by checking if price looks like a vendor name
+    if (price && isNaN(parseFloat(price)) && !vendor) {
+        vendor = price;
+        price = null;
+    }
+
     var overlay = document.createElement('div');
     overlay.id = 'imageOverlay';
     overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; cursor: pointer; padding: 20px;';
     overlay.onclick = function() { overlay.remove(); };
 
-    var priceDisplay = price ? '$' + parseFloat(price).toFixed(2) : '';
+    var priceVal = price ? parseFloat(price) : 0;
+    var priceDisplay = priceVal > 0 ? '$' + priceVal.toFixed(2) : '';
     var hasImage = imageUrl && imageUrl !== 'undefined' && imageUrl !== 'null';
 
     overlay.innerHTML =
         (hasImage ? '<img src="' + imageUrl + '" style="max-width: 90vw; max-height: 65vh; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); background: #fff;">' : '<div style="font-size: 100px;">📦</div>') +
-        '<div style="background: rgba(255,255,255,0.95); padding: 12px 32px; border-radius: 50px; margin-top: 20px; display: flex; align-items: center; gap: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">' +
-            '<span style="color: #0066cc; font-family: monospace; font-size: 15px; font-weight: 700;">' + (partNumber || '—') + '</span>' +
-            '<span style="color: #333; font-size: 14px; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' + (productName || '') + '</span>' +
-            (priceDisplay ? '<span style="color: #2e7d32; font-size: 18px; font-weight: 700;">' + priceDisplay + '</span>' : '') +
+        '<div style="background: rgba(255,255,255,0.95); padding: 14px 24px; border-radius: 16px; margin-top: 20px; text-align: center; max-width: 90vw; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">' +
+            '<div style="display: flex; align-items: center; justify-content: center; gap: 12px;">' +
+                '<span style="color: #0066cc; font-family: monospace; font-size: 15px; font-weight: 700;">' + (partNumber || '—') + '</span>' +
+                (priceDisplay ? '<span style="color: #2e7d32; font-size: 18px; font-weight: 700;">' + priceDisplay + '</span>' : '') +
+            '</div>' +
+            '<div style="color: #333; font-size: 14px; margin-top: 6px; line-height: 1.4;">' + (productName || '') + '</div>' +
+            (vendor ? '<div style="color: #888; font-size: 12px; margin-top: 6px;">' + vendor + '</div>' : '') +
         '</div>' +
-        (vendor ? '<div style="color: #888; font-size: 12px; margin-top: 12px;">' + vendor + '</div>' : '') +
         '<div style="color: #555; margin-top: 16px; font-size: 11px;">Tap anywhere to close</div>';
     document.body.appendChild(overlay);
 }
