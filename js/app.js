@@ -248,6 +248,7 @@ function showView(view) {
     } else if (view === 'officeSearch') {
         document.getElementById('officeSearchView').classList.remove('hidden');
         setActiveNav('officeSearch');
+        if (typeof initBrowse === 'function') initBrowse('office');
     } else if (view === 'estimates') {
         document.getElementById('estimatesView').classList.remove('hidden');
         setActiveNav('estimates');
@@ -346,6 +347,7 @@ function showTechView(view) {
     } else if (view === 'search') {
         document.getElementById('techSearchView').classList.remove('hidden');
         setActiveNav('search');
+        if (typeof initBrowse === 'function') initBrowse('field');
     } else if (view === 'teamschedule') {
         document.getElementById('techTeamScheduleView').classList.remove('hidden');
         setActiveNav('teamschedule');

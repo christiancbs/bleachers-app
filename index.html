@@ -39,10 +39,10 @@
                         <span>Home</span>
                     </div>
 
-                    <!-- Search -->
+                    <!-- Search & Browse -->
                     <div class="nav-item" data-view="officeSearch" onclick="showView('officeSearch')">
                         <span>🔍</span>
-                        <span>Search</span>
+                        <span>Search & Browse</span>
                     </div>
 
                     <!-- Sales -->
@@ -1000,23 +1000,106 @@
                         </div>
                     </div>
 
-                    <!-- Office Search View -->
+                    <!-- Office Search & Browse View -->
                     <div id="officeSearchView" class="hidden">
-                        <div class="page-header">
-                            <h1 class="page-title">Search</h1>
-                            <p class="page-subtitle">Find any work order, inspection, or scheduled job</p>
-                        </div>
 
-                        <div style="margin-bottom: 24px;">
-                            <input type="text" id="officeSearchInput" class="form-input" placeholder="Search by school name, job #, or keyword..." style="font-size: 16px; padding: 14px 16px;" oninput="performOfficeSearch()">
-                        </div>
+                        <!-- Screen 1: Search & Browse (default) -->
+                        <div id="browseScreen1Office" class="browse-screen">
+                            <div class="page-header">
+                                <h1 class="page-title">Search & Browse</h1>
+                                <p class="page-subtitle">Search jobs or browse by district</p>
+                            </div>
 
-                        <div id="officeSearchResults">
-                            <div style="text-align: center; padding: 60px 20px; color: #6c757d;">
-                                <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
-                                <p style="font-size: 15px;">Search for a school, job number, or keyword to find work orders, inspections, and scheduled jobs.</p>
+                            <div style="margin-bottom: 24px;">
+                                <input type="text" id="officeSearchInput" class="form-input" placeholder="Search by school name, job #, or keyword..." style="font-size: 16px; padding: 14px 16px;" oninput="handleBrowseSearch('office')">
+                            </div>
+
+                            <div id="officeSearchResults" class="hidden"></div>
+
+                            <div id="browseListingOffice">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                    <h2 style="font-size: 16px; font-weight: 700; color: #495057; margin: 0;">Districts & Customers</h2>
+                                    <span id="browseCountOffice" style="font-size: 13px; color: #6c757d;"></span>
+                                </div>
+                                <div class="card" style="overflow: hidden;">
+                                    <div id="browseDistrictsListOffice"></div>
+                                </div>
                             </div>
                         </div>
+
+                        <!-- Screen 2: District Detail -->
+                        <div id="browseScreen2Office" class="browse-screen hidden">
+                            <div class="page-header">
+                                <button class="btn btn-secondary" onclick="browseBack()" style="margin-bottom: 12px;">&larr; Back</button>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <h1 class="page-title" style="margin: 0;" id="browseDistrictNameOffice"></h1>
+                                    <span id="browseDistrictTypeBadgeOffice" class="badge badge-info"></span>
+                                </div>
+                                <p id="browseDistrictAddressOffice" style="color: #6c757d; margin-top: 4px;"></p>
+                            </div>
+                            <div class="card" style="overflow: hidden;">
+                                <div class="card-header">
+                                    <h2 class="card-title">Locations</h2>
+                                    <span id="browseSchoolCountOffice" class="badge badge-info"></span>
+                                </div>
+                                <div id="browseSchoolListOffice"></div>
+                            </div>
+                        </div>
+
+                        <!-- Screen 3: School/Location Detail -->
+                        <div id="browseScreen3Office" class="browse-screen hidden">
+                            <div class="page-header">
+                                <button class="btn btn-secondary" onclick="browseBack()" style="margin-bottom: 12px;">&larr; Back</button>
+                                <h1 class="page-title" style="margin: 0;" id="browseSchoolNameOffice"></h1>
+                                <p id="browseSchoolAddressOffice" style="color: #6c757d; margin-top: 4px;"></p>
+                                <div id="browseSchoolContactOffice" style="margin-top: 8px;"></div>
+                            </div>
+                            <div style="margin-bottom: 16px;">
+                                <button class="btn btn-primary" onclick="browseAddNewJob()">+ Add New Job</button>
+                            </div>
+                            <div class="card" style="overflow: hidden;">
+                                <div class="card-header">
+                                    <h2 class="card-title">Service History</h2>
+                                    <span id="browseJobCountOffice" class="badge badge-info"></span>
+                                </div>
+                                <div id="browseJobsTableOffice"></div>
+                            </div>
+
+                            <!-- New Job Type Selector Modal -->
+                            <div id="browseNewJobModalOffice" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+                                <div style="background: white; border-radius: 16px; padding: 32px; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                                    <h3 style="margin: 0 0 8px; font-size: 18px;">Create New Job</h3>
+                                    <p id="browseNewJobContextOffice" style="color: #6c757d; font-size: 13px; margin: 0 0 20px;"></p>
+                                    <div style="display: grid; gap: 8px;">
+                                        <button class="btn btn-outline" onclick="browseCreateJob('inspection')" style="text-align: left; padding: 12px 16px;">Inspection</button>
+                                        <button class="btn btn-outline" onclick="browseCreateJob('work_order')" style="text-align: left; padding: 12px 16px;">Work Order</button>
+                                        <button class="btn btn-outline" onclick="browseCreateJob('service_call')" style="text-align: left; padding: 12px 16px;">Service Call</button>
+                                        <button class="btn btn-outline" onclick="browseCreateJob('go_see')" style="text-align: left; padding: 12px 16px;">Go-See</button>
+                                        <button class="btn btn-outline" onclick="browseCreateJob('field_check')" style="text-align: left; padding: 12px 16px;">Field Check</button>
+                                    </div>
+                                    <button class="btn btn-secondary" onclick="closeBrowseNewJobModal()" style="width: 100%; margin-top: 12px;">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Screen 4: Inspection Job with Banks -->
+                        <div id="browseScreen4Office" class="browse-screen hidden">
+                            <div class="page-header">
+                                <button class="btn btn-secondary" onclick="browseBack()" style="margin-bottom: 12px;">&larr; Back</button>
+                                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                    <h1 class="page-title" style="margin: 0;" id="browseJobTitleOffice"></h1>
+                                    <span id="browseJobTypeBadgeOffice" class="badge badge-info"></span>
+                                    <span id="browseJobStatusBadgeOffice" class="badge"></span>
+                                </div>
+                                <div id="browseJobInfoOffice" style="margin-top: 8px; color: #6c757d;"></div>
+                            </div>
+                            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                                <button class="btn btn-primary" onclick="browseAddBank()">+ Add Bank</button>
+                                <button class="btn btn-outline" onclick="browseViewFullJobDetail()">View Full Detail</button>
+                            </div>
+                            <div id="browseBankCardsOffice" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;"></div>
+                        </div>
+
                     </div>
 
                     <!-- Office Create View -->
@@ -2149,10 +2232,10 @@
                         <span>Home</span>
                     </div>
 
-                    <!-- Search -->
+                    <!-- Search & Browse -->
                     <div class="nav-item" data-view="search" onclick="showTechView('search')">
                         <span>🔍</span>
-                        <span>Search</span>
+                        <span>Search & Browse</span>
                     </div>
 
                     <!-- Inspections & Service -->
@@ -2226,23 +2309,106 @@
                         </div>
                     </div>
 
-                    <!-- Search View -->
+                    <!-- Tech Search & Browse View -->
                     <div id="techSearchView" class="hidden">
-                        <div class="page-header">
-                            <h1 class="page-title">Search</h1>
-                            <p class="page-subtitle">Find any work order or inspection by school name or job number</p>
-                        </div>
 
-                        <div style="margin-bottom: 24px;">
-                            <input type="text" id="techSearchInput" class="form-input" placeholder="Search by school name, job #, or keyword..." style="font-size: 16px; padding: 14px 16px;" oninput="performTechSearch()">
-                        </div>
+                        <!-- Screen 1: Search & Browse (default) -->
+                        <div id="browseScreen1Tech" class="browse-screen">
+                            <div class="page-header">
+                                <h1 class="page-title">Search & Browse</h1>
+                                <p class="page-subtitle">Search jobs or browse by district</p>
+                            </div>
 
-                        <div id="techSearchResults">
-                            <div style="text-align: center; padding: 60px 20px; color: #6c757d;">
-                                <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
-                                <p style="font-size: 15px;">Search for a school, job number, or keyword to find work orders and inspections.</p>
+                            <div style="margin-bottom: 24px;">
+                                <input type="text" id="techSearchInput" class="form-input" placeholder="Search by school name, job #, or keyword..." style="font-size: 16px; padding: 14px 16px;" oninput="handleBrowseSearch('field')">
+                            </div>
+
+                            <div id="techSearchResults" class="hidden"></div>
+
+                            <div id="browseListingTech">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                    <h2 style="font-size: 16px; font-weight: 700; color: #495057; margin: 0;">Districts & Customers</h2>
+                                    <span id="browseCountTech" style="font-size: 13px; color: #6c757d;"></span>
+                                </div>
+                                <div class="card" style="overflow: hidden;">
+                                    <div id="browseDistrictsListTech"></div>
+                                </div>
                             </div>
                         </div>
+
+                        <!-- Screen 2: District Detail -->
+                        <div id="browseScreen2Tech" class="browse-screen hidden">
+                            <div class="page-header">
+                                <button class="btn btn-secondary" onclick="browseBack()" style="margin-bottom: 12px;">&larr; Back</button>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <h1 class="page-title" style="margin: 0;" id="browseDistrictNameTech"></h1>
+                                    <span id="browseDistrictTypeBadgeTech" class="badge badge-info"></span>
+                                </div>
+                                <p id="browseDistrictAddressTech" style="color: #6c757d; margin-top: 4px;"></p>
+                            </div>
+                            <div class="card" style="overflow: hidden;">
+                                <div class="card-header">
+                                    <h2 class="card-title">Locations</h2>
+                                    <span id="browseSchoolCountTech" class="badge badge-info"></span>
+                                </div>
+                                <div id="browseSchoolListTech"></div>
+                            </div>
+                        </div>
+
+                        <!-- Screen 3: School/Location Detail -->
+                        <div id="browseScreen3Tech" class="browse-screen hidden">
+                            <div class="page-header">
+                                <button class="btn btn-secondary" onclick="browseBack()" style="margin-bottom: 12px;">&larr; Back</button>
+                                <h1 class="page-title" style="margin: 0;" id="browseSchoolNameTech"></h1>
+                                <p id="browseSchoolAddressTech" style="color: #6c757d; margin-top: 4px;"></p>
+                                <div id="browseSchoolContactTech" style="margin-top: 8px;"></div>
+                            </div>
+                            <div style="margin-bottom: 16px;">
+                                <button class="btn btn-primary" onclick="browseAddNewJob()">+ Add New Job</button>
+                            </div>
+                            <div class="card" style="overflow: hidden;">
+                                <div class="card-header">
+                                    <h2 class="card-title">Service History</h2>
+                                    <span id="browseJobCountTech" class="badge badge-info"></span>
+                                </div>
+                                <div id="browseJobsTableTech"></div>
+                            </div>
+
+                            <!-- New Job Type Selector Modal -->
+                            <div id="browseNewJobModalTech" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+                                <div style="background: white; border-radius: 16px; padding: 32px; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                                    <h3 style="margin: 0 0 8px; font-size: 18px;">Create New Job</h3>
+                                    <p id="browseNewJobContextTech" style="color: #6c757d; font-size: 13px; margin: 0 0 20px;"></p>
+                                    <div style="display: grid; gap: 8px;">
+                                        <button class="btn btn-outline" onclick="browseCreateJob('inspection')" style="text-align: left; padding: 12px 16px;">Inspection</button>
+                                        <button class="btn btn-outline" onclick="browseCreateJob('work_order')" style="text-align: left; padding: 12px 16px;">Work Order</button>
+                                        <button class="btn btn-outline" onclick="browseCreateJob('service_call')" style="text-align: left; padding: 12px 16px;">Service Call</button>
+                                        <button class="btn btn-outline" onclick="browseCreateJob('go_see')" style="text-align: left; padding: 12px 16px;">Go-See</button>
+                                        <button class="btn btn-outline" onclick="browseCreateJob('field_check')" style="text-align: left; padding: 12px 16px;">Field Check</button>
+                                    </div>
+                                    <button class="btn btn-secondary" onclick="closeBrowseNewJobModal()" style="width: 100%; margin-top: 12px;">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Screen 4: Inspection Job with Banks -->
+                        <div id="browseScreen4Tech" class="browse-screen hidden">
+                            <div class="page-header">
+                                <button class="btn btn-secondary" onclick="browseBack()" style="margin-bottom: 12px;">&larr; Back</button>
+                                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                    <h1 class="page-title" style="margin: 0;" id="browseJobTitleTech"></h1>
+                                    <span id="browseJobTypeBadgeTech" class="badge badge-info"></span>
+                                    <span id="browseJobStatusBadgeTech" class="badge"></span>
+                                </div>
+                                <div id="browseJobInfoTech" style="margin-top: 8px; color: #6c757d;"></div>
+                            </div>
+                            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                                <button class="btn btn-primary" onclick="browseAddBank()">+ Add Bank</button>
+                                <button class="btn btn-outline" onclick="browseViewFullJobDetail()">View Full Detail</button>
+                            </div>
+                            <div id="browseBankCardsTech" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;"></div>
+                        </div>
+
                     </div>
 
                     <!-- My Jobs View (Personal Weekly Schedule) -->
@@ -4095,6 +4261,7 @@
     <script src="js/views/scheduling.js"></script>
     <script src="js/views/create.js"></script>
     <script src="js/views/my-jobs.js"></script>
+    <script src="js/views/browse.js"></script>
     <script src="js/views/admin.js"></script>
 
     <!-- Utilities -->

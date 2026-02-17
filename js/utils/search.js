@@ -10,9 +10,15 @@ async function performTechSearch() {
     const container = document.getElementById('techSearchResults');
 
     if (!query || query.length < 2) {
-        container.innerHTML = '<div style="text-align: center; padding: 60px 20px; color: #6c757d;"><div style="font-size: 48px; margin-bottom: 16px;">🔍</div><p style="font-size: 15px;">Enter a job number to find work orders.</p></div>';
+        container.innerHTML = '';
+        container.classList.add('hidden');
+        var techBrowse = document.getElementById('browseListingTech');
+        if (techBrowse) techBrowse.classList.remove('hidden');
         return;
     }
+    var techBrowse2 = document.getElementById('browseListingTech');
+    if (techBrowse2) techBrowse2.classList.add('hidden');
+    container.classList.remove('hidden');
 
     container.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Searching...</div>';
 
@@ -63,9 +69,15 @@ async function performOfficeSearch() {
     var container = document.getElementById('officeSearchResults');
 
     if (!query || query.length < 2) {
-        container.innerHTML = '<div style="text-align: center; padding: 60px 20px; color: #6c757d;"><div style="font-size: 48px; margin-bottom: 16px;">🔍</div><p style="font-size: 15px;">Search jobs, estimates, inspections, and schedule.</p></div>';
+        container.innerHTML = '';
+        container.classList.add('hidden');
+        var officeBrowse = document.getElementById('browseListingOffice');
+        if (officeBrowse) officeBrowse.classList.remove('hidden');
         return;
     }
+    var officeBrowse2 = document.getElementById('browseListingOffice');
+    if (officeBrowse2) officeBrowse2.classList.add('hidden');
+    container.classList.remove('hidden');
 
     container.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Searching...</div>';
 

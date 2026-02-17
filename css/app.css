@@ -1996,3 +1996,174 @@
     font-size: 11px;
     color: #c62828;
 }
+
+/* ==========================================
+   BROWSE / DRILL-DOWN NAVIGATION
+   ========================================== */
+
+.browse-screen {
+    animation: browseFadeIn 0.2s ease-out;
+}
+
+@keyframes browseFadeIn {
+    from { opacity: 0; transform: translateX(10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.browse-district-item {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.15s;
+}
+
+.browse-district-item:hover {
+    background: #f8f9fa;
+}
+
+.browse-district-item:last-child {
+    border-bottom: none;
+}
+
+.browse-district-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.browse-district-name {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 4px;
+}
+
+.browse-district-meta {
+    font-size: 13px;
+    color: #6c757d;
+}
+
+.browse-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.browse-stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #495057;
+}
+
+.browse-stat-label {
+    font-size: 11px;
+    color: #6c757d;
+}
+
+.browse-school-item {
+    padding: 14px 20px;
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.15s;
+}
+
+.browse-school-item:hover {
+    background: #f8f9fa;
+}
+
+.browse-school-item:last-child {
+    border-bottom: none;
+}
+
+.browse-bank-card {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.browse-bank-card:hover {
+    border-color: #4CAF50;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.browse-bank-card.completed {
+    border-color: #d4edda;
+    background: #f8fff8;
+}
+
+.browse-bank-card.in-progress {
+    border-color: #fff3cd;
+    background: #fffdf5;
+}
+
+.browse-bank-status {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.browse-jobs-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.browse-jobs-table thead {
+    background: #f8f9fa;
+}
+
+.browse-jobs-table th {
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.browse-jobs-table td {
+    padding: 14px 12px;
+    border-top: 1px solid #e9ecef;
+    font-size: 14px;
+}
+
+.browse-jobs-table tr {
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.browse-jobs-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+@media (max-width: 768px) {
+    .browse-hide-mobile {
+        display: none;
+    }
+
+    .browse-stat-value {
+        font-size: 16px;
+    }
+
+    #browseBankCardsOffice,
+    #browseBankCardsTech {
+        grid-template-columns: 1fr !important;
+    }
+
+    .browse-jobs-table th,
+    .browse-jobs-table td {
+        padding: 10px 8px;
+        font-size: 13px;
+    }
+}
