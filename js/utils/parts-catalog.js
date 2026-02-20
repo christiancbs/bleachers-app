@@ -200,6 +200,21 @@ let _officePage = 0;
 let _officeTotal = 0;
 let _officeIsSearch = false;
 
+function renderRelatedParts(relatedParts) {
+    if (!relatedParts || !Array.isArray(relatedParts) || relatedParts.length === 0) return '';
+    const items = relatedParts.map(rp => {
+        const safePn = (rp.partNumber || '').replace(/'/g, "\\'");
+        return `<div style="display: flex; align-items: center; gap: 6px; padding: 3px 0;">
+            <span onclick="event.stopPropagation(); document.querySelector('[id\$=PartSearchInput]').value='${safePn}'; document.querySelector('[id\$=PartSearchInput]').dispatchEvent(new Event('input'));" style="background: #e3f2fd; color: #1565c0; padding: 2px 7px; border-radius: 4px; font-family: monospace; font-size: 11px; font-weight: 600; cursor: pointer;">${rp.partNumber}</span>
+            <span style="font-size: 11px; color: #555;">${rp.name || ''}</span>
+        </div>`;
+    }).join('');
+    return `<div style="margin-top: 8px; padding: 8px 10px; background: #f0f7ff; border-radius: 6px; border: 1px solid #d4e6f9;">
+        <div style="font-size: 11px; font-weight: 700; color: #1565c0; margin-bottom: 4px;">Related Hardware</div>
+        ${items}
+    </div>`;
+}
+
 function renderPagination(prefix, currentPage, total, onPageFn) {
     const totalPages = Math.ceil(total / PARTS_PAGE_SIZE);
     if (totalPages <= 1) return '';
@@ -333,7 +348,8 @@ function renderTechParts(parts, container, currentPage, total, isSearch) {
             const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'");
             const safeProductName = (part.productName || '').replace(/'/g, "\\'");
             const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'");
-            const clickHandler = part.imageUrl ? `onclick="showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${safeVendor}')"` : '';
+            const rpJson = part.relatedParts ? encodeURIComponent(JSON.stringify(part.relatedParts)) : '';
+            const clickHandler = part.imageUrl ? `onclick="showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${safeVendor}', null, decodeURIComponent('${rpJson}'))"` : '';
             const imageHtml = part.imageUrl
                 ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px; background: #fff;">`
                 : '';
@@ -351,6 +367,7 @@ function renderTechParts(parts, container, currentPage, total, isSearch) {
                             <span class="part-category">${part.category || ''}</span>
                         </div>
                         ${part.productLine ? `<div style="font-size: 11px; color: #888; margin-top: 4px;">${part.productLine}</div>` : ''}
+                        ${renderRelatedParts(part.relatedParts)}
                     </div>
                 </div>
             `;
@@ -453,7 +470,8 @@ function renderOfficeParts(parts, container, currentPage, total, isSearch) {
             const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'");
             const safeProductName = (part.productName || '').replace(/'/g, "\\'");
             const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'");
-            const clickHandler = part.imageUrl ? `onclick="showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${price}', '${safeVendor}')"` : '';
+            const rpJson = part.relatedParts ? encodeURIComponent(JSON.stringify(part.relatedParts)) : '';
+            const clickHandler = part.imageUrl ? `onclick="showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${price}', '${safeVendor}', decodeURIComponent('${rpJson}'))"` : '';
             const imageHtml = part.imageUrl
                 ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px; background: #fff;">`
                 : '';
@@ -473,6 +491,7 @@ function renderOfficeParts(parts, container, currentPage, total, isSearch) {
                         </div>
                         ${part.productLine ? `<div style="font-size: 11px; color: #888; margin-top: 4px;">${part.productLine}</div>` : ''}
                         ${part.description ? `<div style="font-size: 12px; color: #666; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">${part.description}</div>` : ''}
+                        ${renderRelatedParts(part.relatedParts)}
                     </div>
                 </div>
             `;
