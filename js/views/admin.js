@@ -418,9 +418,11 @@ function showPartImage(imageUrl, partNumber, productName, price, vendor, related
         rpHtml = '<div style="background: #f0f7ff; padding: 10px 16px; border-radius: 8px; margin-top: 10px; text-align: left;">' +
             '<div style="font-size: 11px; font-weight: 700; color: #1565c0; margin-bottom: 6px;">Related Hardware</div>' +
             rpArray.map(function(rp) {
-                return '<div style="padding: 3px 0; font-size: 12px;">' +
-                    '<span style="background: #e3f2fd; color: #1565c0; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 11px; font-weight: 600;">' + (rp.partNumber || '') + '</span> ' +
-                    '<span style="color: #444;">' + (rp.name || '') + '</span>' +
+                var priceStr = rp.price ? '<span style="color: #888; margin-left: 8px;">$' + parseFloat(rp.price).toFixed(2) + '</span>' : '';
+                return '<div style="display: flex; align-items: center; gap: 6px; padding: 3px 0; font-size: 12px;">' +
+                    '<span style="background: #e3f2fd; color: #1565c0; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 11px; font-weight: 600;">' + (rp.partNumber || '') + '</span>' +
+                    '<span style="color: #444; flex: 1;">' + (rp.name || '') + '</span>' +
+                    priceStr +
                 '</div>';
             }).join('') +
         '</div>';

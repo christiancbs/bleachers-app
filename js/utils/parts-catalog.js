@@ -204,9 +204,11 @@ function renderRelatedParts(relatedParts) {
     if (!relatedParts || !Array.isArray(relatedParts) || relatedParts.length === 0) return '';
     const items = relatedParts.map(rp => {
         const safePn = (rp.partNumber || '').replace(/'/g, "\\'");
+        const priceHtml = rp.price ? `<span style="font-size: 11px; color: #888; margin-left: auto; white-space: nowrap;">$${parseFloat(rp.price).toFixed(2)}</span>` : '';
         return `<div style="display: flex; align-items: center; gap: 6px; padding: 3px 0;">
             <span onclick="event.stopPropagation(); document.querySelector('[id\$=PartSearchInput]').value='${safePn}'; document.querySelector('[id\$=PartSearchInput]').dispatchEvent(new Event('input'));" style="background: #e3f2fd; color: #1565c0; padding: 2px 7px; border-radius: 4px; font-family: monospace; font-size: 11px; font-weight: 600; cursor: pointer;">${rp.partNumber}</span>
             <span style="font-size: 11px; color: #555;">${rp.name || ''}</span>
+            ${priceHtml}
         </div>`;
     }).join('');
     return `<div style="margin-top: 8px; padding: 8px 10px; background: #f0f7ff; border-radius: 6px; border: 1px solid #d4e6f9;">
