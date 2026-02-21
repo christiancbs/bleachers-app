@@ -1,41 +1,7 @@
 // ==========================================
-// PARTS CATALOG & LEGACY INSPECTION
-// Airtable search, part selection, old inspection form
+// PARTS CATALOG
+// Parts search, selection, and inspection navigation
 // ==========================================
-
-// Legacy stub — inspections view now loads from API via loadInspectionsView() in scheduling.js
-function loadOfficeInspections() {
-    if (typeof loadInspectionsView === 'function') {
-        loadInspectionsView();
-    }
-}
-
-function startNewInspection() {
-    currentInspection = { selectedParts: [] };
-    currentInspectionType = '';
-    goalInspections = [];
-    issuesList = [];
-
-    // Reset form
-    document.getElementById('inspectionTypeSelect').value = '';
-    document.getElementById('inspectionFormFields').classList.add('hidden');
-    document.getElementById('basketballFields').classList.add('hidden');
-    document.getElementById('bleacherFields').classList.add('hidden');
-    document.getElementById('outdoorFields').classList.add('hidden');
-    document.getElementById('manufacturerSection').classList.add('hidden');
-
-    if (currentRole === 'office') {
-        // Hide all office views
-        document.querySelectorAll('[id$="View"]').forEach(el => el.classList.add('hidden'));
-        // Show techDashboard temporarily to access the inspection form
-        document.getElementById('officeDashboard').classList.add('hidden');
-        document.getElementById('techDashboard').classList.remove('hidden');
-    }
-
-    document.querySelectorAll('#techDashboard [id^="tech"][id$="View"]').forEach(el => el.classList.add('hidden'));
-    document.getElementById('newInspectionView').classList.remove('hidden');
-    renderSelectedParts();
-}
 
 function goBackFromInspection() {
     // Hide all inspection-related views

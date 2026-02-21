@@ -6,15 +6,9 @@
 const CUSTOMERS_API_BASE = 'https://bleachers-api.vercel.app/api/customers';
 
 const CustomersAPI = {
+    // Get headers with auth token (delegates to shared api-base.js)
     async getHeaders() {
-        const headers = { 'Content-Type': 'application/json' };
-        if (typeof getAuthToken === 'function') {
-            const token = await getAuthToken();
-            if (token) {
-                headers['Authorization'] = 'Bearer ' + token;
-            }
-        }
-        return headers;
+        return getApiHeaders();
     },
 
     // List/search customers with nested locations + contacts

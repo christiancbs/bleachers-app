@@ -211,7 +211,6 @@ let currentWorkOrder = null;
 const TECH_WORK_ORDERS = {};
 
 // Photo upload state
-// Photo upload state
 let twoMainPhoto = null;
 let twoAdditionalPhotosList = [];
 let twoWrongPartPhoto = null;

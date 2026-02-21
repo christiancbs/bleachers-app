@@ -6,16 +6,9 @@
 const PARTS_API_BASE = 'https://bleachers-api.vercel.app/api/parts';
 
 const PartsAPI = {
-    // Get headers with auth token
+    // Get headers with auth token (delegates to shared api-base.js)
     async getHeaders() {
-        const headers = { 'Content-Type': 'application/json' };
-        if (typeof getAuthToken === 'function') {
-            const token = await getAuthToken();
-            if (token) {
-                headers['Authorization'] = 'Bearer ' + token;
-            }
-        }
-        return headers;
+        return getApiHeaders();
     },
 
     // Search parts catalog

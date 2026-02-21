@@ -355,35 +355,6 @@
             font-size: 14px;
         }
 
-        /* Alert Boxes */
-        .alert-box {
-            padding: 16px 20px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 14px;
-        }
-
-        .alert-warning {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            color: #856404;
-        }
-
-        .alert-danger {
-            background: #f8d7da;
-            border-left: 4px solid #dc3545;
-            color: #721c24;
-        }
-
-        .alert-info {
-            background: #d1ecf1;
-            border-left: 4px solid #17a2b8;
-            color: #0c5460;
-        }
-
         /* Stats Cards */
         .stats-grid {
             display: grid;

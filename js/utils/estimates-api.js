@@ -6,16 +6,9 @@
 const QB_API_BASE = 'https://bleachers-api.vercel.app/api/qb';
 
 const EstimatesAPI = {
-    // Get headers with auth token
+    // Get headers with auth token (delegates to shared api-base.js)
     async getHeaders() {
-        const headers = { 'Content-Type': 'application/json' };
-        if (typeof getAuthToken === 'function') {
-            const token = await getAuthToken();
-            if (token) {
-                headers['Authorization'] = 'Bearer ' + token;
-            }
-        }
-        return headers;
+        return getApiHeaders();
     },
 
     // Cache for estimates
