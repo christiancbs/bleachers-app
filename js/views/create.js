@@ -30,6 +30,7 @@ function initFieldCreateForm() {
     var customEl = document.getElementById('fieldCreateCustomName');
     if (customEl) customEl.value = '';
     document.getElementById('fieldCreatePhotoPreview').innerHTML = '';
+    document.getElementById('fieldCreateNewCustomerForm').classList.add('hidden');
     fieldCreatePhoto = null;
     fieldCreateSelectedCustomer = null;
 }
@@ -87,12 +88,16 @@ function searchFieldCreateCustomers(query) {
 
 function showFieldCustomCustomerEntry() {
     document.getElementById('fieldCreateCustomerResults').classList.add('hidden');
+    document.getElementById('fieldCreateNewCustomerForm').classList.remove('hidden');
+    document.getElementById('fieldCreateNewCustomerName').value = document.getElementById('fieldCreateCustomerSearch').value || '';
+    document.getElementById('fieldCreateNewCustomerName').focus();
+}
 
-    // Show custom entry modal or inline form
-    var name = prompt('Enter customer/school name:');
-    if (!name) return;
+function confirmFieldCustomCustomer() {
+    var name = document.getElementById('fieldCreateNewCustomerName').value.trim();
+    if (!name) { alert('Please enter a customer/school name.'); return; }
 
-    var address = prompt('Enter address (optional):') || '';
+    var address = document.getElementById('fieldCreateNewCustomerAddress').value.trim();
 
     fieldCreateSelectedCustomer = {
         locationId: 'custom_' + Date.now(),
@@ -109,6 +114,11 @@ function showFieldCustomCustomerEntry() {
     document.getElementById('fieldCreateAddress').textContent = address || 'Custom entry';
     document.getElementById('fieldCreateContact').textContent = '';
     document.getElementById('fieldCreateCustomerInfo').classList.remove('hidden');
+    document.getElementById('fieldCreateNewCustomerForm').classList.add('hidden');
+}
+
+function cancelFieldCustomCustomer() {
+    document.getElementById('fieldCreateNewCustomerForm').classList.add('hidden');
 }
 
 function selectFieldCreateCustomer(customer) {
@@ -326,6 +336,7 @@ function initOfficeCreateForm() {
     var customEl = document.getElementById('officeCreateCustomName');
     if (customEl) customEl.value = '';
     document.getElementById('officeCreatePhotoPreview').innerHTML = '';
+    document.getElementById('officeCreateNewCustomerForm').classList.add('hidden');
     officeCreatePhoto = null;
     officeCreateSelectedCustomer = null;
 }
@@ -383,11 +394,16 @@ function searchOfficeCreateCustomers(query) {
 
 function showOfficeCustomCustomerEntry() {
     document.getElementById('officeCreateCustomerResults').classList.add('hidden');
+    document.getElementById('officeCreateNewCustomerForm').classList.remove('hidden');
+    document.getElementById('officeCreateNewCustomerName').value = document.getElementById('officeCreateCustomerSearch').value || '';
+    document.getElementById('officeCreateNewCustomerName').focus();
+}
 
-    var name = prompt('Enter customer/school name:');
-    if (!name) return;
+function confirmOfficeCustomCustomer() {
+    var name = document.getElementById('officeCreateNewCustomerName').value.trim();
+    if (!name) { alert('Please enter a customer/school name.'); return; }
 
-    var address = prompt('Enter address (optional):') || '';
+    var address = document.getElementById('officeCreateNewCustomerAddress').value.trim();
 
     officeCreateSelectedCustomer = {
         locationId: 'custom_' + Date.now(),
@@ -404,6 +420,11 @@ function showOfficeCustomCustomerEntry() {
     document.getElementById('officeCreateAddress').textContent = address || 'Custom entry';
     document.getElementById('officeCreateContact').textContent = '';
     document.getElementById('officeCreateCustomerInfo').classList.remove('hidden');
+    document.getElementById('officeCreateNewCustomerForm').classList.add('hidden');
+}
+
+function cancelOfficeCustomCustomer() {
+    document.getElementById('officeCreateNewCustomerForm').classList.add('hidden');
 }
 
 function selectOfficeCreateCustomer(customer) {

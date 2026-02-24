@@ -134,6 +134,7 @@ function createNewBank(name, formType) {
     return {
         name: name,
         formType: formType || 'indoor_bleacher',
+        bankPhoto: null,
         bleacherType: '',
         tiers: '',
         seatType: '',
@@ -148,11 +149,22 @@ function createNewBank(name, formType) {
         wheelType: '',
         topSideIssues: [],
         understructureIssues: [],
-        safetyIssues: '',
-        mechanicalIssues: '',
-        cosmeticIssues: '',
+        summaryNotes: '',
         tagAffixed: 'yes'
     };
+}
+
+// Preview bank photo
+function previewBankPhoto(input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('bankPhotoPreview').innerHTML =
+                '<img src="' + e.target.result + '" style="max-width: 100%; max-height: 120px; border-radius: 8px; object-fit: cover;">';
+            currentJob.banks[currentBankIndex].bankPhoto = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
 }
 
 // ==========================================
@@ -235,12 +247,21 @@ function renderOverviewCards() {
         var statusBg = hasData ? '#fff3e0' : '#f8f9fa';
         var statusColor = hasData ? '#e65100' : '#6c757d';
 
+        var thumbHtml = bank.bankPhoto
+            ? '<img src="' + bank.bankPhoto + '" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; margin-right: 16px; flex-shrink: 0;">'
+            : '<div style="width: 80px; height: 80px; background: #f0f0f0; border-radius: 8px; margin-right: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 28px;">📷</div>';
+
         return '<div class="job-overview-card" onclick="openBankForm(' + idx + ')" style="cursor: pointer; border: 2px solid #e9ecef; border-radius: 12px; padding: 20px; background: white; transition: all 0.15s; position: relative;" onmouseover="this.style.borderColor=\'#007bff\'; this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.1)\'" onmouseout="this.style.borderColor=\'#e9ecef\'; this.style.boxShadow=\'none\'">' +
-            '<div style="display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; background: ' + statusBg + '; color: ' + statusColor + '; margin-bottom: 12px;">' + statusLabel + '</div>' +
+            '<div style="display: flex; align-items: start;">' +
+            thumbHtml +
+            '<div style="flex: 1;">' +
+            '<div style="display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; background: ' + statusBg + '; color: ' + statusColor + '; margin-bottom: 8px;">' + statusLabel + '</div>' +
             '<div style="font-weight: 700; font-size: 18px; margin-bottom: 6px;">' + (bank.name || 'Form ' + (idx + 1)) + '</div>' +
             '<div style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; background: ' + ftColor.bg + '; color: ' + ftColor.color + ';">' + ftLabel + '</div>' +
             (bank.bleacherType ? '<div style="font-size: 13px; color: #6c757d; margin-top: 8px;">' + bank.bleacherType + (bank.tiers ? ' &bull; ' + bank.tiers + ' tiers' : '') + '</div>' : '') +
             (issueCount > 0 ? '<div style="margin-top: 8px;"><span style="display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: #fff3e0; color: #e65100;">' + issueCount + ' issue' + (issueCount !== 1 ? 's' : '') + '</span></div>' : '') +
+            '</div>' +
+            '</div>' +
             '<div style="position: absolute; top: 16px; right: 16px;"><button onclick="event.stopPropagation(); deleteFormFromJob(' + idx + ')" style="background: none; border: none; font-size: 16px; cursor: pointer; color: #dc3545; padding: 4px;" title="Remove">&times;</button></div>' +
         '</div>';
     }).join('');
@@ -346,6 +367,8 @@ function exitJobOverview() {
 
     if (_jobOverviewReturnView === 'myjobs') {
         showTechView('myjobs');
+    } else if (_jobOverviewReturnView === 'inspections') {
+        showTechView('inspections');
     } else if (_jobOverviewReturnView === 'search') {
         showTechView('search');
     } else if (_jobOverviewReturnView === 'office') {
@@ -353,7 +376,7 @@ function exitJobOverview() {
         document.getElementById('officeDashboard').classList.remove('hidden');
         showView('home');
     } else {
-        showTechView('myjobs');
+        showTechView('inspections');
     }
 }
 
@@ -403,13 +426,23 @@ function loadBankData() {
     document.getElementById('bankMotorHP').value = bank.motorHP || '';
     document.getElementById('bankMotorCount').value = bank.motorCount || '';
     document.getElementById('bankWheelType').value = bank.wheelType || '';
-    document.getElementById('bankSafetyIssues').value = bank.safetyIssues || '';
-    document.getElementById('bankMechanicalIssues').value = bank.mechanicalIssues || '';
-    document.getElementById('bankCosmeticIssues').value = bank.cosmeticIssues || '';
     document.getElementById('bankTagAffixed').value = bank.tagAffixed || 'yes';
+
+    // Bank photo
+    var photoPreview = document.getElementById('bankPhotoPreview');
+    if (bank.bankPhoto) {
+        photoPreview.innerHTML = '<img src="' + bank.bankPhoto + '" style="max-width: 100%; max-height: 120px; border-radius: 8px; object-fit: cover;">';
+    } else {
+        photoPreview.innerHTML = '<div style="text-align: center; color: #6c757d;"><div style="font-size: 28px;">📷</div><div style="font-size: 13px;">Tap to add bank photo (becomes thumbnail)</div></div>';
+    }
+
+    // Summary notes
+    var notesEl = document.getElementById('bankSummaryNotes');
+    if (notesEl) notesEl.value = bank.summaryNotes || '';
 
     renderTopSideIssues();
     renderUnderstructureIssues();
+    renderIssueTally();
 }
 
 // Save bank data from form
@@ -429,10 +462,9 @@ function saveBankData() {
     bank.motorHP = document.getElementById('bankMotorHP').value;
     bank.motorCount = document.getElementById('bankMotorCount').value;
     bank.wheelType = document.getElementById('bankWheelType').value;
-    bank.safetyIssues = document.getElementById('bankSafetyIssues').value;
-    bank.mechanicalIssues = document.getElementById('bankMechanicalIssues').value;
-    bank.cosmeticIssues = document.getElementById('bankCosmeticIssues').value;
     bank.tagAffixed = document.getElementById('bankTagAffixed').value;
+    var notesEl = document.getElementById('bankSummaryNotes');
+    if (notesEl) bank.summaryNotes = notesEl.value;
 }
 
 // Edit bank name
@@ -475,203 +507,546 @@ function toggleSection(sectionId) {
 
 // ==========================================
 // ISSUE MANAGEMENT
-// Add, edit, delete, and render issues
+// Inline expandable issues with parts catalog
 // ==========================================
 
-// Open add issue modal
-function openAddIssueModal() {
-    document.getElementById('addIssueModal').classList.remove('hidden');
-    document.getElementById('addIssueModal').style.display = 'flex';
-    resetIssueModal();
+// Track which issue is currently being edited inline
+var _editingIssueType = null; // 'topSide' or 'understructure'
+var _editingIssueIndex = -1;  // -1 = new issue, >= 0 = editing existing
+var _editingIssuePhoto = null;
+var _editingIssuePart = null;
+var _issuePartSearchTimeout = null;
+
+// Add top side issue — expand inline form
+function addTopSideIssue() {
+    _editingIssueType = 'topSide';
+    _editingIssueIndex = -1;
+    _editingIssuePhoto = null;
+    _editingIssuePart = null;
+    renderTopSideIssues();
+    // Scroll to the new form
+    setTimeout(function() {
+        var form = document.getElementById('inlineIssueForm_topSide');
+        if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
 }
 
-// Close add issue modal
-function closeAddIssueModal() {
-    document.getElementById('addIssueModal').classList.add('hidden');
-    document.getElementById('addIssueModal').style.display = 'none';
+// Add understructure issue — expand inline form
+function addUnderstructureIssue() {
+    _editingIssueType = 'understructure';
+    _editingIssueIndex = -1;
+    _editingIssuePhoto = null;
+    _editingIssuePart = null;
+    renderUnderstructureIssues();
+    setTimeout(function() {
+        var form = document.getElementById('inlineIssueForm_understructure');
+        if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
 }
 
-// Reset issue modal
-function resetIssueModal() {
-    currentIssueType = '';
-    document.getElementById('issueTypeTopSide').classList.remove('btn-primary');
-    document.getElementById('issueTypeTopSide').classList.add('btn-outline');
-    document.getElementById('issueTypeUnder').classList.remove('btn-primary');
-    document.getElementById('issueTypeUnder').classList.add('btn-outline');
-    document.getElementById('issueLocationFields').classList.add('hidden');
-    document.getElementById('topSideLocationFields').classList.add('hidden');
-    document.getElementById('underLocationFields').classList.add('hidden');
-    document.getElementById('issueDescription').value = '';
-    document.getElementById('issueSection').value = '';
-    document.getElementById('issueRow').value = '';
-    document.getElementById('issueAisle').value = '';
-    document.getElementById('issueFrame').value = '';
-    document.getElementById('issueTier').value = '';
-    document.getElementById('issuePhotoPreview').innerHTML = '<div style="text-align: center; color: #6c757d;"><div style="font-size: 32px;">📷</div><div style="font-size: 13px;">Tap to take photo</div></div>';
+// Edit existing issue — expand it inline
+function editIssue(type, index) {
+    var bank = currentJob.banks[currentBankIndex];
+    var issues = type === 'topSide' ? bank.topSideIssues : bank.understructureIssues;
+    var issue = issues[index];
+    if (!issue) return;
+
+    _editingIssueType = type;
+    _editingIssueIndex = index;
+    _editingIssuePhoto = issue.photo || null;
+    _editingIssuePart = issue.part || null;
+
+    if (type === 'topSide') {
+        renderTopSideIssues();
+    } else {
+        renderUnderstructureIssues();
+    }
+    setTimeout(function() {
+        var form = document.getElementById('inlineIssueForm_' + type);
+        if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
 }
 
-// Select issue type
-function selectIssueType(type) {
-    currentIssueType = type;
-
-    document.getElementById('issueTypeTopSide').classList.toggle('btn-primary', type === 'topSide');
-    document.getElementById('issueTypeTopSide').classList.toggle('btn-outline', type !== 'topSide');
-    document.getElementById('issueTypeUnder').classList.toggle('btn-primary', type === 'understructure');
-    document.getElementById('issueTypeUnder').classList.toggle('btn-outline', type !== 'understructure');
-
-    document.getElementById('issueLocationFields').classList.remove('hidden');
-    document.getElementById('topSideLocationFields').classList.toggle('hidden', type !== 'topSide');
-    document.getElementById('underLocationFields').classList.toggle('hidden', type !== 'understructure');
+// Cancel inline issue editing
+function cancelInlineIssue(type) {
+    _editingIssueType = null;
+    _editingIssueIndex = -1;
+    _editingIssuePhoto = null;
+    _editingIssuePart = null;
+    if (type === 'topSide') {
+        renderTopSideIssues();
+    } else {
+        renderUnderstructureIssues();
+    }
 }
 
-// Preview issue photo
-function previewIssuePhoto(input) {
+// Build the inline issue form HTML
+function buildInlineIssueForm(type, issue) {
+    var isTopSide = type === 'topSide';
+    var locationFields = '';
+
+    if (isTopSide) {
+        locationFields =
+            '<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px;">' +
+                '<div class="form-group" style="margin-bottom: 0;">' +
+                    '<label class="form-label" style="font-size: 11px;">Section</label>' +
+                    '<input type="text" id="inlineIssueSection" class="form-input" placeholder="e.g., 2" value="' + (issue ? (issue.section || '') : '') + '">' +
+                '</div>' +
+                '<div class="form-group" style="margin-bottom: 0;">' +
+                    '<label class="form-label" style="font-size: 11px;">Row</label>' +
+                    '<input type="text" id="inlineIssueRow" class="form-input" placeholder="e.g., 3" value="' + (issue ? (issue.row || '') : '') + '">' +
+                '</div>' +
+                '<div class="form-group" style="margin-bottom: 0;">' +
+                    '<label class="form-label" style="font-size: 11px;">Aisle</label>' +
+                    '<input type="text" id="inlineIssueAisle" class="form-input" placeholder="e.g., 1" value="' + (issue ? (issue.aisle || '') : '') + '">' +
+                '</div>' +
+            '</div>';
+    } else {
+        locationFields =
+            '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">' +
+                '<div class="form-group" style="margin-bottom: 0;">' +
+                    '<label class="form-label" style="font-size: 11px;">Frame</label>' +
+                    '<input type="text" id="inlineIssueFrame" class="form-input" placeholder="e.g., 3" value="' + (issue ? (issue.frame || '') : '') + '">' +
+                '</div>' +
+                '<div class="form-group" style="margin-bottom: 0;">' +
+                    '<label class="form-label" style="font-size: 11px;">Tier</label>' +
+                    '<input type="text" id="inlineIssueTier" class="form-input" placeholder="e.g., 1" value="' + (issue ? (issue.tier || '') : '') + '">' +
+                '</div>' +
+            '</div>';
+    }
+
+    // Photo preview
+    var photoHtml = '';
+    if (_editingIssuePhoto) {
+        photoHtml = '<img src="' + _editingIssuePhoto + '" style="max-width: 100%; max-height: 100px; border-radius: 8px; object-fit: cover;">';
+    } else {
+        photoHtml = '<div style="text-align: center; color: #6c757d;"><div style="font-size: 24px;">📷</div><div style="font-size: 12px;">Photo (required)</div></div>';
+    }
+
+    // Part badge
+    var partHtml = '';
+    if (_editingIssuePart) {
+        partHtml =
+            '<div id="inlineIssuePartBadge" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #e3f2fd; border-radius: 6px; margin-bottom: 8px;">' +
+                '<div style="flex: 1;">' +
+                    '<div style="font-weight: 600; font-size: 13px;">' + (_editingIssuePart.partNumber || '') + '</div>' +
+                    '<div style="font-size: 12px; color: #555;">' + (_editingIssuePart.productName || '') + '</div>' +
+                    '<div style="font-size: 11px; color: #888;">' + (_editingIssuePart.vendor || '') + ((_editingIssuePart.price && parseFloat(_editingIssuePart.price) > 0) ? ' - $' + parseFloat(_editingIssuePart.price).toFixed(2) : '') + '</div>' +
+                '</div>' +
+                '<button onclick="_editingIssuePart=null; document.getElementById(\'inlineIssuePartBadge\').remove(); document.getElementById(\'issuePartSearchArea\').style.display=\'block\';" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 16px;">×</button>' +
+            '</div>';
+    }
+
+    var manualPartVal = issue && issue.manualPart ? issue.manualPart : '';
+    var qtyVal = issue && issue.quantity ? issue.quantity : 1;
+
+    return '<div id="inlineIssueForm_' + type + '" style="background: #fffde7; border: 2px solid #fbc02d; border-radius: 8px; padding: 16px; margin-bottom: 8px;">' +
+        locationFields +
+        '<div class="form-group" style="margin-bottom: 12px;">' +
+            '<label class="form-label" style="font-size: 11px;">Description *</label>' +
+            '<textarea id="inlineIssueDesc" class="form-textarea" placeholder="Describe the issue..." style="min-height: 60px;">' + (issue ? (issue.description || '') : '') + '</textarea>' +
+        '</div>' +
+        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">' +
+            '<div>' +
+                '<label class="form-label" style="font-size: 11px;">📷 Photo *</label>' +
+                '<div id="inlineIssuePhotoPreview" style="width: 100%; height: 100px; background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="document.getElementById(\'inlineIssuePhotoInput\').click()">' +
+                    photoHtml +
+                '</div>' +
+                '<input type="file" id="inlineIssuePhotoInput" accept="image/*" capture="environment" style="display: none;" onchange="handleInlineIssuePhoto(this)">' +
+            '</div>' +
+            '<div>' +
+                '<label class="form-label" style="font-size: 11px;">Qty</label>' +
+                '<input type="number" id="inlineIssueQty" class="form-input" value="' + qtyVal + '" min="1" style="margin-bottom: 8px;">' +
+            '</div>' +
+        '</div>' +
+        '<div style="margin-bottom: 12px;">' +
+            '<label class="form-label" style="font-size: 11px;">Part (from catalog or manual)</label>' +
+            partHtml +
+            '<div id="issuePartSearchArea" style="' + (_editingIssuePart ? 'display:none;' : '') + '">' +
+                '<input type="text" id="inlineIssuePartSearch" class="form-input" placeholder="Search parts catalog..." oninput="searchIssueParts(this.value)" autocomplete="off">' +
+                '<div id="inlineIssuePartResults" style="max-height: 200px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 6px; display: none; margin-top: 4px;"></div>' +
+                '<div style="margin-top: 6px;">' +
+                    '<a href="#" onclick="event.preventDefault(); toggleManualPartEntry();" style="font-size: 12px; color: #6c757d;">Or enter manually</a>' +
+                '</div>' +
+                '<input type="text" id="inlineIssueManualPart" class="form-input" placeholder="Describe part needed..." value="' + manualPartVal + '" style="display: ' + (manualPartVal ? 'block' : 'none') + '; margin-top: 6px;">' +
+            '</div>' +
+        '</div>' +
+        '<div style="display: flex; gap: 8px;">' +
+            '<button class="btn btn-primary" onclick="saveInlineIssue(\'' + type + '\')" style="flex: 1; padding: 10px;">Save Issue</button>' +
+            '<button class="btn btn-outline" onclick="cancelInlineIssue(\'' + type + '\')" style="padding: 10px;">Cancel</button>' +
+        '</div>' +
+    '</div>';
+}
+
+// Toggle manual part entry field
+function toggleManualPartEntry() {
+    var el = document.getElementById('inlineIssueManualPart');
+    if (el.style.display === 'none') {
+        el.style.display = 'block';
+        el.focus();
+    } else {
+        el.style.display = 'none';
+        el.value = '';
+    }
+}
+
+// Handle photo capture for inline issue
+function handleInlineIssuePhoto(input) {
     if (input.files && input.files[0]) {
-        const reader = new FileReader();
+        var reader = new FileReader();
         reader.onload = function(e) {
-            document.getElementById('issuePhotoPreview').innerHTML = `
-                <img src="${e.target.result}" style="max-width: 100%; max-height: 150px; border-radius: 8px;">
-            `;
+            _editingIssuePhoto = e.target.result;
+            document.getElementById('inlineIssuePhotoPreview').innerHTML =
+                '<img src="' + e.target.result + '" style="max-width: 100%; max-height: 100px; border-radius: 8px; object-fit: cover;">';
         };
         reader.readAsDataURL(input.files[0]);
     }
 }
 
-// Save issue
-function saveIssue() {
-    if (!currentIssueType) {
-        alert('Please select issue type (Top Side or Understructure)');
+// Search parts catalog from inline issue
+function searchIssueParts(query) {
+    clearTimeout(_issuePartSearchTimeout);
+    var resultsEl = document.getElementById('inlineIssuePartResults');
+
+    if (!query || query.length < 2) {
+        resultsEl.style.display = 'none';
         return;
     }
 
-    const description = document.getElementById('issueDescription').value.trim();
-    if (!description) {
+    resultsEl.style.display = 'block';
+    resultsEl.innerHTML = '<div style="padding: 12px; text-align: center; color: #6c757d; font-size: 13px;">Searching...</div>';
+
+    _issuePartSearchTimeout = setTimeout(function() {
+        PartsAPI.search(query, null, null, 20)
+            .then(function(data) {
+                if (!data.parts || data.parts.length === 0) {
+                    resultsEl.innerHTML = '<div style="padding: 12px; text-align: center; color: #6c757d; font-size: 13px;">No parts found</div>';
+                    return;
+                }
+                // Store parts for selection by index
+                window._issuePartResults = data.parts;
+                resultsEl.innerHTML = data.parts.map(function(part, idx) {
+                    var price = parseFloat(part.price) || 0;
+                    var priceStr = price > 0 ? '$' + price.toFixed(2) : '';
+                    var imgHtml = part.imageUrl
+                        ? '<img src="' + part.imageUrl + '" style="width: 36px; height: 36px; object-fit: cover; border-radius: 4px; margin-right: 8px;">'
+                        : '';
+                    return '<div onclick="selectIssuePartByIndex(' + idx + ')" style="display: flex; align-items: center; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0;" onmouseover="this.style.background=\'#f0f7ff\'" onmouseout="this.style.background=\'white\'">' +
+                        imgHtml +
+                        '<div style="flex: 1;">' +
+                            '<div style="font-size: 13px; font-weight: 600;">' + (part.partNumber || '—') + ' <span style="font-weight: 400; color: #888;">' + (part.vendor || '') + '</span></div>' +
+                            '<div style="font-size: 12px; color: #555;">' + (part.productName || '') + '</div>' +
+                        '</div>' +
+                        (priceStr ? '<div style="font-size: 12px; font-weight: 600; color: #2e7d32; white-space: nowrap;">' + priceStr + '</div>' : '') +
+                    '</div>';
+                }).join('');
+            })
+            .catch(function(err) {
+                resultsEl.innerHTML = '<div style="padding: 12px; text-align: center; color: #dc3545; font-size: 13px;">Search failed</div>';
+            });
+    }, 300);
+}
+
+// Select a part by index from search results
+function selectIssuePartByIndex(idx) {
+    var part = window._issuePartResults && window._issuePartResults[idx];
+    if (!part) return;
+
+    _editingIssuePart = {
+        id: part.id,
+        partNumber: part.partNumber || '',
+        productName: part.productName || '',
+        vendor: part.vendor || '',
+        price: parseFloat(part.price) || 0
+    };
+
+    // Show part badge, hide search
+    document.getElementById('inlineIssuePartResults').style.display = 'none';
+    document.getElementById('inlineIssuePartSearch').value = '';
+    document.getElementById('issuePartSearchArea').style.display = 'none';
+
+    // Insert badge before the search area
+    var searchArea = document.getElementById('issuePartSearchArea');
+    var existingBadge = document.getElementById('inlineIssuePartBadge');
+    if (existingBadge) existingBadge.remove();
+
+    var badge = document.createElement('div');
+    badge.id = 'inlineIssuePartBadge';
+    badge.style.cssText = 'display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #e3f2fd; border-radius: 6px; margin-bottom: 8px;';
+    badge.innerHTML =
+        '<div style="flex: 1;">' +
+            '<div style="font-weight: 600; font-size: 13px;">' + (_editingIssuePart.partNumber || '') + '</div>' +
+            '<div style="font-size: 12px; color: #555;">' + (_editingIssuePart.productName || '') + '</div>' +
+            '<div style="font-size: 11px; color: #888;">' + (_editingIssuePart.vendor || '') + ((_editingIssuePart.price > 0) ? ' - $' + _editingIssuePart.price.toFixed(2) : '') + '</div>' +
+        '</div>' +
+        '<button onclick="_editingIssuePart=null; this.parentElement.remove(); document.getElementById(\'issuePartSearchArea\').style.display=\'block\';" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 16px;">×</button>';
+    searchArea.parentElement.insertBefore(badge, searchArea);
+}
+
+// Save inline issue
+function saveInlineIssue(type) {
+    var desc = document.getElementById('inlineIssueDesc').value.trim();
+    if (!desc) {
         alert('Please enter a description');
         return;
     }
 
-    const bank = currentJob.banks[currentBankIndex];
-    const photoInput = document.getElementById('issuePhotoInput');
-    let photoData = null;
-
-    if (photoInput.files && photoInput.files[0]) {
-        // In a real app, we'd upload this. For demo, store base64
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            photoData = e.target.result;
-            completeIssueSave(bank, description, photoData);
-        };
-        reader.readAsDataURL(photoInput.files[0]);
-    } else {
-        completeIssueSave(bank, description, null);
+    if (!_editingIssuePhoto) {
+        // Highlight photo area with red border
+        var photoEl = document.getElementById('inlineIssuePhotoPreview');
+        photoEl.style.borderColor = '#dc3545';
+        photoEl.style.borderWidth = '3px';
+        alert('Photo is required for each issue');
+        return;
     }
-}
 
-function completeIssueSave(bank, description, photoData) {
-    const issue = {
-        id: Date.now(),
-        description: description,
-        photo: photoData,
-        createdAt: new Date().toISOString()
+    var bank = currentJob.banks[currentBankIndex];
+    var qty = parseInt(document.getElementById('inlineIssueQty').value) || 1;
+    var manualPart = document.getElementById('inlineIssueManualPart').value.trim();
+
+    var issue = {
+        id: _editingIssueIndex >= 0 ? (type === 'topSide' ? bank.topSideIssues[_editingIssueIndex].id : bank.understructureIssues[_editingIssueIndex].id) : Date.now(),
+        description: desc,
+        photo: _editingIssuePhoto,
+        part: _editingIssuePart ? Object.assign({}, _editingIssuePart) : null,
+        manualPart: manualPart || null,
+        quantity: qty,
+        createdAt: _editingIssueIndex >= 0 ? (type === 'topSide' ? bank.topSideIssues[_editingIssueIndex].createdAt : bank.understructureIssues[_editingIssueIndex].createdAt) : new Date().toISOString()
     };
 
-    if (currentIssueType === 'topSide') {
-        issue.section = document.getElementById('issueSection').value;
-        issue.row = document.getElementById('issueRow').value;
-        issue.aisle = document.getElementById('issueAisle').value;
-        bank.topSideIssues.push(issue);
-        renderTopSideIssues();
+    if (type === 'topSide') {
+        issue.section = document.getElementById('inlineIssueSection').value;
+        issue.row = document.getElementById('inlineIssueRow').value;
+        issue.aisle = document.getElementById('inlineIssueAisle').value;
+        if (_editingIssueIndex >= 0) {
+            bank.topSideIssues[_editingIssueIndex] = issue;
+        } else {
+            bank.topSideIssues.push(issue);
+        }
     } else {
-        issue.frame = document.getElementById('issueFrame').value;
-        issue.tier = document.getElementById('issueTier').value;
-        bank.understructureIssues.push(issue);
-        renderUnderstructureIssues();
+        issue.frame = document.getElementById('inlineIssueFrame').value;
+        issue.tier = document.getElementById('inlineIssueTier').value;
+        if (_editingIssueIndex >= 0) {
+            bank.understructureIssues[_editingIssueIndex] = issue;
+        } else {
+            bank.understructureIssues.push(issue);
+        }
     }
 
-    closeAddIssueModal();
-}
+    // Reset editing state
+    _editingIssueType = null;
+    _editingIssueIndex = -1;
+    _editingIssuePhoto = null;
+    _editingIssuePart = null;
 
-// Add top side issue (shortcut)
-function addTopSideIssue() {
-    openAddIssueModal();
-    selectIssueType('topSide');
-}
-
-// Add understructure issue (shortcut)
-function addUnderstructureIssue() {
-    openAddIssueModal();
-    selectIssueType('understructure');
-}
-
-// Render top side issues
-function renderTopSideIssues() {
-    const bank = currentJob.banks[currentBankIndex];
-    const container = document.getElementById('topSideIssuesList');
-
-    if (!bank.topSideIssues || bank.topSideIssues.length === 0) {
-        container.innerHTML = `
-            <div style="text-align: center; padding: 24px; color: #6c757d; background: #f8f9fa; border-radius: 8px;">
-                <div style="font-size: 32px; margin-bottom: 8px;">👀</div>
-                <p>No top side issues documented yet</p>
-                <p style="font-size: 12px; margin-top: 4px;">Walk the bleachers and tap + to add issues</p>
-            </div>
-        `;
-        return;
-    }
-
-    container.innerHTML = bank.topSideIssues.map((issue, i) => `
-        <div style="background: #fff; border: 1px solid #e9ecef; border-radius: 8px; padding: 12px; margin-bottom: 8px; display: flex; gap: 12px;">
-            ${issue.photo ? `<img src="${issue.photo}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">` : ''}
-            <div style="flex: 1;">
-                <div style="font-size: 12px; color: #1565c0; margin-bottom: 4px;">
-                    ${issue.section ? `Section ${issue.section}` : ''} ${issue.row ? `Row ${issue.row}` : ''} ${issue.aisle ? `Aisle ${issue.aisle}` : ''}
-                </div>
-                <div style="font-size: 14px;">${issue.description}</div>
-            </div>
-            <button onclick="deleteTopSideIssue(${i})" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 16px;">×</button>
-        </div>
-    `).join('');
-}
-
-// Render understructure issues
-function renderUnderstructureIssues() {
-    const bank = currentJob.banks[currentBankIndex];
-    const container = document.getElementById('understructureIssuesList');
-
-    if (!bank.understructureIssues || bank.understructureIssues.length === 0) {
-        container.innerHTML = `
-            <div style="text-align: center; padding: 24px; color: #6c757d; background: #f8f9fa; border-radius: 8px;">
-                <div style="font-size: 32px; margin-bottom: 8px;">🔍</div>
-                <p>No understructure issues documented yet</p>
-                <p style="font-size: 12px; margin-top: 4px;">Check motors, frames, wheels and tap + to add issues</p>
-            </div>
-        `;
-        return;
-    }
-
-    container.innerHTML = bank.understructureIssues.map((issue, i) => `
-        <div style="background: #fff; border: 1px solid #e9ecef; border-radius: 8px; padding: 12px; margin-bottom: 8px; display: flex; gap: 12px;">
-            ${issue.photo ? `<img src="${issue.photo}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">` : ''}
-            <div style="flex: 1;">
-                <div style="font-size: 12px; color: #c2185b; margin-bottom: 4px;">
-                    ${issue.frame ? `Frame ${issue.frame}` : ''} ${issue.tier ? `Tier ${issue.tier}` : ''}
-                </div>
-                <div style="font-size: 14px;">${issue.description}</div>
-            </div>
-            <button onclick="deleteUnderstructureIssue(${i})" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 16px;">×</button>
-        </div>
-    `).join('');
-}
-
-// Delete issues
-function deleteTopSideIssue(index) {
-    currentJob.banks[currentBankIndex].topSideIssues.splice(index, 1);
     renderTopSideIssues();
+    renderUnderstructureIssues();
+    renderIssueTally();
 }
 
-function deleteUnderstructureIssue(index) {
-    currentJob.banks[currentBankIndex].understructureIssues.splice(index, 1);
+// Render compact issue card (collapsed)
+function renderIssueCard(issue, type, index) {
+    var locationHtml = '';
+    if (type === 'topSide') {
+        var parts = [];
+        if (issue.section) parts.push('Sec ' + issue.section);
+        if (issue.row) parts.push('Row ' + issue.row);
+        if (issue.aisle) parts.push('Aisle ' + issue.aisle);
+        if (parts.length > 0) locationHtml = '<span style="font-size: 11px; color: #1565c0;">' + parts.join(' | ') + '</span>';
+    } else {
+        var parts = [];
+        if (issue.frame) parts.push('Frame ' + issue.frame);
+        if (issue.tier) parts.push('Tier ' + issue.tier);
+        if (parts.length > 0) locationHtml = '<span style="font-size: 11px; color: #c2185b;">' + parts.join(' | ') + '</span>';
+    }
+
+    var photoHtml = issue.photo
+        ? '<img src="' + issue.photo + '" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; flex-shrink: 0;">'
+        : '';
+
+    var partBadge = '';
+    if (issue.part) {
+        partBadge = '<span style="display: inline-block; padding: 1px 6px; background: #e3f2fd; color: #1565c0; border-radius: 4px; font-size: 11px; font-weight: 600; margin-top: 4px;">' + (issue.part.partNumber || 'Part') + '</span>';
+    } else if (issue.manualPart) {
+        partBadge = '<span style="display: inline-block; padding: 1px 6px; background: #fff3e0; color: #e65100; border-radius: 4px; font-size: 11px; margin-top: 4px;">' + issue.manualPart.substring(0, 30) + '</span>';
+    }
+
+    var qtyBadge = issue.quantity && issue.quantity > 1
+        ? '<span style="display: inline-block; padding: 1px 6px; background: #e8f5e9; color: #2e7d32; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 4px;">x' + issue.quantity + '</span>'
+        : '';
+
+    return '<div onclick="editIssue(\'' + type + '\', ' + index + ')" style="background: #fff; border: 1px solid #e9ecef; border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; display: flex; gap: 10px; cursor: pointer; transition: border-color 0.15s;" onmouseover="this.style.borderColor=\'#007bff\'" onmouseout="this.style.borderColor=\'#e9ecef\'">' +
+        photoHtml +
+        '<div style="flex: 1; min-width: 0;">' +
+            (locationHtml ? '<div style="margin-bottom: 2px;">' + locationHtml + '</div>' : '') +
+            '<div style="font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + issue.description + '</div>' +
+            (partBadge || qtyBadge ? '<div>' + partBadge + qtyBadge + '</div>' : '') +
+        '</div>' +
+        '<button onclick="event.stopPropagation(); deleteIssue(\'' + type + '\', ' + index + ')" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 16px; flex-shrink: 0;">×</button>' +
+    '</div>';
+}
+
+// Render top side issues list
+function renderTopSideIssues() {
+    var bank = currentJob.banks[currentBankIndex];
+    var container = document.getElementById('topSideIssuesList');
+    var issues = bank.topSideIssues || [];
+
+    var html = '';
+
+    if (issues.length === 0 && _editingIssueType !== 'topSide') {
+        html = '<div style="text-align: center; padding: 20px; color: #6c757d; background: #f8f9fa; border-radius: 8px;">' +
+            '<p style="font-size: 13px;">No top side issues yet</p>' +
+            '<p style="font-size: 12px; margin-top: 4px;">Tap + Add Issue to document problems</p>' +
+        '</div>';
+    } else {
+        issues.forEach(function(issue, i) {
+            if (_editingIssueType === 'topSide' && _editingIssueIndex === i) {
+                html += buildInlineIssueForm('topSide', issue);
+            } else {
+                html += renderIssueCard(issue, 'topSide', i);
+            }
+        });
+    }
+
+    // Show new issue form at the bottom if adding new
+    if (_editingIssueType === 'topSide' && _editingIssueIndex === -1) {
+        html += buildInlineIssueForm('topSide', null);
+    }
+
+    container.innerHTML = html;
+}
+
+// Render understructure issues list
+function renderUnderstructureIssues() {
+    var bank = currentJob.banks[currentBankIndex];
+    var container = document.getElementById('understructureIssuesList');
+    var issues = bank.understructureIssues || [];
+
+    var html = '';
+
+    if (issues.length === 0 && _editingIssueType !== 'understructure') {
+        html = '<div style="text-align: center; padding: 20px; color: #6c757d; background: #f8f9fa; border-radius: 8px;">' +
+            '<p style="font-size: 13px;">No understructure issues yet</p>' +
+            '<p style="font-size: 12px; margin-top: 4px;">Tap + Add Issue to document problems</p>' +
+        '</div>';
+    } else {
+        issues.forEach(function(issue, i) {
+            if (_editingIssueType === 'understructure' && _editingIssueIndex === i) {
+                html += buildInlineIssueForm('understructure', issue);
+            } else {
+                html += renderIssueCard(issue, 'understructure', i);
+            }
+        });
+    }
+
+    // Show new issue form at the bottom if adding new
+    if (_editingIssueType === 'understructure' && _editingIssueIndex === -1) {
+        html += buildInlineIssueForm('understructure', null);
+    }
+
+    container.innerHTML = html;
+}
+
+// Delete issue
+function deleteIssue(type, index) {
+    var bank = currentJob.banks[currentBankIndex];
+    if (type === 'topSide') {
+        bank.topSideIssues.splice(index, 1);
+    } else {
+        bank.understructureIssues.splice(index, 1);
+    }
+    renderTopSideIssues();
     renderUnderstructureIssues();
+    renderIssueTally();
+}
+
+// Legacy delete functions (keep for any remaining references)
+function deleteTopSideIssue(index) { deleteIssue('topSide', index); }
+function deleteUnderstructureIssue(index) { deleteIssue('understructure', index); }
+
+// ==========================================
+// ISSUE TALLY SUMMARY
+// Auto-generated summary from all issues
+// ==========================================
+
+function renderIssueTally() {
+    var bank = currentJob.banks[currentBankIndex];
+    var container = document.getElementById('issueTallyContainer');
+    if (!container) return;
+
+    var allIssues = (bank.topSideIssues || []).concat(bank.understructureIssues || []);
+    if (allIssues.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">' +
+            '<p>No issues documented yet</p>' +
+            '<p style="font-size: 12px; margin-top: 4px;">Issues will be tallied here automatically</p>' +
+        '</div>';
+        return;
+    }
+
+    // Group by part name or description
+    var tally = {};
+    var totalParts = 0;
+    allIssues.forEach(function(issue) {
+        var key, label, vendor, price;
+        if (issue.part) {
+            key = 'part_' + (issue.part.partNumber || issue.part.productName);
+            label = (issue.part.partNumber ? issue.part.partNumber + ' - ' : '') + (issue.part.productName || 'Unknown Part');
+            vendor = issue.part.vendor || '';
+            price = issue.part.price || 0;
+        } else if (issue.manualPart) {
+            key = 'manual_' + issue.manualPart;
+            label = issue.manualPart;
+            vendor = 'Manual entry';
+            price = 0;
+        } else {
+            key = 'desc_' + issue.description;
+            label = issue.description;
+            vendor = '';
+            price = 0;
+        }
+
+        var qty = issue.quantity || 1;
+        if (tally[key]) {
+            tally[key].qty += qty;
+        } else {
+            tally[key] = { label: label, vendor: vendor, price: parseFloat(price) || 0, qty: qty };
+        }
+        totalParts += qty;
+    });
+
+    var tallyKeys = Object.keys(tally);
+
+    var html = '<div style="margin-bottom: 12px; display: flex; gap: 12px;">' +
+        '<div style="background: #f3e5f5; padding: 8px 16px; border-radius: 8px; flex: 1; text-align: center;">' +
+            '<div style="font-size: 20px; font-weight: 700; color: #7b1fa2;">' + allIssues.length + '</div>' +
+            '<div style="font-size: 11px; color: #7b1fa2;">Issues</div>' +
+        '</div>' +
+        '<div style="background: #e3f2fd; padding: 8px 16px; border-radius: 8px; flex: 1; text-align: center;">' +
+            '<div style="font-size: 20px; font-weight: 700; color: #1565c0;">' + tallyKeys.length + '</div>' +
+            '<div style="font-size: 11px; color: #1565c0;">Unique Items</div>' +
+        '</div>' +
+        '<div style="background: #e8f5e9; padding: 8px 16px; border-radius: 8px; flex: 1; text-align: center;">' +
+            '<div style="font-size: 20px; font-weight: 700; color: #2e7d32;">' + totalParts + '</div>' +
+            '<div style="font-size: 11px; color: #2e7d32;">Total Qty</div>' +
+        '</div>' +
+    '</div>';
+
+    html += '<div style="border: 1px solid #e9ecef; border-radius: 8px; overflow: hidden;">';
+    tallyKeys.forEach(function(key, i) {
+        var item = tally[key];
+        var priceHtml = item.price > 0 ? '<span style="color: #2e7d32; font-weight: 600;">$' + (item.price * item.qty).toFixed(2) + '</span>' : '';
+        html += '<div style="padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;' + (i < tallyKeys.length - 1 ? ' border-bottom: 1px solid #f0f0f0;' : '') + '">' +
+            '<div style="flex: 1;">' +
+                '<div style="font-size: 13px; font-weight: 600;">' + item.qty + 'x ' + item.label + '</div>' +
+                (item.vendor ? '<div style="font-size: 11px; color: #888;">' + item.vendor + '</div>' : '') +
+            '</div>' +
+            priceHtml +
+        '</div>';
+    });
+    html += '</div>';
+
+    container.innerHTML = html;
 }
 
 // Save bank and go back to overview
@@ -717,25 +1092,6 @@ function showJobSummary() {
 
         let issuesHTML = '';
         if (totalIssues > 0) {
-            if (bank.safetyIssues) {
-                issuesHTML += `<div style="background: #ffebee; padding: 8px 12px; border-radius: 4px; margin-top: 8px; border-left: 3px solid #c62828;">
-                    <div style="font-size: 11px; font-weight: 600; color: #c62828; text-transform: uppercase;">Safety Issues</div>
-                    <div style="font-size: 13px; margin-top: 4px;">${bank.safetyIssues}</div>
-                </div>`;
-            }
-            if (bank.functionalIssues) {
-                issuesHTML += `<div style="background: #fff3e0; padding: 8px 12px; border-radius: 4px; margin-top: 8px; border-left: 3px solid #e65100;">
-                    <div style="font-size: 11px; font-weight: 600; color: #e65100; text-transform: uppercase;">Functional/Mechanical</div>
-                    <div style="font-size: 13px; margin-top: 4px;">${bank.functionalIssues}</div>
-                </div>`;
-            }
-            if (bank.cosmeticIssues) {
-                issuesHTML += `<div style="background: #e3f2fd; padding: 8px 12px; border-radius: 4px; margin-top: 8px; border-left: 3px solid #1565c0;">
-                    <div style="font-size: 11px; font-weight: 600; color: #1565c0; text-transform: uppercase;">Cosmetic</div>
-                    <div style="font-size: 13px; margin-top: 4px;">${bank.cosmeticIssues}</div>
-                </div>`;
-            }
-
             // Show individual issues
             if (underIssues.length > 0 || topIssues.length > 0) {
                 issuesHTML += `<details style="margin-top: 12px;">
@@ -745,10 +1101,18 @@ function showJobSummary() {
                 if (underIssues.length > 0) {
                     issuesHTML += `<div style="font-size: 11px; font-weight: 600; color: #6c757d; text-transform: uppercase; margin-bottom: 4px;">Understructure</div>`;
                     underIssues.forEach(issue => {
-                        issuesHTML += `<div style="font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f0f0;">
-                            ${issue.frame ? `<span style="color: #e65100;">Frame ${issue.frame}</span>` : ''}
-                            ${issue.tier ? `<span style="color: #6c757d;"> Tier ${issue.tier}</span>` : ''}
-                            ${issue.frame || issue.tier ? ' - ' : ''}${issue.description}
+                        var partInfo = '';
+                        if (issue.part) partInfo = `<span style="background: #e3f2fd; color: #1565c0; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-left: 6px;">${issue.part.partNumber || issue.part.productName}</span>`;
+                        else if (issue.manualPart) partInfo = `<span style="background: #fff3e0; color: #e65100; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-left: 6px;">${issue.manualPart.substring(0, 30)}</span>`;
+                        var qtyInfo = issue.quantity > 1 ? `<span style="background: #e8f5e9; color: #2e7d32; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-left: 4px;">x${issue.quantity}</span>` : '';
+                        issuesHTML += `<div style="font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 6px;">
+                            ${issue.photo ? `<img src="${issue.photo}" style="width: 32px; height: 32px; object-fit: cover; border-radius: 3px;">` : ''}
+                            <div style="flex: 1;">
+                                ${issue.frame ? `<span style="color: #e65100;">Frame ${issue.frame}</span>` : ''}
+                                ${issue.tier ? `<span style="color: #6c757d;"> Tier ${issue.tier}</span>` : ''}
+                                ${issue.frame || issue.tier ? ' - ' : ''}${issue.description}
+                                ${partInfo}${qtyInfo}
+                            </div>
                         </div>`;
                     });
                 }
@@ -756,10 +1120,18 @@ function showJobSummary() {
                 if (topIssues.length > 0) {
                     issuesHTML += `<div style="font-size: 11px; font-weight: 600; color: #6c757d; text-transform: uppercase; margin: 12px 0 4px;">Top Side</div>`;
                     topIssues.forEach(issue => {
-                        issuesHTML += `<div style="font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f0f0;">
-                            ${issue.section ? `<span style="color: #0066cc;">Section ${issue.section}</span>` : ''}
-                            ${issue.row ? `<span style="color: #6c757d;"> Row ${issue.row}</span>` : ''}
-                            ${issue.section || issue.row ? ' - ' : ''}${issue.description}
+                        var partInfo = '';
+                        if (issue.part) partInfo = `<span style="background: #e3f2fd; color: #1565c0; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-left: 6px;">${issue.part.partNumber || issue.part.productName}</span>`;
+                        else if (issue.manualPart) partInfo = `<span style="background: #fff3e0; color: #e65100; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-left: 6px;">${issue.manualPart.substring(0, 30)}</span>`;
+                        var qtyInfo = issue.quantity > 1 ? `<span style="background: #e8f5e9; color: #2e7d32; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-left: 4px;">x${issue.quantity}</span>` : '';
+                        issuesHTML += `<div style="font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 6px;">
+                            ${issue.photo ? `<img src="${issue.photo}" style="width: 32px; height: 32px; object-fit: cover; border-radius: 3px;">` : ''}
+                            <div style="flex: 1;">
+                                ${issue.section ? `<span style="color: #0066cc;">Section ${issue.section}</span>` : ''}
+                                ${issue.row ? `<span style="color: #6c757d;"> Row ${issue.row}</span>` : ''}
+                                ${issue.section || issue.row ? ' - ' : ''}${issue.description}
+                                ${partInfo}${qtyInfo}
+                            </div>
                         </div>`;
                     });
                 }
@@ -1020,13 +1392,16 @@ function loadInspectionJobs() {
         submittedContainer.innerHTML = '<div style="padding: 24px; text-align: center; color: #6c757d;">No submitted jobs</div>';
     } else {
         submittedContainer.innerHTML = submitted.map(job => `
-            <div onclick="viewSubmittedJob(${job.jobNumber})" style="padding: 16px; border-bottom: 1px solid #e9ecef; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                <div>
+            <div style="padding: 16px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center;">
+                <div onclick="viewSubmittedJob(${job.jobNumber})" style="cursor: pointer; flex: 1;">
                     <div style="font-weight: 600;">Job ${job.jobNumber}</div>
                     <div style="font-size: 14px; color: #6c757d;">${job.locationName}</div>
                     <div style="font-size: 12px; color: #2e7d32;">${job.banks?.length || 0} bank(s) • Submitted ${new Date(job.submittedAt).toLocaleDateString()}</div>
                 </div>
-                <span class="badge badge-success">Submitted</span>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button onclick="editSubmittedJob(${job.jobNumber})" style="padding: 6px 12px; font-size: 12px; background: #fff3e0; color: #e65100; border: 1px solid #e65100; border-radius: 6px; cursor: pointer;">Edit</button>
+                    <span class="badge badge-success">Submitted</span>
+                </div>
             </div>
         `).join('');
     }
@@ -1040,7 +1415,7 @@ function resumeJob(jobNumber) {
     }
 }
 
-// View submitted job (for office review)
+// View submitted job (read-only summary)
 function viewSubmittedJob(jobNumber) {
     currentJob = inspectionJobs.find(j => j.jobNumber === jobNumber);
     if (currentJob) {
@@ -1050,6 +1425,18 @@ function viewSubmittedJob(jobNumber) {
             document.getElementById('techDashboard').classList.remove('hidden');
         }
         showJobSummary();
+    }
+}
+
+// Edit a submitted job (reopen for editing)
+function editSubmittedJob(jobNumber) {
+    currentJob = inspectionJobs.find(j => j.jobNumber === jobNumber);
+    if (currentJob) {
+        currentJob.status = 'in_progress';
+        const idx = inspectionJobs.findIndex(j => j.jobNumber === jobNumber);
+        if (idx >= 0) inspectionJobs[idx] = currentJob;
+        localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
+        showJobOverview('inspections');
     }
 }
 

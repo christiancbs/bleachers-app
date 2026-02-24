@@ -369,7 +369,7 @@ function showTechView(view) {
         initCreateForm();
     } else if (view === 'inspections') {
         document.getElementById('techInspectionsView').classList.remove('hidden');
-        setActiveNav('create');
+        setActiveNav('inspections');
         loadInspectionJobs();
         loadTechInspections();
     } else if (view === 'parts') {
@@ -416,6 +416,7 @@ function initCreateForm() {
     var customEl = document.getElementById('createCustomName');
     if (customEl) customEl.value = '';
     document.getElementById('createPhotoPreview').innerHTML = '';
+    document.getElementById('createNewCustomerForm').classList.add('hidden');
     createPhoto = null;
     createSelectedCustomer = null;
 }
@@ -473,11 +474,16 @@ function searchCreateCustomers(query) {
 
 function showCustomCustomerEntry() {
     document.getElementById('createCustomerResults').classList.add('hidden');
+    document.getElementById('createNewCustomerForm').classList.remove('hidden');
+    document.getElementById('createNewCustomerName').value = document.getElementById('createCustomerSearch').value || '';
+    document.getElementById('createNewCustomerName').focus();
+}
 
-    var name = prompt('Enter customer/school name:');
-    if (!name) return;
+function confirmCreateCustomCustomer() {
+    var name = document.getElementById('createNewCustomerName').value.trim();
+    if (!name) { alert('Please enter a customer/school name.'); return; }
 
-    var address = prompt('Enter address (optional):') || '';
+    var address = document.getElementById('createNewCustomerAddress').value.trim();
 
     createSelectedCustomer = {
         locationId: 'custom_' + Date.now(),
@@ -494,6 +500,11 @@ function showCustomCustomerEntry() {
     document.getElementById('createAddress').textContent = address || 'Custom entry';
     document.getElementById('createContact').textContent = '';
     document.getElementById('createCustomerInfo').classList.remove('hidden');
+    document.getElementById('createNewCustomerForm').classList.add('hidden');
+}
+
+function cancelCreateCustomCustomer() {
+    document.getElementById('createNewCustomerForm').classList.add('hidden');
 }
 
 function selectCreateCustomer(customer) {
