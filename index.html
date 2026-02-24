@@ -2509,18 +2509,18 @@
 
                                 <div id="fieldCreateFormFields" class="hidden">
                                     <div class="form-group">
-                                        <label class="form-label">Customer / School *</label>
+                                        <label class="form-label">School / Location *</label>
                                         <div style="position: relative;">
-                                            <input type="text" id="fieldCreateCustomerSearch" class="form-input" placeholder="Start typing to search..." autocomplete="off" oninput="searchFieldCreateCustomers(this.value)" style="font-size: 16px; padding: 14px;">
+                                            <input type="text" id="fieldCreateCustomerSearch" class="form-input" placeholder="Search by school or location name..." autocomplete="off" oninput="searchFieldCreateCustomers(this.value)" style="font-size: 16px; padding: 14px;">
                                             <div id="fieldCreateCustomerResults" class="customer-search-results hidden"></div>
                                             <input type="hidden" id="fieldCreateCustomerId">
                                             <input type="hidden" id="fieldCreateLocationId">
                                         </div>
-                                        <!-- Inline new customer form -->
+                                        <!-- Inline new location form -->
                                         <div id="fieldCreateNewCustomerForm" class="hidden" style="background: #fffde7; border: 2px solid #fbc02d; border-radius: 8px; padding: 16px; margin-top: 8px;">
-                                            <div style="font-weight: 600; font-size: 14px; margin-bottom: 12px;">+ Add New Customer / School</div>
+                                            <div style="font-weight: 600; font-size: 14px; margin-bottom: 12px;">+ Add New Location</div>
                                             <div class="form-group" style="margin-bottom: 8px;">
-                                                <label class="form-label" style="font-size: 12px;">Customer / School Name *</label>
+                                                <label class="form-label" style="font-size: 12px;">School / Location Name *</label>
                                                 <input type="text" id="fieldCreateNewCustomerName" class="form-input" placeholder="e.g., Brentwood Academy">
                                             </div>
                                             <div class="form-group" style="margin-bottom: 12px;">
@@ -2528,7 +2528,7 @@
                                                 <input type="text" id="fieldCreateNewCustomerAddress" class="form-input" placeholder="e.g., 219 Granny White Pike, Brentwood TN">
                                             </div>
                                             <div style="display: flex; gap: 8px;">
-                                                <button class="btn btn-primary" onclick="confirmFieldCustomCustomer()" style="flex: 1; font-size: 13px;">Use This Customer</button>
+                                                <button class="btn btn-primary" onclick="confirmFieldCustomCustomer()" style="flex: 1; font-size: 13px;">Use This Location</button>
                                                 <button class="btn btn-outline" onclick="cancelFieldCustomCustomer()" style="font-size: 13px;">Cancel</button>
                                             </div>
                                         </div>
@@ -3161,6 +3161,28 @@
                             <button class="btn btn-primary" onclick="showAddFormSelector()" style="padding: 8px 20px;">+ Add Form</button>
                         </div>
 
+                        <!-- Add Form Type Selector (inline, hidden by default) -->
+                        <div id="addFormSelector" class="hidden" style="margin-bottom: 16px; border: 2px solid #e9ecef; border-radius: 12px; padding: 12px; background: #f8f9fa;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <span style="font-size: 14px; font-weight: 600; color: #495057;">Choose form type</span>
+                                <button onclick="hideAddFormSelector()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #6c757d; padding: 0 4px;">&times;</button>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button onclick="addFormToJob('indoor_bleacher')" style="flex: 1; min-width: 140px; padding: 12px; cursor: pointer; border-radius: 8px; border: 2px solid #e9ecef; background: white; text-align: left; transition: all 0.15s;" onmouseover="this.style.borderColor='#007bff'" onmouseout="this.style.borderColor='#e9ecef'">
+                                    <div style="font-weight: 600; font-size: 14px;">Indoor Bleacher Bank</div>
+                                    <div style="font-size: 12px; color: #6c757d; margin-top: 2px;">Telescopic bleacher</div>
+                                </button>
+                                <button onclick="addFormToJob('basketball')" style="flex: 1; min-width: 140px; padding: 12px; cursor: pointer; border-radius: 8px; border: 2px solid #e9ecef; background: white; text-align: left; transition: all 0.15s;" onmouseover="this.style.borderColor='#007bff'" onmouseout="this.style.borderColor='#e9ecef'">
+                                    <div style="font-weight: 600; font-size: 14px;">Basketball Goals</div>
+                                    <div style="font-size: 12px; color: #6c757d; margin-top: 2px;">Wall or ceiling mounted</div>
+                                </button>
+                                <button onclick="addFormToJob('outdoor')" style="flex: 1; min-width: 140px; padding: 12px; cursor: pointer; border-radius: 8px; border: 2px solid #e9ecef; background: white; text-align: left; transition: all 0.15s;" onmouseover="this.style.borderColor='#007bff'" onmouseout="this.style.borderColor='#e9ecef'">
+                                    <div style="font-weight: 600; font-size: 14px;">Outdoor Bleacher</div>
+                                    <div style="font-size: 12px; color: #6c757d; margin-top: 2px;">Aluminum outdoor</div>
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Form cards container -->
                         <div id="overviewFormCards" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
                         </div>
@@ -3168,33 +3190,6 @@
                         <!-- Actions -->
                         <div id="overviewActions" style="margin-top: 32px; display: flex; gap: 12px;">
                             <button class="btn btn-primary btn-lg" onclick="showJobSummary()" style="flex: 1; padding: 14px;">Review & Submit</button>
-                        </div>
-
-                        <!-- Add Form Type Selector (hidden by default) -->
-                        <div id="addFormSelector" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; align-items: center; justify-content: center;">
-                            <div style="background: white; border-radius: 16px; width: 90%; max-width: 400px; overflow: hidden;">
-                                <div style="padding: 20px; border-bottom: 1px solid #e9ecef;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <h3 style="margin: 0; font-size: 18px;">Add Inspection Form</h3>
-                                        <button onclick="hideAddFormSelector()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6c757d;">&times;</button>
-                                    </div>
-                                    <p style="margin: 8px 0 0; font-size: 13px; color: #6c757d;">Choose the type of inspection form to add</p>
-                                </div>
-                                <div style="padding: 12px;">
-                                    <div onclick="addFormToJob('indoor_bleacher')" style="padding: 16px; cursor: pointer; border-radius: 8px; margin-bottom: 8px; border: 2px solid #e9ecef; transition: all 0.15s;" onmouseover="this.style.borderColor='#007bff'; this.style.background='#f8f9fa'" onmouseout="this.style.borderColor='#e9ecef'; this.style.background='white'">
-                                        <div style="font-weight: 600; font-size: 16px;">Indoor Bleacher Bank</div>
-                                        <div style="font-size: 13px; color: #6c757d; margin-top: 4px;">Telescopic bleacher inspection — top side + understructure</div>
-                                    </div>
-                                    <div onclick="addFormToJob('basketball')" style="padding: 16px; cursor: pointer; border-radius: 8px; margin-bottom: 8px; border: 2px solid #e9ecef; transition: all 0.15s;" onmouseover="this.style.borderColor='#007bff'; this.style.background='#f8f9fa'" onmouseout="this.style.borderColor='#e9ecef'; this.style.background='white'">
-                                        <div style="font-weight: 600; font-size: 16px;">Basketball Goals</div>
-                                        <div style="font-size: 13px; color: #6c757d; margin-top: 4px;">Wall-mounted or ceiling-mounted basketball goal inspection</div>
-                                    </div>
-                                    <div onclick="addFormToJob('outdoor')" style="padding: 16px; cursor: pointer; border-radius: 8px; border: 2px solid #e9ecef; transition: all 0.15s;" onmouseover="this.style.borderColor='#007bff'; this.style.background='#f8f9fa'" onmouseout="this.style.borderColor='#e9ecef'; this.style.background='white'">
-                                        <div style="font-weight: 600; font-size: 16px;">Outdoor Bleacher</div>
-                                        <div style="font-size: 13px; color: #6c757d; margin-top: 4px;">Aluminum outdoor bleacher inspection</div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
 

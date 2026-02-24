@@ -197,7 +197,7 @@ let inspectionJobs = JSON.parse(localStorage.getItem('inspectionJobs')) || [];
 let currentJob = null;
 let currentBankIndex = 0;
 let currentIssueType = '';
-let nextJobNumber = parseInt(localStorage.getItem('nextJobNumber')) || 17500;
+let nextJobNumber = Math.max(parseInt(localStorage.getItem('nextJobNumber')) || 20000, 20000);
 
 // Sample inspection data — no hardcoded PII
 const SAMPLE_INSPECTION_JOBS = [];

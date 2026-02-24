@@ -256,7 +256,10 @@ function renderOverviewCards() {
             thumbHtml +
             '<div style="flex: 1;">' +
             '<div style="display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; background: ' + statusBg + '; color: ' + statusColor + '; margin-bottom: 8px;">' + statusLabel + '</div>' +
-            '<div style="font-weight: 700; font-size: 18px; margin-bottom: 6px;">' + (bank.name || 'Form ' + (idx + 1)) + '</div>' +
+            '<div style="font-weight: 700; font-size: 18px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">' +
+                '<span id="bankName_' + idx + '">' + (bank.name || 'Form ' + (idx + 1)) + '</span>' +
+                '<button onclick="event.stopPropagation(); renameBank(' + idx + ')" style="background: none; border: none; cursor: pointer; color: #6c757d; font-size: 13px; padding: 2px 4px;" title="Rename">&#9998;</button>' +
+            '</div>' +
             '<div style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; background: ' + ftColor.bg + '; color: ' + ftColor.color + ';">' + ftLabel + '</div>' +
             (bank.bleacherType ? '<div style="font-size: 13px; color: #6c757d; margin-top: 8px;">' + bank.bleacherType + (bank.tiers ? ' &bull; ' + bank.tiers + ' tiers' : '') + '</div>' : '') +
             (issueCount > 0 ? '<div style="margin-top: 8px;"><span style="display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: #fff3e0; color: #e65100;">' + issueCount + ' issue' + (issueCount !== 1 ? 's' : '') + '</span></div>' : '') +
@@ -284,7 +287,7 @@ function addFormToJob(formType) {
         outdoor: 'Outdoor Bleacher'
     };
 
-    // Suggest a name based on common naming
+    // Auto-name based on common naming
     var bankNames = {
         indoor_bleacher: ['East Side', 'West Side', 'Facing Logo', 'Behind Logo', 'North Side', 'South Side'],
         basketball: ['Main Gym Goals', 'Aux Gym Goals', 'Practice Gym Goals'],
@@ -293,10 +296,7 @@ function addFormToJob(formType) {
 
     var names = bankNames[formType] || bankNames.indoor_bleacher;
     var usedNames = currentJob.banks.map(function(b) { return b.name; });
-    var suggested = names.find(function(n) { return !usedNames.includes(n); }) || typeLabels[formType] + ' ' + (currentJob.banks.length + 1);
-
-    var name = prompt('Name this form:', suggested);
-    if (!name) return;
+    var name = names.find(function(n) { return !usedNames.includes(n); }) || typeLabels[formType] + ' ' + (currentJob.banks.length + 1);
 
     currentJob.banks.push(createNewBank(name, formType));
 
@@ -313,6 +313,41 @@ function addFormToJob(formType) {
 
     // Show review button now that we have banks
     document.getElementById('overviewActions').style.display = 'flex';
+}
+
+function renameBank(idx) {
+    var nameEl = document.getElementById('bankName_' + idx);
+    if (!nameEl) return;
+    var currentName = currentJob.banks[idx].name;
+
+    // Replace the name span with an input
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentName;
+    input.style.cssText = 'font-size: 18px; font-weight: 700; border: 2px solid #007bff; border-radius: 6px; padding: 2px 8px; width: 160px; outline: none;';
+
+    var saveRename = function() {
+        var newName = input.value.trim();
+        if (!newName) newName = currentName;
+        currentJob.banks[idx].name = newName;
+
+        // Save to localStorage
+        var existingIndex = inspectionJobs.findIndex(function(j) { return j.jobNumber === currentJob.jobNumber; });
+        if (existingIndex >= 0) inspectionJobs[existingIndex] = currentJob;
+        localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
+
+        renderOverviewCards();
+    };
+
+    input.addEventListener('blur', saveRename);
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        if (e.key === 'Escape') { input.value = currentName; input.blur(); }
+    });
+
+    nameEl.parentNode.replaceChild(input, nameEl);
+    input.focus();
+    input.select();
 }
 
 function deleteFormFromJob(idx) {
@@ -514,7 +549,7 @@ function toggleSection(sectionId) {
 var _editingIssueType = null; // 'topSide' or 'understructure'
 var _editingIssueIndex = -1;  // -1 = new issue, >= 0 = editing existing
 var _editingIssuePhoto = null;
-var _editingIssuePart = null;
+var _editingIssueParts = [];
 var _issuePartSearchTimeout = null;
 
 // Add top side issue — expand inline form
@@ -522,7 +557,7 @@ function addTopSideIssue() {
     _editingIssueType = 'topSide';
     _editingIssueIndex = -1;
     _editingIssuePhoto = null;
-    _editingIssuePart = null;
+    _editingIssueParts = [];
     renderTopSideIssues();
     // Scroll to the new form
     setTimeout(function() {
@@ -536,7 +571,7 @@ function addUnderstructureIssue() {
     _editingIssueType = 'understructure';
     _editingIssueIndex = -1;
     _editingIssuePhoto = null;
-    _editingIssuePart = null;
+    _editingIssueParts = [];
     renderUnderstructureIssues();
     setTimeout(function() {
         var form = document.getElementById('inlineIssueForm_understructure');
@@ -554,7 +589,14 @@ function editIssue(type, index) {
     _editingIssueType = type;
     _editingIssueIndex = index;
     _editingIssuePhoto = issue.photo || null;
-    _editingIssuePart = issue.part || null;
+    // Support both old single part and new parts array
+    if (issue.parts && issue.parts.length > 0) {
+        _editingIssueParts = issue.parts.map(function(p) { return Object.assign({}, p); });
+    } else if (issue.part) {
+        _editingIssueParts = [Object.assign({}, issue.part)];
+    } else {
+        _editingIssueParts = [];
+    }
 
     if (type === 'topSide') {
         renderTopSideIssues();
@@ -572,7 +614,7 @@ function cancelInlineIssue(type) {
     _editingIssueType = null;
     _editingIssueIndex = -1;
     _editingIssuePhoto = null;
-    _editingIssuePart = null;
+    _editingIssueParts = [];
     if (type === 'topSide') {
         renderTopSideIssues();
     } else {
@@ -623,18 +665,20 @@ function buildInlineIssueForm(type, issue) {
         photoHtml = '<div style="text-align: center; color: #6c757d;"><div style="font-size: 24px;">📷</div><div style="font-size: 12px;">Photo (required)</div></div>';
     }
 
-    // Part badge
+    // Part badges (multiple)
     var partHtml = '';
-    if (_editingIssuePart) {
-        partHtml =
-            '<div id="inlineIssuePartBadge" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #e3f2fd; border-radius: 6px; margin-bottom: 8px;">' +
-                '<div style="flex: 1;">' +
-                    '<div style="font-weight: 600; font-size: 13px;">' + (_editingIssuePart.partNumber || '') + '</div>' +
-                    '<div style="font-size: 12px; color: #555;">' + (_editingIssuePart.productName || '') + '</div>' +
-                    '<div style="font-size: 11px; color: #888;">' + (_editingIssuePart.vendor || '') + ((_editingIssuePart.price && parseFloat(_editingIssuePart.price) > 0) ? ' - $' + parseFloat(_editingIssuePart.price).toFixed(2) : '') + '</div>' +
-                '</div>' +
-                '<button onclick="_editingIssuePart=null; document.getElementById(\'inlineIssuePartBadge\').remove(); document.getElementById(\'issuePartSearchArea\').style.display=\'block\';" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 16px;">×</button>' +
-            '</div>';
+    if (_editingIssueParts.length > 0) {
+        partHtml = '<div id="inlineIssuePartBadges">' +
+            _editingIssueParts.map(function(p, pi) {
+                return '<div style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #e3f2fd; border-radius: 6px; margin-bottom: 4px;">' +
+                    '<div style="flex: 1;">' +
+                        '<div style="font-weight: 600; font-size: 12px;">' + (p.partNumber || '') + ' <span style="font-weight: 400; color: #888;">' + (p.vendor || '') + '</span></div>' +
+                        '<div style="font-size: 11px; color: #555;">' + (p.productName || '') + '</div>' +
+                    '</div>' +
+                    '<button onclick="removeIssuePart(' + pi + ')" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 14px; padding: 2px;">×</button>' +
+                '</div>';
+            }).join('') +
+        '</div>';
     }
 
     var manualPartVal = issue && issue.manualPart ? issue.manualPart : '';
@@ -660,9 +704,9 @@ function buildInlineIssueForm(type, issue) {
             '</div>' +
         '</div>' +
         '<div style="margin-bottom: 12px;">' +
-            '<label class="form-label" style="font-size: 11px;">Part (from catalog or manual)</label>' +
+            '<label class="form-label" style="font-size: 11px;">Parts (from catalog or manual)</label>' +
             partHtml +
-            '<div id="issuePartSearchArea" style="' + (_editingIssuePart ? 'display:none;' : '') + '">' +
+            '<div id="issuePartSearchArea">' +
                 '<input type="text" id="inlineIssuePartSearch" class="form-input" placeholder="Search parts catalog..." oninput="searchIssueParts(this.value)" autocomplete="off">' +
                 '<div id="inlineIssuePartResults" style="max-height: 200px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 6px; display: none; margin-top: 4px;"></div>' +
                 '<div style="margin-top: 6px;">' +
@@ -726,8 +770,9 @@ function searchIssueParts(query) {
                 // Store parts for selection by index
                 window._issuePartResults = data.parts;
                 resultsEl.innerHTML = data.parts.map(function(part, idx) {
+                    var isOfficeOrAdmin = currentRole === 'admin' || currentRole === 'office';
                     var price = parseFloat(part.price) || 0;
-                    var priceStr = price > 0 ? '$' + price.toFixed(2) : '';
+                    var priceStr = (isOfficeOrAdmin && price > 0) ? '$' + price.toFixed(2) : '';
                     var imgHtml = part.imageUrl
                         ? '<img src="' + part.imageUrl + '" style="width: 36px; height: 36px; object-fit: cover; border-radius: 4px; margin-right: 8px;">'
                         : '';
@@ -747,12 +792,12 @@ function searchIssueParts(query) {
     }, 300);
 }
 
-// Select a part by index from search results
+// Select a part by index from search results — adds to list
 function selectIssuePartByIndex(idx) {
     var part = window._issuePartResults && window._issuePartResults[idx];
     if (!part) return;
 
-    _editingIssuePart = {
+    var newPart = {
         id: part.id,
         partNumber: part.partNumber || '',
         productName: part.productName || '',
@@ -760,27 +805,51 @@ function selectIssuePartByIndex(idx) {
         price: parseFloat(part.price) || 0
     };
 
-    // Show part badge, hide search
+    // Don't add duplicates
+    var isDupe = _editingIssueParts.some(function(p) { return p.id === newPart.id; });
+    if (isDupe) return;
+
+    _editingIssueParts.push(newPart);
+
+    // Clear search, keep it visible for more parts
     document.getElementById('inlineIssuePartResults').style.display = 'none';
     document.getElementById('inlineIssuePartSearch').value = '';
-    document.getElementById('issuePartSearchArea').style.display = 'none';
 
-    // Insert badge before the search area
+    // Re-render badges
+    renderIssuePartBadges();
+}
+
+// Remove a part by index
+function removeIssuePart(idx) {
+    _editingIssueParts.splice(idx, 1);
+    renderIssuePartBadges();
+}
+
+// Render the part badges above the search area
+function renderIssuePartBadges() {
+    var container = document.getElementById('inlineIssuePartBadges');
     var searchArea = document.getElementById('issuePartSearchArea');
-    var existingBadge = document.getElementById('inlineIssuePartBadge');
-    if (existingBadge) existingBadge.remove();
 
-    var badge = document.createElement('div');
-    badge.id = 'inlineIssuePartBadge';
-    badge.style.cssText = 'display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #e3f2fd; border-radius: 6px; margin-bottom: 8px;';
-    badge.innerHTML =
-        '<div style="flex: 1;">' +
-            '<div style="font-weight: 600; font-size: 13px;">' + (_editingIssuePart.partNumber || '') + '</div>' +
-            '<div style="font-size: 12px; color: #555;">' + (_editingIssuePart.productName || '') + '</div>' +
-            '<div style="font-size: 11px; color: #888;">' + (_editingIssuePart.vendor || '') + ((_editingIssuePart.price > 0) ? ' - $' + _editingIssuePart.price.toFixed(2) : '') + '</div>' +
-        '</div>' +
-        '<button onclick="_editingIssuePart=null; this.parentElement.remove(); document.getElementById(\'issuePartSearchArea\').style.display=\'block\';" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 16px;">×</button>';
-    searchArea.parentElement.insertBefore(badge, searchArea);
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'inlineIssuePartBadges';
+        searchArea.parentElement.insertBefore(container, searchArea);
+    }
+
+    if (_editingIssueParts.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = _editingIssueParts.map(function(p, pi) {
+        return '<div style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #e3f2fd; border-radius: 6px; margin-bottom: 4px;">' +
+            '<div style="flex: 1;">' +
+                '<div style="font-weight: 600; font-size: 12px;">' + (p.partNumber || '') + ' <span style="font-weight: 400; color: #888;">' + (p.vendor || '') + '</span></div>' +
+                '<div style="font-size: 11px; color: #555;">' + (p.productName || '') + '</div>' +
+            '</div>' +
+            '<button onclick="removeIssuePart(' + pi + ')" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 14px; padding: 2px;">×</button>' +
+        '</div>';
+    }).join('');
 }
 
 // Save inline issue
@@ -808,7 +877,9 @@ function saveInlineIssue(type) {
         id: _editingIssueIndex >= 0 ? (type === 'topSide' ? bank.topSideIssues[_editingIssueIndex].id : bank.understructureIssues[_editingIssueIndex].id) : Date.now(),
         description: desc,
         photo: _editingIssuePhoto,
-        part: _editingIssuePart ? Object.assign({}, _editingIssuePart) : null,
+        parts: _editingIssueParts.map(function(p) { return Object.assign({}, p); }),
+        // Keep singular part for backwards compat
+        part: _editingIssueParts.length > 0 ? Object.assign({}, _editingIssueParts[0]) : null,
         manualPart: manualPart || null,
         quantity: qty,
         createdAt: _editingIssueIndex >= 0 ? (type === 'topSide' ? bank.topSideIssues[_editingIssueIndex].createdAt : bank.understructureIssues[_editingIssueIndex].createdAt) : new Date().toISOString()
@@ -837,7 +908,7 @@ function saveInlineIssue(type) {
     _editingIssueType = null;
     _editingIssueIndex = -1;
     _editingIssuePhoto = null;
-    _editingIssuePart = null;
+    _editingIssueParts = [];
 
     renderTopSideIssues();
     renderUnderstructureIssues();
@@ -865,8 +936,11 @@ function renderIssueCard(issue, type, index) {
         : '';
 
     var partBadge = '';
-    if (issue.part) {
-        partBadge = '<span style="display: inline-block; padding: 1px 6px; background: #e3f2fd; color: #1565c0; border-radius: 4px; font-size: 11px; font-weight: 600; margin-top: 4px;">' + (issue.part.partNumber || 'Part') + '</span>';
+    var issueParts = issue.parts || (issue.part ? [issue.part] : []);
+    if (issueParts.length > 0) {
+        partBadge = issueParts.map(function(p) {
+            return '<span style="display: inline-block; padding: 1px 6px; background: #e3f2fd; color: #1565c0; border-radius: 4px; font-size: 11px; font-weight: 600; margin-top: 4px; margin-right: 4px;">' + (p.partNumber || 'Part') + '</span>';
+        }).join('');
     } else if (issue.manualPart) {
         partBadge = '<span style="display: inline-block; padding: 1px 6px; background: #fff3e0; color: #e65100; border-radius: 4px; font-size: 11px; margin-top: 4px;">' + issue.manualPart.substring(0, 30) + '</span>';
     }
@@ -984,35 +1058,43 @@ function renderIssueTally() {
         return;
     }
 
-    // Group by part name or description
+    // Group by part — each issue can have multiple parts
     var tally = {};
     var totalParts = 0;
     allIssues.forEach(function(issue) {
-        var key, label, vendor, price;
-        if (issue.part) {
-            key = 'part_' + (issue.part.partNumber || issue.part.productName);
-            label = (issue.part.partNumber ? issue.part.partNumber + ' - ' : '') + (issue.part.productName || 'Unknown Part');
-            vendor = issue.part.vendor || '';
-            price = issue.part.price || 0;
-        } else if (issue.manualPart) {
-            key = 'manual_' + issue.manualPart;
-            label = issue.manualPart;
-            vendor = 'Manual entry';
-            price = 0;
-        } else {
-            key = 'desc_' + issue.description;
-            label = issue.description;
-            vendor = '';
-            price = 0;
-        }
-
         var qty = issue.quantity || 1;
-        if (tally[key]) {
-            tally[key].qty += qty;
+        var issueParts = issue.parts || (issue.part ? [issue.part] : []);
+
+        if (issueParts.length > 0) {
+            issueParts.forEach(function(p) {
+                var key = 'part_' + (p.partNumber || p.productName);
+                var label = (p.partNumber ? p.partNumber + ' - ' : '') + (p.productName || 'Unknown Part');
+                var vendor = p.vendor || '';
+                var price = p.price || 0;
+                if (tally[key]) {
+                    tally[key].qty += qty;
+                } else {
+                    tally[key] = { label: label, vendor: vendor, price: parseFloat(price) || 0, qty: qty };
+                }
+                totalParts += qty;
+            });
+        } else if (issue.manualPart) {
+            var key = 'manual_' + issue.manualPart;
+            if (tally[key]) {
+                tally[key].qty += qty;
+            } else {
+                tally[key] = { label: issue.manualPart, vendor: 'Manual entry', price: 0, qty: qty };
+            }
+            totalParts += qty;
         } else {
-            tally[key] = { label: label, vendor: vendor, price: parseFloat(price) || 0, qty: qty };
+            var key = 'desc_' + issue.description;
+            if (tally[key]) {
+                tally[key].qty += qty;
+            } else {
+                tally[key] = { label: issue.description, vendor: '', price: 0, qty: qty };
+            }
+            totalParts += qty;
         }
-        totalParts += qty;
     });
 
     var tallyKeys = Object.keys(tally);
@@ -1035,7 +1117,8 @@ function renderIssueTally() {
     html += '<div style="border: 1px solid #e9ecef; border-radius: 8px; overflow: hidden;">';
     tallyKeys.forEach(function(key, i) {
         var item = tally[key];
-        var priceHtml = item.price > 0 ? '<span style="color: #2e7d32; font-weight: 600;">$' + (item.price * item.qty).toFixed(2) + '</span>' : '';
+        var isOfficeOrAdmin = currentRole === 'admin' || currentRole === 'office';
+        var priceHtml = (isOfficeOrAdmin && item.price > 0) ? '<span style="color: #2e7d32; font-weight: 600;">$' + (item.price * item.qty).toFixed(2) + '</span>' : '';
         html += '<div style="padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;' + (i < tallyKeys.length - 1 ? ' border-bottom: 1px solid #f0f0f0;' : '') + '">' +
             '<div style="flex: 1;">' +
                 '<div style="font-size: 13px; font-weight: 600;">' + item.qty + 'x ' + item.label + '</div>' +
@@ -1102,7 +1185,8 @@ function showJobSummary() {
                     issuesHTML += `<div style="font-size: 11px; font-weight: 600; color: #6c757d; text-transform: uppercase; margin-bottom: 4px;">Understructure</div>`;
                     underIssues.forEach(issue => {
                         var partInfo = '';
-                        if (issue.part) partInfo = `<span style="background: #e3f2fd; color: #1565c0; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-left: 6px;">${issue.part.partNumber || issue.part.productName}</span>`;
+                        var issueParts = issue.parts || (issue.part ? [issue.part] : []);
+                        if (issueParts.length > 0) partInfo = issueParts.map(function(p) { return `<span style="background: #e3f2fd; color: #1565c0; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-left: 4px;">${p.partNumber || p.productName}</span>`; }).join('');
                         else if (issue.manualPart) partInfo = `<span style="background: #fff3e0; color: #e65100; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-left: 6px;">${issue.manualPart.substring(0, 30)}</span>`;
                         var qtyInfo = issue.quantity > 1 ? `<span style="background: #e8f5e9; color: #2e7d32; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-left: 4px;">x${issue.quantity}</span>` : '';
                         issuesHTML += `<div style="font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 6px;">
@@ -1121,7 +1205,8 @@ function showJobSummary() {
                     issuesHTML += `<div style="font-size: 11px; font-weight: 600; color: #6c757d; text-transform: uppercase; margin: 12px 0 4px;">Top Side</div>`;
                     topIssues.forEach(issue => {
                         var partInfo = '';
-                        if (issue.part) partInfo = `<span style="background: #e3f2fd; color: #1565c0; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-left: 6px;">${issue.part.partNumber || issue.part.productName}</span>`;
+                        var issueParts = issue.parts || (issue.part ? [issue.part] : []);
+                        if (issueParts.length > 0) partInfo = issueParts.map(function(p) { return `<span style="background: #e3f2fd; color: #1565c0; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-left: 4px;">${p.partNumber || p.productName}</span>`; }).join('');
                         else if (issue.manualPart) partInfo = `<span style="background: #fff3e0; color: #e65100; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-left: 6px;">${issue.manualPart.substring(0, 30)}</span>`;
                         var qtyInfo = issue.quantity > 1 ? `<span style="background: #e8f5e9; color: #2e7d32; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-left: 4px;">x${issue.quantity}</span>` : '';
                         issuesHTML += `<div style="font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 6px;">
@@ -1177,10 +1262,14 @@ function showJobSummary() {
     const submitBtn = document.querySelector('#jobSummaryView .btn-primary');
     const backBtn = document.querySelector('#jobSummaryView .btn-secondary');
     if (currentJob.status === 'submitted' || currentJob.status === 'under_review') {
-        submitBtn.innerHTML = '📤 Generate QuickBooks Estimate';
-        submitBtn.onclick = () => generateEstimateFromJob();
-        submitBtn.style.display = '';
-        backBtn.textContent = '← Back to Ops Review';
+        if (currentRole === 'admin' || currentRole === 'office') {
+            submitBtn.innerHTML = '📤 Generate QuickBooks Estimate';
+            submitBtn.onclick = () => generateEstimateFromJob();
+            submitBtn.style.display = '';
+        } else {
+            submitBtn.style.display = 'none';
+        }
+        backBtn.textContent = currentRole === 'admin' || currentRole === 'office' ? '← Back to Ops Review' : '← Back';
         backBtn.onclick = () => goBackFromInspection();
     } else if (currentJob.status === 'approved') {
         submitBtn.style.display = 'none';

@@ -634,7 +634,7 @@ function submitCreate() {
 
         var notes = document.getElementById('createNotes').value.trim();
 
-        var nextNum = parseInt(localStorage.getItem('nextJobNumber') || '17500');
+        var nextNum = Math.max(parseInt(localStorage.getItem('nextJobNumber') || '20000'), 20000);
         var jobNumber = '' + nextNum;
         localStorage.setItem('nextJobNumber', '' + (nextNum + 1));
 

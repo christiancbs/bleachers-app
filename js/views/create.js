@@ -10,7 +10,22 @@ var fieldCreatePhoto = null;
 var fieldCreateSelectedCustomer = null;
 var officeCreateSelectedCustomer = null;
 
+// Ensure CUSTOMERS array is loaded from API (needed for typeahead)
+function ensureCustomersLoaded() {
+    if (typeof CUSTOMERS !== 'undefined' && CUSTOMERS.length > 0) return;
+    if (typeof CustomersAPI === 'undefined') return;
+    CustomersAPI.list({ limit: 2000 }).then(function(data) {
+        if (data && data.customers) {
+            CUSTOMERS.length = 0;
+            CUSTOMERS.push.apply(CUSTOMERS, data.customers);
+        }
+    }).catch(function(err) {
+        console.error('Failed to load customers for typeahead:', err);
+    });
+}
+
 function initFieldCreateForm() {
+    ensureCustomersLoaded();
     // Reset all fields
     document.getElementById('fieldCreateTypeSelect').value = '';
     document.getElementById('fieldCreateCustomerSearch').value = '';
@@ -78,8 +93,8 @@ function searchFieldCreateCustomers(query) {
 
     // Always add custom entry option
     html += '<div class="customer-result-item" onclick="showFieldCustomCustomerEntry()" style="border-top: 2px solid #dee2e6; background: #f8f9fa;">' +
-        '<strong style="color: #007bff;">+ Enter Custom Customer</strong>' +
-        '<div style="font-size: 12px; color: #6c757d;">Not in the list? Add manually</div>' +
+        '<strong style="color: #007bff;">+ Add New Location</strong>' +
+        '<div style="font-size: 12px; color: #6c757d;">Not in the list? Enter it manually</div>' +
     '</div>';
 
     resultsEl.innerHTML = html;
@@ -268,7 +283,7 @@ function submitFieldCreate() {
 
         var notes = document.getElementById('fieldCreateNotes').value.trim();
 
-        var nextNum = parseInt(localStorage.getItem('nextJobNumber') || '17500');
+        var nextNum = Math.max(parseInt(localStorage.getItem('nextJobNumber') || '20000'), 20000);
         var jobNumber = '' + nextNum;
         localStorage.setItem('nextJobNumber', '' + (nextNum + 1));
 
@@ -317,6 +332,7 @@ function submitFieldCreate() {
 }
 
 function initOfficeCreateForm() {
+    ensureCustomersLoaded();
     // Reset all fields
     document.getElementById('officeCreateTypeSelect').value = '';
     document.getElementById('officeCreateCustomerSearch').value = '';
