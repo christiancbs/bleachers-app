@@ -243,29 +243,29 @@ function renderOverviewCards() {
         var issueCount = (bank.topSideIssues || []).length + (bank.understructureIssues || []).length;
         var hasData = bank.bleacherType || bank.tiers || bank.sections || issueCount > 0;
 
-        var statusLabel = hasData ? 'In Progress' : 'Not Started';
-        var statusBg = hasData ? '#fff3e0' : '#f8f9fa';
-        var statusColor = hasData ? '#e65100' : '#6c757d';
+        var isComplete = bank.status === 'complete';
+        var statusLabel = isComplete ? 'Complete' : (hasData ? 'In Progress' : 'Not Started');
+        var statusBg = isComplete ? '#e8f5e9' : (hasData ? '#fff3e0' : '#f8f9fa');
+        var statusColor = isComplete ? '#2e7d32' : (hasData ? '#e65100' : '#6c757d');
 
         var thumbHtml = bank.bankPhoto
-            ? '<img src="' + bank.bankPhoto + '" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; margin-right: 16px; flex-shrink: 0;">'
-            : '<div style="width: 80px; height: 80px; background: #f0f0f0; border-radius: 8px; margin-right: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 28px;">📷</div>';
+            ? '<img src="' + bank.bankPhoto + '" style="width: 100%; height: 100px; object-fit: contain; border-radius: 0 0 10px 10px; background: #f0f0f0;">'
+            : '';
 
-        return '<div class="job-overview-card" onclick="openBankForm(' + idx + ')" style="cursor: pointer; border: 2px solid #e9ecef; border-radius: 12px; padding: 20px; background: white; transition: all 0.15s; position: relative;" onmouseover="this.style.borderColor=\'#007bff\'; this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.1)\'" onmouseout="this.style.borderColor=\'#e9ecef\'; this.style.boxShadow=\'none\'">' +
-            '<div style="display: flex; align-items: start;">' +
+        return '<div class="job-overview-card" onclick="openBankForm(' + idx + ')" style="cursor: pointer; border: 2px solid #e9ecef; border-radius: 12px; background: white; transition: all 0.15s; position: relative; overflow: hidden;" onmouseover="this.style.borderColor=\'#007bff\'; this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.1)\'" onmouseout="this.style.borderColor=\'#e9ecef\'; this.style.boxShadow=\'none\'">' +
+            '<div style="padding: 10px 14px 8px; background: #f8f9fa; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center;">' +
+                '<span id="bankName_' + idx + '" onclick="event.stopPropagation(); renameBank(' + idx + ')" style="font-weight: 700; font-size: 16px; cursor: text; padding: 3px 6px; border-radius: 4px; background: rgba(0,0,0,0.04); transition: background 0.15s;" onmouseover="this.style.background=\'rgba(0,0,0,0.08)\'" onmouseout="this.style.background=\'rgba(0,0,0,0.04)\'">' + (bank.name || 'Form ' + (idx + 1)) + '</span>' +
+                '<button onclick="event.stopPropagation(); deleteFormFromJob(' + idx + ')" style="background: none; border: none; font-size: 16px; cursor: pointer; color: #dc3545; padding: 2px 4px;" title="Remove">&times;</button>' +
+            '</div>' +
+            '<div style="padding: 10px 14px;">' +
+                '<div style="display: flex; gap: 6px; margin-bottom: 6px;">' +
+                    '<span style="padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; background: ' + ftColor.bg + '; color: ' + ftColor.color + ';">' + ftLabel + '</span>' +
+                    '<span style="padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: ' + statusBg + '; color: ' + statusColor + ';">' + statusLabel + '</span>' +
+                '</div>' +
+                (bank.bleacherType ? '<div style="font-size: 13px; color: #6c757d;">' + bank.bleacherType + (bank.tiers ? ' &bull; ' + bank.tiers + ' tiers' : '') + '</div>' : '') +
+                (issueCount > 0 ? '<div style="margin-top: 4px;"><span style="padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: #fff3e0; color: #e65100;">' + issueCount + ' issue' + (issueCount !== 1 ? 's' : '') + '</span></div>' : '') +
+            '</div>' +
             thumbHtml +
-            '<div style="flex: 1;">' +
-            '<div style="display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; background: ' + statusBg + '; color: ' + statusColor + '; margin-bottom: 8px;">' + statusLabel + '</div>' +
-            '<div style="font-weight: 700; font-size: 18px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">' +
-                '<span id="bankName_' + idx + '">' + (bank.name || 'Form ' + (idx + 1)) + '</span>' +
-                '<button onclick="event.stopPropagation(); renameBank(' + idx + ')" style="background: none; border: none; cursor: pointer; color: #6c757d; font-size: 13px; padding: 2px 4px;" title="Rename">&#9998;</button>' +
-            '</div>' +
-            '<div style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; background: ' + ftColor.bg + '; color: ' + ftColor.color + ';">' + ftLabel + '</div>' +
-            (bank.bleacherType ? '<div style="font-size: 13px; color: #6c757d; margin-top: 8px;">' + bank.bleacherType + (bank.tiers ? ' &bull; ' + bank.tiers + ' tiers' : '') + '</div>' : '') +
-            (issueCount > 0 ? '<div style="margin-top: 8px;"><span style="display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: #fff3e0; color: #e65100;">' + issueCount + ' issue' + (issueCount !== 1 ? 's' : '') + '</span></div>' : '') +
-            '</div>' +
-            '</div>' +
-            '<div style="position: absolute; top: 16px; right: 16px;"><button onclick="event.stopPropagation(); deleteFormFromJob(' + idx + ')" style="background: none; border: none; font-size: 16px; cursor: pointer; color: #dc3545; padding: 4px;" title="Remove">&times;</button></div>' +
         '</div>';
     }).join('');
 }
@@ -313,6 +313,10 @@ function addFormToJob(formType) {
 
     // Show review button now that we have banks
     document.getElementById('overviewActions').style.display = 'flex';
+
+    // Immediately open rename on the new card so user can name it
+    var newIdx = currentJob.banks.length - 1;
+    setTimeout(function() { renameBank(newIdx); }, 100);
 }
 
 function renameBank(idx) {
@@ -475,6 +479,23 @@ function loadBankData() {
     var notesEl = document.getElementById('bankSummaryNotes');
     if (notesEl) notesEl.value = bank.summaryNotes || '';
 
+    // Update complete button label based on form type
+    var completeBtn = document.getElementById('completeBankBtn');
+    if (completeBtn) {
+        var typeBtnLabels = {
+            indoor_bleacher: 'Complete Bank Inspection',
+            basketball: 'Complete Goal Inspection',
+            outdoor: 'Complete Outdoor Inspection'
+        };
+        completeBtn.textContent = typeBtnLabels[bank.formType] || 'Complete Inspection';
+        if (bank.status === 'complete') {
+            completeBtn.textContent = 'Completed';
+            completeBtn.style.background = '#2e7d32';
+        } else {
+            completeBtn.style.background = '';
+        }
+    }
+
     renderTopSideIssues();
     renderUnderstructureIssues();
     renderIssueTally();
@@ -485,19 +506,24 @@ function saveBankData() {
     const bank = currentJob.banks[currentBankIndex];
     if (!bank) return;
 
-    bank.bleacherType = document.getElementById('bankBleacherType').value;
-    bank.tiers = document.getElementById('bankTiers').value;
-    bank.seatType = document.getElementById('bankSeatType').value;
-    bank.color = document.getElementById('bankColor').value;
-    bank.sections = document.getElementById('bankSections').value;
-    bank.rows = document.getElementById('bankRows').value;
-    bank.aisles = document.getElementById('bankAisles').value;
-    bank.aisleRailType = document.getElementById('bankAisleRailType').value;
-    bank.motorPhase = document.getElementById('bankMotorPhase').value;
-    bank.motorHP = document.getElementById('bankMotorHP').value;
-    bank.motorCount = document.getElementById('bankMotorCount').value;
-    bank.wheelType = document.getElementById('bankWheelType').value;
-    bank.tagAffixed = document.getElementById('bankTagAffixed').value;
+    function getVal(id) {
+        var el = document.getElementById(id);
+        return el ? el.value : undefined;
+    }
+
+    var bt = getVal('bankBleacherType'); if (bt !== undefined) bank.bleacherType = bt;
+    var ti = getVal('bankTiers'); if (ti !== undefined) bank.tiers = ti;
+    var st = getVal('bankSeatType'); if (st !== undefined) bank.seatType = st;
+    var co = getVal('bankColor'); if (co !== undefined) bank.color = co;
+    var se = getVal('bankSections'); if (se !== undefined) bank.sections = se;
+    var ro = getVal('bankRows'); if (ro !== undefined) bank.rows = ro;
+    var ai = getVal('bankAisles'); if (ai !== undefined) bank.aisles = ai;
+    var ar = getVal('bankAisleRailType'); if (ar !== undefined) bank.aisleRailType = ar;
+    var mp = getVal('bankMotorPhase'); if (mp !== undefined) bank.motorPhase = mp;
+    var mh = getVal('bankMotorHP'); if (mh !== undefined) bank.motorHP = mh;
+    var mc = getVal('bankMotorCount'); if (mc !== undefined) bank.motorCount = mc;
+    var wt = getVal('bankWheelType'); if (wt !== undefined) bank.wheelType = wt;
+    var ta = getVal('bankTagAffixed'); if (ta !== undefined) bank.tagAffixed = ta;
     var notesEl = document.getElementById('bankSummaryNotes');
     if (notesEl) bank.summaryNotes = notesEl.value;
 }
@@ -550,6 +576,7 @@ var _editingIssueType = null; // 'topSide' or 'understructure'
 var _editingIssueIndex = -1;  // -1 = new issue, >= 0 = editing existing
 var _editingIssuePhoto = null;
 var _editingIssueParts = [];
+var _editingManualParts = [];
 var _issuePartSearchTimeout = null;
 
 // Add top side issue — expand inline form
@@ -558,6 +585,7 @@ function addTopSideIssue() {
     _editingIssueIndex = -1;
     _editingIssuePhoto = null;
     _editingIssueParts = [];
+    _editingManualParts = [];
     renderTopSideIssues();
     // Scroll to the new form
     setTimeout(function() {
@@ -572,6 +600,7 @@ function addUnderstructureIssue() {
     _editingIssueIndex = -1;
     _editingIssuePhoto = null;
     _editingIssueParts = [];
+    _editingManualParts = [];
     renderUnderstructureIssues();
     setTimeout(function() {
         var form = document.getElementById('inlineIssueForm_understructure');
@@ -597,6 +626,14 @@ function editIssue(type, index) {
     } else {
         _editingIssueParts = [];
     }
+    // Load manual parts
+    if (issue.manualParts && issue.manualParts.length > 0) {
+        _editingManualParts = issue.manualParts.slice();
+    } else if (issue.manualPart) {
+        _editingManualParts = [issue.manualPart];
+    } else {
+        _editingManualParts = [];
+    }
 
     if (type === 'topSide') {
         renderTopSideIssues();
@@ -615,6 +652,7 @@ function cancelInlineIssue(type) {
     _editingIssueIndex = -1;
     _editingIssuePhoto = null;
     _editingIssueParts = [];
+    _editingManualParts = [];
     if (type === 'topSide') {
         renderTopSideIssues();
     } else {
@@ -681,7 +719,19 @@ function buildInlineIssueForm(type, issue) {
         '</div>';
     }
 
-    var manualPartVal = issue && issue.manualPart ? issue.manualPart : '';
+    // Manual part badges
+    var manualPartHtml = '';
+    if (_editingManualParts.length > 0) {
+        manualPartHtml = '<div id="inlineIssueManualBadges">' +
+            _editingManualParts.map(function(mp, mi) {
+                return '<div style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #fff3e0; border-radius: 6px; margin-bottom: 4px;">' +
+                    '<div style="flex: 1; font-size: 12px; color: #e65100;">' + mp + '</div>' +
+                    '<button onclick="removeManualPart(' + mi + ')" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 14px; padding: 2px;">×</button>' +
+                '</div>';
+            }).join('') +
+        '</div>';
+    }
+
     var qtyVal = issue && issue.quantity ? issue.quantity : 1;
 
     return '<div id="inlineIssueForm_' + type + '" style="background: #fffde7; border: 2px solid #fbc02d; border-radius: 8px; padding: 16px; margin-bottom: 8px;">' +
@@ -706,13 +756,14 @@ function buildInlineIssueForm(type, issue) {
         '<div style="margin-bottom: 12px;">' +
             '<label class="form-label" style="font-size: 11px;">Parts (from catalog or manual)</label>' +
             partHtml +
+            manualPartHtml +
             '<div id="issuePartSearchArea">' +
                 '<input type="text" id="inlineIssuePartSearch" class="form-input" placeholder="Search parts catalog..." oninput="searchIssueParts(this.value)" autocomplete="off">' +
                 '<div id="inlineIssuePartResults" style="max-height: 200px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 6px; display: none; margin-top: 4px;"></div>' +
-                '<div style="margin-top: 6px;">' +
-                    '<a href="#" onclick="event.preventDefault(); toggleManualPartEntry();" style="font-size: 12px; color: #6c757d;">Or enter manually</a>' +
+                '<div style="display: flex; gap: 6px; margin-top: 6px; align-items: center;">' +
+                    '<input type="text" id="inlineIssueManualPart" class="form-input" placeholder="Or type part manually..." style="flex: 1; font-size: 13px;">' +
+                    '<button onclick="addManualPart()" class="btn btn-outline" style="padding: 6px 12px; font-size: 12px; white-space: nowrap;">+ Add</button>' +
                 '</div>' +
-                '<input type="text" id="inlineIssueManualPart" class="form-input" placeholder="Describe part needed..." value="' + manualPartVal + '" style="display: ' + (manualPartVal ? 'block' : 'none') + '; margin-top: 6px;">' +
             '</div>' +
         '</div>' +
         '<div style="display: flex; gap: 8px;">' +
@@ -722,16 +773,44 @@ function buildInlineIssueForm(type, issue) {
     '</div>';
 }
 
-// Toggle manual part entry field
-function toggleManualPartEntry() {
-    var el = document.getElementById('inlineIssueManualPart');
-    if (el.style.display === 'none') {
-        el.style.display = 'block';
-        el.focus();
-    } else {
-        el.style.display = 'none';
-        el.value = '';
+// Add a manual part entry
+function addManualPart() {
+    var input = document.getElementById('inlineIssueManualPart');
+    var val = input.value.trim();
+    if (!val) return;
+    _editingManualParts.push(val);
+    input.value = '';
+    renderManualPartBadges();
+}
+
+// Remove a manual part by index
+function removeManualPart(idx) {
+    _editingManualParts.splice(idx, 1);
+    renderManualPartBadges();
+}
+
+// Render manual part badges
+function renderManualPartBadges() {
+    var container = document.getElementById('inlineIssueManualBadges');
+    var searchArea = document.getElementById('issuePartSearchArea');
+
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'inlineIssueManualBadges';
+        searchArea.parentElement.insertBefore(container, searchArea);
     }
+
+    if (_editingManualParts.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = _editingManualParts.map(function(mp, mi) {
+        return '<div style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #fff3e0; border-radius: 6px; margin-bottom: 4px;">' +
+            '<div style="flex: 1; font-size: 12px; color: #e65100;">' + mp + '</div>' +
+            '<button onclick="removeManualPart(' + mi + ')" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 14px; padding: 2px;">×</button>' +
+        '</div>';
+    }).join('');
 }
 
 // Handle photo capture for inline issue
@@ -871,7 +950,9 @@ function saveInlineIssue(type) {
 
     var bank = currentJob.banks[currentBankIndex];
     var qty = parseInt(document.getElementById('inlineIssueQty').value) || 1;
-    var manualPart = document.getElementById('inlineIssueManualPart').value.trim();
+    // Pick up any unsaved text in the manual input
+    var manualInput = document.getElementById('inlineIssueManualPart').value.trim();
+    if (manualInput) _editingManualParts.push(manualInput);
 
     var issue = {
         id: _editingIssueIndex >= 0 ? (type === 'topSide' ? bank.topSideIssues[_editingIssueIndex].id : bank.understructureIssues[_editingIssueIndex].id) : Date.now(),
@@ -880,7 +961,8 @@ function saveInlineIssue(type) {
         parts: _editingIssueParts.map(function(p) { return Object.assign({}, p); }),
         // Keep singular part for backwards compat
         part: _editingIssueParts.length > 0 ? Object.assign({}, _editingIssueParts[0]) : null,
-        manualPart: manualPart || null,
+        manualParts: _editingManualParts.slice(),
+        manualPart: _editingManualParts.length > 0 ? _editingManualParts[0] : null,
         quantity: qty,
         createdAt: _editingIssueIndex >= 0 ? (type === 'topSide' ? bank.topSideIssues[_editingIssueIndex].createdAt : bank.understructureIssues[_editingIssueIndex].createdAt) : new Date().toISOString()
     };
@@ -909,6 +991,7 @@ function saveInlineIssue(type) {
     _editingIssueIndex = -1;
     _editingIssuePhoto = null;
     _editingIssueParts = [];
+    _editingManualParts = [];
 
     renderTopSideIssues();
     renderUnderstructureIssues();
@@ -941,8 +1024,13 @@ function renderIssueCard(issue, type, index) {
         partBadge = issueParts.map(function(p) {
             return '<span style="display: inline-block; padding: 1px 6px; background: #e3f2fd; color: #1565c0; border-radius: 4px; font-size: 11px; font-weight: 600; margin-top: 4px; margin-right: 4px;">' + (p.partNumber || 'Part') + '</span>';
         }).join('');
-    } else if (issue.manualPart) {
-        partBadge = '<span style="display: inline-block; padding: 1px 6px; background: #fff3e0; color: #e65100; border-radius: 4px; font-size: 11px; margin-top: 4px;">' + issue.manualPart.substring(0, 30) + '</span>';
+    }
+    // Manual parts badges
+    var manualParts = issue.manualParts || (issue.manualPart ? [issue.manualPart] : []);
+    if (manualParts.length > 0) {
+        partBadge += manualParts.map(function(mp) {
+            return '<span style="display: inline-block; padding: 1px 6px; background: #fff3e0; color: #e65100; border-radius: 4px; font-size: 11px; margin-top: 4px; margin-right: 4px;">' + mp.substring(0, 30) + '</span>';
+        }).join('');
     }
 
     var qtyBadge = issue.quantity && issue.quantity > 1
@@ -1078,15 +1166,21 @@ function renderIssueTally() {
                 }
                 totalParts += qty;
             });
-        } else if (issue.manualPart) {
-            var key = 'manual_' + issue.manualPart;
-            if (tally[key]) {
-                tally[key].qty += qty;
-            } else {
-                tally[key] = { label: issue.manualPart, vendor: 'Manual entry', price: 0, qty: qty };
-            }
-            totalParts += qty;
-        } else {
+        }
+        // Manual parts (array or single)
+        var manualParts = issue.manualParts || (issue.manualPart ? [issue.manualPart] : []);
+        if (manualParts.length > 0) {
+            manualParts.forEach(function(mp) {
+                var key = 'manual_' + mp;
+                if (tally[key]) {
+                    tally[key].qty += qty;
+                } else {
+                    tally[key] = { label: mp, vendor: 'Manual entry', price: 0, qty: qty };
+                }
+                totalParts += qty;
+            });
+        }
+        if (issueParts.length === 0 && manualParts.length === 0) {
             var key = 'desc_' + issue.description;
             if (tally[key]) {
                 tally[key].qty += qty;
@@ -1138,10 +1232,77 @@ function saveBankAndAddAnother() {
     goBackToJobOverview();
 }
 
-// Save bank and finish job
-function saveBankAndFinishJob() {
+// Complete the current bank inspection
+function completeBankInspection() {
     saveBankData();
-    showJobSummary();
+    var bank = currentJob.banks[currentBankIndex];
+    var formTypeLabels = {
+        indoor_bleacher: 'Bank',
+        basketball: 'Basketball Goal',
+        outdoor: 'Outdoor Bank'
+    };
+    var label = formTypeLabels[bank.formType] || 'Form';
+    bank.status = 'complete';
+
+    // Save to localStorage
+    var existingIndex = inspectionJobs.findIndex(function(j) { return j.jobNumber === currentJob.jobNumber; });
+    if (existingIndex >= 0) inspectionJobs[existingIndex] = currentJob;
+    localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
+
+    goBackToJobOverview();
+}
+
+// Complete the entire inspection (all banks)
+function completeInspection() {
+    if (!currentJob.banks || currentJob.banks.length === 0) {
+        alert('Add at least one inspection form before completing.');
+        return;
+    }
+
+    // Mark all banks complete
+    currentJob.banks.forEach(function(bank) {
+        bank.status = 'complete';
+    });
+    currentJob.status = 'ready_for_review';
+
+    // Save to localStorage
+    var existingIndex = inspectionJobs.findIndex(function(j) { return j.jobNumber === currentJob.jobNumber; });
+    if (existingIndex >= 0) {
+        inspectionJobs[existingIndex] = currentJob;
+    }
+    localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
+
+    alert('Inspection #' + currentJob.jobNumber + ' marked complete.\n\nOffice will review.');
+    showTechView('myjobs');
+}
+
+// Unable to complete inspection
+function unableToComplete() {
+    var reasons = [
+        'Gym in use / school function',
+        'Could not access all banks',
+        'Equipment issue (lift, etc.)',
+        'Weather / site access',
+        'Other'
+    ];
+
+    var reasonList = reasons.map(function(r, i) { return (i + 1) + '. ' + r; }).join('\n');
+    var choice = prompt('Why was this inspection unable to be completed?\n\n' + reasonList + '\n\nEnter number or type reason:');
+    if (!choice) return;
+
+    var reasonIndex = parseInt(choice) - 1;
+    var reason = (reasonIndex >= 0 && reasonIndex < reasons.length) ? reasons[reasonIndex] : choice;
+
+    currentJob.status = 'unable';
+    currentJob.unableReason = reason;
+
+    // Save
+    var existingIndex = inspectionJobs.findIndex(function(j) { return j.jobNumber === currentJob.jobNumber; });
+    if (existingIndex >= 0) inspectionJobs[existingIndex] = currentJob;
+    localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
+
+    alert('Inspection #' + currentJob.jobNumber + ' marked as unable to complete.\nReason: ' + reason);
+    showTechView('myjobs');
 }
 
 // ==========================================
@@ -1504,16 +1665,11 @@ function resumeJob(jobNumber) {
     }
 }
 
-// View submitted job (read-only summary)
+// View submitted/completed job
 function viewSubmittedJob(jobNumber) {
     currentJob = inspectionJobs.find(j => j.jobNumber === jobNumber);
     if (currentJob) {
-        // For office users, need to switch to tech dashboard to see job summary
-        if (currentRole === 'office') {
-            document.getElementById('officeDashboard').classList.add('hidden');
-            document.getElementById('techDashboard').classList.remove('hidden');
-        }
-        showJobSummary();
+        showJobOverview('myjobs');
     }
 }
 

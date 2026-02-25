@@ -329,6 +329,7 @@ function showTechView(view) {
     document.querySelectorAll('#techDashboard [id^="tech"][id$="View"]').forEach(el => el.classList.add('hidden'));
     document.getElementById('newJobSetupView')?.classList.add('hidden');
     document.getElementById('bankInspectionView')?.classList.add('hidden');
+    document.getElementById('jobOverviewView')?.classList.add('hidden');
     document.getElementById('jobSummaryView')?.classList.add('hidden');
     document.getElementById('newInspectionView')?.classList.add('hidden');
     document.getElementById('fieldCreateView')?.classList.add('hidden');

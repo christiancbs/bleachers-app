@@ -2917,7 +2917,7 @@
                             </div>
                             <div style="text-align: right;">
                                 <div style="font-size: 12px; opacity: 0.7;">Banks: <span id="bankCount">0</span></div>
-                                <button class="btn btn-outline" onclick="goBackToJobOverview()" style="color: white; border-color: rgba(255,255,255,0.3); margin-top: 4px; font-size: 12px; padding: 6px 12px;">Save & Back</button>
+                                <button class="btn" onclick="goBackToJobOverview()" style="color: white; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.4); margin-top: 4px; font-size: 12px; padding: 6px 12px;">Save & Back</button>
                             </div>
                         </div>
 
@@ -3108,7 +3108,7 @@
                         <!-- ISSUE TALLY SUMMARY (auto-generated) -->
                         <div class="card" id="issueTallyCard">
                             <div class="card-header" style="background: #f3e5f5;">
-                                <h2 class="card-title" style="color: #7b1fa2;">Issue Summary</h2>
+                                <h2 class="card-title" style="color: #7b1fa2;">Summary</h2>
                                 <p style="font-size: 12px; color: #7b1fa2; margin-top: 4px;">Auto-generated from issues above</p>
                             </div>
                             <div class="card-body">
@@ -3130,8 +3130,8 @@
                             <button class="btn btn-outline btn-lg" onclick="goBackToJobOverview()">
                                 Save & Back
                             </button>
-                            <button class="btn btn-primary btn-lg" onclick="saveBankAndFinishJob()">
-                                Review & Submit ✓
+                            <button id="completeBankBtn" class="btn btn-primary btn-lg" onclick="completeBankInspection()">
+                                Complete Inspection
                             </button>
                         </div>
                     </div>
@@ -3184,12 +3184,13 @@
                         </div>
 
                         <!-- Form cards container -->
-                        <div id="overviewFormCards" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
+                        <div id="overviewFormCards" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px;">
                         </div>
 
                         <!-- Actions -->
                         <div id="overviewActions" style="margin-top: 32px; display: flex; gap: 12px;">
-                            <button class="btn btn-primary btn-lg" onclick="showJobSummary()" style="flex: 1; padding: 14px;">Review & Submit</button>
+                            <button class="btn btn-primary btn-lg" onclick="completeInspection()" style="flex: 1; padding: 14px;">Complete Inspection</button>
+                            <button class="btn btn-lg" onclick="unableToComplete()" style="padding: 14px; background: #fff3e0; color: #e65100; border: 2px solid #e65100;">Unable to Complete</button>
                         </div>
                     </div>
 
