@@ -114,7 +114,7 @@ function updateJobCustomerInfo() {
 // Create job and show overview
 function createJobAndAddBank() {
     if (!currentJob.locationId) {
-        alert('Please select a customer/location');
+        showNotification('Please select a customer/location', 'warning');
         return;
     }
 
@@ -135,6 +135,12 @@ function createNewBank(name, formType) {
         name: name,
         formType: formType || 'indoor_bleacher',
         bankPhoto: null,
+        motorPhoto: null,
+        tagPhoto: null,
+        seatColorPhoto: null,
+        pendantPhoto: null,
+        lastFramePhoto: null,
+        wiringHarnessPhoto: null,
         bleacherType: '',
         tiers: '',
         seatType: '',
@@ -162,6 +168,52 @@ function previewBankPhoto(input) {
             document.getElementById('bankPhotoPreview').innerHTML =
                 '<img src="' + e.target.result + '" style="max-width: 100%; max-height: 120px; border-radius: 8px; object-fit: cover;">';
             currentJob.banks[currentBankIndex].bankPhoto = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Required photo slots (besides bank photo which is handled separately)
+var REQUIRED_PHOTO_SLOTS = [
+    { key: 'motorPhoto', label: 'Motor', hint: 'Photo of motor' },
+    { key: 'tagPhoto', label: 'Tag', hint: 'Manufacturer tag' },
+    { key: 'seatColorPhoto', label: 'Seat Color', hint: 'With color chips' },
+    { key: 'pendantPhoto', label: 'Pendant', hint: 'Plug & controller' },
+    { key: 'lastFramePhoto', label: 'Last Frame', hint: 'End frame photo' },
+    { key: 'wiringHarnessPhoto', label: 'Wiring', hint: 'Good=any part, Bad=worst part' }
+];
+
+function renderRequiredPhotos() {
+    var grid = document.getElementById('requiredPhotosGrid');
+    if (!grid) return;
+    var bank = currentJob.banks[currentBankIndex];
+    if (!bank) return;
+
+    var html = '';
+    REQUIRED_PHOTO_SLOTS.forEach(function(slot) {
+        var hasPhoto = bank[slot.key];
+        html += '<div style="text-align: center;">' +
+            '<div id="reqPhoto_' + slot.key + '" style="width: 100%; height: 90px; background: ' + (hasPhoto ? '#e8f5e9' : '#f8f9fa') + '; border: 2px ' + (hasPhoto ? 'solid #4CAF50' : 'dashed #dee2e6') + '; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden;" onclick="document.getElementById(\'reqInput_' + slot.key + '\').click()">';
+        if (hasPhoto) {
+            html += '<img src="' + bank[slot.key] + '" style="width: 100%; height: 100%; object-fit: cover;">';
+        } else {
+            html += '<div style="color: #6c757d; font-size: 24px;">📷</div>';
+        }
+        html += '</div>' +
+            '<input type="file" id="reqInput_' + slot.key + '" accept="image/*" capture="environment" style="display: none;" onchange="captureRequiredPhoto(\'' + slot.key + '\', this)">' +
+            '<div style="font-size: 11px; font-weight: 600; margin-top: 4px; color: ' + (hasPhoto ? '#2e7d32' : '#495057') + ';">' + slot.label + '</div>' +
+            '<div style="font-size: 10px; color: #6c757d;">' + slot.hint + '</div>' +
+            '</div>';
+    });
+    grid.innerHTML = html;
+}
+
+function captureRequiredPhoto(key, input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            currentJob.banks[currentBankIndex][key] = e.target.result;
+            renderRequiredPhotos();
         };
         reader.readAsDataURL(input.files[0]);
     }
@@ -407,7 +459,7 @@ function exitJobOverview() {
     if (_jobOverviewReturnView === 'myjobs') {
         showTechView('myjobs');
     } else if (_jobOverviewReturnView === 'inspections') {
-        showTechView('inspections');
+        showTechView('myjobs');
     } else if (_jobOverviewReturnView === 'search') {
         showTechView('search');
     } else if (_jobOverviewReturnView === 'office') {
@@ -415,7 +467,7 @@ function exitJobOverview() {
         document.getElementById('officeDashboard').classList.remove('hidden');
         showView('home');
     } else {
-        showTechView('inspections');
+        showTechView('myjobs');
     }
 }
 
@@ -499,6 +551,7 @@ function loadBankData() {
     renderTopSideIssues();
     renderUnderstructureIssues();
     renderIssueTally();
+    renderRequiredPhotos();
 }
 
 // Save bank data from form
@@ -935,7 +988,7 @@ function renderIssuePartBadges() {
 function saveInlineIssue(type) {
     var desc = document.getElementById('inlineIssueDesc').value.trim();
     if (!desc) {
-        alert('Please enter a description');
+        showNotification('Please enter a description', 'warning');
         return;
     }
 
@@ -944,7 +997,7 @@ function saveInlineIssue(type) {
         var photoEl = document.getElementById('inlineIssuePhotoPreview');
         photoEl.style.borderColor = '#dc3545';
         photoEl.style.borderWidth = '3px';
-        alert('Photo is required for each issue');
+        showNotification('Photo is required for each issue', 'warning');
         return;
     }
 
@@ -1236,6 +1289,19 @@ function saveBankAndAddAnother() {
 function completeBankInspection() {
     saveBankData();
     var bank = currentJob.banks[currentBankIndex];
+
+    // Validate required photos
+    var missingPhotos = [];
+    if (!bank.bankPhoto) missingPhotos.push('Bank Photo');
+    REQUIRED_PHOTO_SLOTS.forEach(function(slot) {
+        if (!bank[slot.key]) missingPhotos.push(slot.label);
+    });
+
+    if (missingPhotos.length > 0) {
+        showNotification('Missing photos: ' + missingPhotos.join(', '), 'warning');
+        return;
+    }
+
     var formTypeLabels = {
         indoor_bleacher: 'Bank',
         basketball: 'Basketball Goal',
@@ -1255,7 +1321,7 @@ function completeBankInspection() {
 // Complete the entire inspection (all banks)
 function completeInspection() {
     if (!currentJob.banks || currentJob.banks.length === 0) {
-        alert('Add at least one inspection form before completing.');
+        showNotification('Add at least one inspection form before completing', 'warning');
         return;
     }
 
@@ -1272,27 +1338,50 @@ function completeInspection() {
     }
     localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
 
-    alert('Inspection #' + currentJob.jobNumber + ' marked complete.\n\nOffice will review.');
+    showNotification('Inspection #' + currentJob.jobNumber + ' marked complete — office will review', 'success');
     showTechView('myjobs');
 }
 
-// Unable to complete inspection
+// Unable to complete inspection — inline reason picker
 function unableToComplete() {
+    var container = document.getElementById('unableToCompletePanel');
+    if (container) {
+        // Toggle off if already showing
+        container.remove();
+        return;
+    }
+
     var reasons = [
         'Gym in use / school function',
         'Could not access all banks',
         'Equipment issue (lift, etc.)',
-        'Weather / site access',
-        'Other'
+        'Weather / site access'
     ];
 
-    var reasonList = reasons.map(function(r, i) { return (i + 1) + '. ' + r; }).join('\n');
-    var choice = prompt('Why was this inspection unable to be completed?\n\n' + reasonList + '\n\nEnter number or type reason:');
-    if (!choice) return;
+    var html = '<div id="unableToCompletePanel" style="background: #fff; border: 2px solid #c62828; border-radius: 12px; padding: 20px; margin-top: 16px;">' +
+        '<div style="font-weight: 600; font-size: 15px; color: #c62828; margin-bottom: 12px;">Why was this inspection unable to be completed?</div>';
 
-    var reasonIndex = parseInt(choice) - 1;
-    var reason = (reasonIndex >= 0 && reasonIndex < reasons.length) ? reasons[reasonIndex] : choice;
+    reasons.forEach(function(r) {
+        html += '<div onclick="confirmUnableToComplete(\'' + r.replace(/'/g, "\\'") + '\')" style="padding: 12px 16px; margin-bottom: 8px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; cursor: pointer; font-size: 14px;">' + r + '</div>';
+    });
 
+    html += '<div style="margin-top: 8px;">' +
+        '<input type="text" id="unableOtherReason" class="form-input" placeholder="Other reason..." style="margin-bottom: 8px;">' +
+        '<button class="btn btn-outline" onclick="var r=document.getElementById(\'unableOtherReason\').value.trim(); if(r) confirmUnableToComplete(r); else showNotification(\'Enter a reason\',\'warning\');" style="width: 100%; color: #c62828; border-color: #c62828;">Submit Other Reason</button>' +
+        '</div>' +
+        '<button class="btn btn-outline" onclick="document.getElementById(\'unableToCompletePanel\').remove()" style="width: 100%; margin-top: 8px;">Cancel</button>' +
+        '</div>';
+
+    // Insert after the actions buttons
+    var actionsArea = document.getElementById('overviewActions');
+    if (actionsArea) {
+        actionsArea.insertAdjacentHTML('afterend', html);
+    } else {
+        document.getElementById('jobOverviewView').insertAdjacentHTML('beforeend', html);
+    }
+}
+
+function confirmUnableToComplete(reason) {
     currentJob.status = 'unable';
     currentJob.unableReason = reason;
 
@@ -1301,7 +1390,7 @@ function unableToComplete() {
     if (existingIndex >= 0) inspectionJobs[existingIndex] = currentJob;
     localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
 
-    alert('Inspection #' + currentJob.jobNumber + ' marked as unable to complete.\nReason: ' + reason);
+    showNotification('Marked as unable to complete: ' + reason, 'warning');
     showTechView('myjobs');
 }
 
@@ -1484,7 +1573,7 @@ function submitJob() {
     }
     localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
 
-    alert(`✅ Job ${currentJob.jobNumber} submitted successfully!\n\n🎉 ${currentJob.banks.length} bank(s) inspected.\n\nOffice staff can now review and generate a QuickBooks estimate.`);
+    showNotification('Job ' + currentJob.jobNumber + ' submitted — ' + currentJob.banks.length + ' bank(s) inspected', 'success');
 
     currentJob = null;
     goBackFromInspection();
@@ -1494,7 +1583,7 @@ function submitJob() {
 // Generate estimate from a submitted job
 function generateEstimateFromJob() {
     if (!currentJob) {
-        alert('No job selected');
+        showNotification('No job selected', 'warning');
         return;
     }
 
@@ -1568,11 +1657,7 @@ function generateEstimateFromJob() {
     workOrders.push(newWorkOrder);
     localStorage.setItem('appWorkOrders', JSON.stringify(workOrders));
 
-    alert(`Estimate generated for Job ${currentJob.jobNumber}\n\n` +
-          `Customer: ${currentJob.locationName}\n` +
-          `Status: Approved\n` +
-          `Work order created.\n\n` +
-          `QuickBooks integration coming soon - this will auto-push the estimate.`);
+    showNotification('Estimate generated for Job ' + currentJob.jobNumber + ' — work order created', 'success');
 
     // Return to Ops Review
     currentJob = null;
@@ -1681,7 +1766,7 @@ function editSubmittedJob(jobNumber) {
         const idx = inspectionJobs.findIndex(j => j.jobNumber === jobNumber);
         if (idx >= 0) inspectionJobs[idx] = currentJob;
         localStorage.setItem('inspectionJobs', JSON.stringify(inspectionJobs));
-        showJobOverview('inspections');
+        showJobOverview('myjobs');
     }
 }
 
@@ -1702,7 +1787,7 @@ function hideAllViews() {
 // Open parts search from summary
 function openPartsSearch() {
     // For now, show alert. In full version, would open parts modal
-    alert('Parts search will open here. For now, add parts from the main inspection form.');
+    showNotification('Use the parts catalog in the inspection form to add parts', 'info');
 }
 
 // Inspection type change handler

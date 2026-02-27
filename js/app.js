@@ -369,10 +369,10 @@ function showTechView(view) {
         setActiveNav('create');
         initCreateForm();
     } else if (view === 'inspections') {
-        document.getElementById('techInspectionsView').classList.remove('hidden');
-        setActiveNav('inspections');
-        loadInspectionJobs();
-        loadTechInspections();
+        // Redirected to myjobs — Inspections tab removed from field nav (Feb 25, 2026)
+        document.getElementById('techMyJobsView').classList.remove('hidden');
+        setActiveNav('myjobs');
+        loadMyJobs();
     } else if (view === 'parts') {
         document.getElementById('techPartsView').classList.remove('hidden');
         setActiveNav('parts');

@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bleachers & Seats - Operations Platform</title>
     <link rel="stylesheet" href="css/app.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2d3748">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bleachers">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body>
     <!-- Login Screen -->
@@ -2254,13 +2260,9 @@
                         <span>Search & Browse</span>
                     </div>
 
-                    <!-- Inspections & Service -->
+                    <!-- Field Work -->
                     <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
-                        <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Inspections & Service</span>
-                    </div>
-                    <div class="nav-item" data-view="inspections" onclick="showTechView('inspections')">
-                        <span>📋</span>
-                        <span>Inspections</span>
+                        <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Field Work</span>
                     </div>
                     <div class="nav-item" data-view="myjobs" onclick="showTechView('myjobs')">
                         <span>📅</span>
@@ -2954,6 +2956,12 @@
                                         </div>
                                     </div>
                                     <input type="file" id="bankPhotoInput" accept="image/*" capture="environment" style="display: none;" onchange="previewBankPhoto(this)">
+                                </div>
+
+                                <!-- Required Photos Grid -->
+                                <div style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #e9ecef;">
+                                    <label class="form-label" style="font-weight: 600;">Required Photos</label>
+                                    <div id="requiredPhotosGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;"></div>
                                 </div>
 
                                 <!-- Equipment Quick Info -->
@@ -4308,5 +4316,14 @@
 
     <!-- Clerk auth (after app.js so login() is available) -->
     <script src="js/auth.js"></script>
+
+    <!-- PWA Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(function(reg) { console.log('SW registered:', reg.scope); })
+                .catch(function(err) { console.log('SW registration failed:', err); });
+        }
+    </script>
 </body>
 </html>

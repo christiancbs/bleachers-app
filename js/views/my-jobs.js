@@ -44,6 +44,46 @@ function loadMyJobs() {
 
     let html = '';
 
+    // Active Inspections from localStorage (field-created)
+    const activeInspections = (typeof inspectionJobs !== 'undefined') ? inspectionJobs : [];
+
+    if (activeInspections.length > 0) {
+        const statusConfig = {
+            'in_progress': { label: 'In Progress', color: '#e65100', bg: '#fff3e0' },
+            'ready_for_review': { label: 'Ready for Review', color: '#1565c0', bg: '#e3f2fd' },
+            'submitted': { label: 'Submitted', color: '#2e7d32', bg: '#c8e6c9' },
+            'unable': { label: 'Unable to Complete', color: '#c62828', bg: '#ffcdd2' }
+        };
+
+        html += `<div class="card" style="margin-bottom: 16px;">
+            <div class="card-header" style="padding: 12px 16px; font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
+                <span>My Inspections</span>
+                <span class="badge" style="background: #e3f2fd; color: #1565c0;">${activeInspections.length}</span>
+            </div>`;
+
+        activeInspections.forEach(job => {
+            const bankCount = job.banks?.length || 0;
+            const created = new Date(job.createdAt).toLocaleDateString();
+            const st = statusConfig[job.status] || statusConfig['in_progress'];
+            const canReopen = job.status === 'submitted' || job.status === 'ready_for_review';
+
+            html += `<div onclick="resumeJob(${job.jobNumber})" style="padding: 14px 16px; border-bottom: 1px solid #e9ecef; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                <div style="flex: 1;">
+                    <div style="font-weight: 600;">Job ${job.jobNumber}</div>
+                    <div style="font-size: 14px; color: #6c757d;">${job.locationName || 'No location'}</div>
+                    <div style="font-size: 12px; color: #6c757d;">${bankCount} bank(s) &bull; ${created}</div>
+                    ${job.unableReason ? '<div style="font-size: 12px; color: #c62828; margin-top: 2px;">' + job.unableReason + '</div>' : ''}
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    ${canReopen ? '<button onclick="event.stopPropagation(); editSubmittedJob(' + job.jobNumber + ')" style="padding: 6px 12px; font-size: 12px; background: #fff3e0; color: #e65100; border: 1px solid #e65100; border-radius: 6px; cursor: pointer;">Edit</button>' : ''}
+                    <span class="badge" style="background: ${st.bg}; color: ${st.color};">${st.label}</span>
+                </div>
+            </div>`;
+        });
+
+        html += `</div>`;
+    }
+
     // Add progress indicator
     if (totalJobs > 0) {
         const progressPercent = Math.round((completedJobs / totalJobs) * 100);

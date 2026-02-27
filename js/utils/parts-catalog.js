@@ -15,7 +15,7 @@ function goBackFromInspection() {
         document.getElementById('officeDashboard').classList.remove('hidden');
         showView('opsReview');
     } else {
-        showTechView('inspections');
+        showTechView('myjobs');
     }
 }
 
