@@ -279,6 +279,9 @@ async function loadEstimates() {
     searchResults.classList.add('hidden');
     createTab.classList.add('hidden');
 
+    // Reset to accepted tab
+    switchEstimateTab('accepted');
+
     var loadingHtml = '<div style="padding: 30px; text-align: center; color: #6c757d;">Loading from QuickBooks...</div>';
     acceptedList.innerHTML = loadingHtml;
     pendingList.innerHTML = loadingHtml;
@@ -408,10 +411,30 @@ function hideEstimateBuilder() {
     document.getElementById('estimatesSearchInput').value = '';
 }
 
+function switchEstimateTab(tab) {
+    var acceptedTab = document.getElementById('estTabAccepted');
+    var pendingTab = document.getElementById('estTabPending');
+    var acceptedPanel = document.getElementById('estPanelAccepted');
+    var pendingPanel = document.getElementById('estPanelPending');
+
+    if (tab === 'accepted') {
+        acceptedTab.classList.add('active');
+        pendingTab.classList.remove('active');
+        acceptedPanel.classList.remove('hidden');
+        pendingPanel.classList.add('hidden');
+    } else {
+        pendingTab.classList.add('active');
+        acceptedTab.classList.remove('active');
+        pendingPanel.classList.remove('hidden');
+        acceptedPanel.classList.add('hidden');
+    }
+}
+
 window.showEstimateBuilder = showEstimateBuilder;
 window.hideEstimateBuilder = hideEstimateBuilder;
 window.loadEstimates = loadEstimates;
 window.searchEstimates = searchEstimates;
+window.switchEstimateTab = switchEstimateTab;
 
 function viewEstimate(id) {
     const inspection = inspections.find(i => i.id === id);

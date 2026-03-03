@@ -162,41 +162,42 @@
                             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
                                 <div>
                                     <h1 class="page-title">Estimates</h1>
-                                    <p class="page-subtitle">Accepted estimates needing jobs, pending estimates, and search</p>
+                                    <p class="page-subtitle">Manage accepted and pending estimates from QuickBooks</p>
                                 </div>
-                                <div style="display: flex; gap: 8px;">
-                                    <button class="btn btn-primary" onclick="showEstimateBuilder()">+ Create Estimate</button>
-                                    <a href="https://app.qbo.intuit.com" target="_blank" rel="noopener" class="btn btn-outline" style="font-size: 13px; display: flex; align-items: center; gap: 6px; white-space: nowrap;">
-                                        Open QuickBooks ↗
-                                    </a>
-                                </div>
+                                <a href="https://app.qbo.intuit.com" target="_blank" rel="noopener" class="btn btn-outline" style="font-size: 13px; display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+                                    Open QuickBooks ↗
+                                </a>
                             </div>
+                        </div>
+
+                        <div style="margin-bottom: 12px;">
+                            <input type="text" id="estimatesSearchInput" class="form-input" placeholder="Search all estimates by customer, estimate #, or keyword..." oninput="searchEstimates()" style="font-size: 16px; padding: 14px 16px;">
                         </div>
 
                         <div style="margin-bottom: 20px;">
-                            <input type="text" id="estimatesSearchInput" class="form-input" placeholder="Search estimates by customer, estimate #, or keyword..." oninput="searchEstimates()" style="font-size: 16px; padding: 14px 16px;">
+                            <button class="btn btn-primary browse-action-btn" onclick="showEstimateBuilder()">+ Create Estimate</button>
                         </div>
 
-                        <!-- Default view: Accepted + Pending sections -->
+                        <!-- Default view: Tabs for Accepted + Pending -->
                         <div id="estimatesDefaultView">
-                            <!-- Accepted Estimates (Need Action) -->
-                            <div style="margin-bottom: 24px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                    <h2 style="font-size: 16px; font-weight: 700; color: #495057; margin: 0;">Accepted — Need Jobs <span id="estAcceptedCount" class="badge" style="background: #c8e6c9; color: #2e7d32; margin-left: 6px;">0</span></h2>
-                                </div>
-                                <div class="card">
-                                    <div class="card-body" id="acceptedEstimatesList" style="padding: 0;"></div>
-                                </div>
+                            <!-- Tab bar -->
+                            <div style="display: flex; gap: 0; margin-bottom: 0; border-bottom: 2px solid #e9ecef;">
+                                <button id="estTabAccepted" class="est-tab active" onclick="switchEstimateTab('accepted')">
+                                    Accepted <span id="estAcceptedCount" class="badge" style="background: #c8e6c9; color: #2e7d32; margin-left: 4px; font-size: 11px;">0</span>
+                                </button>
+                                <button id="estTabPending" class="est-tab" onclick="switchEstimateTab('pending')">
+                                    Pending <span id="estPendingCount" class="badge" style="background: #fff3e0; color: #e65100; margin-left: 4px; font-size: 11px;">0</span>
+                                </button>
                             </div>
 
-                            <!-- Pending Estimates -->
-                            <div style="margin-bottom: 24px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                    <h2 style="font-size: 16px; font-weight: 700; color: #495057; margin: 0;">Pending <span id="estPendingCount" class="badge" style="background: #fff3e0; color: #e65100; margin-left: 6px;">0</span></h2>
-                                </div>
-                                <div class="card">
-                                    <div class="card-body" id="pendingEstimatesList" style="padding: 0;"></div>
-                                </div>
+                            <!-- Accepted panel -->
+                            <div id="estPanelAccepted" class="card" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+                                <div class="card-body" id="acceptedEstimatesList" style="padding: 0;"></div>
+                            </div>
+
+                            <!-- Pending panel -->
+                            <div id="estPanelPending" class="card hidden" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+                                <div class="card-body" id="pendingEstimatesList" style="padding: 0;"></div>
                             </div>
                         </div>
 
@@ -1016,9 +1017,9 @@
                             </div>
 
                             <div style="display: flex; gap: 8px; margin-bottom: 20px;">
-                                <button class="btn btn-primary" onclick="browseShowNewCustomerForm()">+ New Customer</button>
-                                <button class="btn btn-outline" onclick="browseCreateTopLevelJob()">+ New Job</button>
-                                <button class="btn btn-outline" onclick="browseCreateEstimate()">+ Create Estimate</button>
+                                <button class="btn btn-primary browse-action-btn" onclick="browseShowNewCustomerForm()">+ New Customer</button>
+                                <button class="btn btn-primary browse-action-btn" onclick="browseCreateTopLevelJob()">+ New Job</button>
+                                <button class="btn btn-primary browse-action-btn" onclick="browseCreateEstimate()">+ Create Estimate</button>
                             </div>
 
                             <!-- Inline New Customer Form (hidden by default) -->
@@ -2397,9 +2398,9 @@
                             </div>
 
                             <div style="display: flex; gap: 8px; margin-bottom: 20px;">
-                                <button class="btn btn-primary" onclick="browseShowNewCustomerForm()">+ New Customer</button>
-                                <button class="btn btn-outline" onclick="browseCreateTopLevelJob()">+ New Job</button>
-                                <button class="btn btn-outline" onclick="browseCreateEstimate()">+ Create Estimate</button>
+                                <button class="btn btn-primary browse-action-btn" onclick="browseShowNewCustomerForm()">+ New Customer</button>
+                                <button class="btn btn-primary browse-action-btn" onclick="browseCreateTopLevelJob()">+ New Job</button>
+                                <button class="btn btn-primary browse-action-btn" onclick="browseCreateEstimate()">+ Create Estimate</button>
                             </div>
 
                             <!-- Inline New Customer Form (hidden by default) -->

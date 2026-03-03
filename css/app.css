@@ -551,6 +551,38 @@
             color: white;
         }
 
+        .browse-action-btn {
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .browse-action-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        /* Estimate tabs */
+        .est-tab {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #6c757d;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            cursor: pointer;
+            transition: color 0.15s ease, border-color 0.15s ease;
+        }
+
+        .est-tab:hover {
+            color: #495057;
+        }
+
+        .est-tab.active {
+            color: #4CAF50;
+            border-bottom-color: #4CAF50;
+        }
+
         .btn-danger {
             background: #dc3545;
             color: white;
