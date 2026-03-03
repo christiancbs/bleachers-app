@@ -960,8 +960,8 @@ async function submitEstimateToQb() {
         EstimatesAPI.clearCache();
 
         // Reset builder and go back to estimates list
-        filterEstimates('all');
-        loadEstimatesList();
+        hideEstimateBuilder();
+        loadEstimates();
 
     } catch (err) {
         console.error('Failed to create estimate:', err);
@@ -979,7 +979,7 @@ function cancelEstimateBuilder() {
             return;
         }
     }
-    filterEstimates('all');
+    hideEstimateBuilder();
 }
 
 // ==========================================
@@ -991,8 +991,8 @@ function openEstimateBuilderFromInspection(inspection) {
     // Switch to estimates view
     showView('estimates');
 
-    // Switch to create tab
-    filterEstimates('create');
+    // Open estimate builder
+    showEstimateBuilder();
 
     // Initialize with prefill data
     initEstimateBuilder(inspection);

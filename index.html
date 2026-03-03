@@ -59,7 +59,8 @@
                         <span>💼</span>
                         <span>Pipeline</span>
                     </div>
-                    <div class="nav-item" data-view="accounts" onclick="showView('accounts')">
+                    <!-- ARCHIVED: Accounts tab removed — customers now accessed via Search & Browse (QB-first) -->
+                    <div class="nav-item hidden" data-view="accounts" onclick="showView('accounts')">
                         <span>🏫</span>
                         <span>Accounts</span>
                     </div>
@@ -161,64 +162,58 @@
                             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
                                 <div>
                                     <h1 class="page-title">Estimates</h1>
-                                    <p class="page-subtitle">Manage customer estimates and create new ones</p>
+                                    <p class="page-subtitle">Accepted estimates needing jobs, pending estimates, and search</p>
                                 </div>
-                                <a href="https://app.qbo.intuit.com" target="_blank" rel="noopener" class="btn btn-outline" style="font-size: 13px; display: flex; align-items: center; gap: 6px; white-space: nowrap;">
-                                    Open QuickBooks ↗
-                                </a>
+                                <div style="display: flex; gap: 8px;">
+                                    <button class="btn btn-primary" onclick="showEstimateBuilder()">+ Create Estimate</button>
+                                    <a href="https://app.qbo.intuit.com" target="_blank" rel="noopener" class="btn btn-outline" style="font-size: 13px; display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+                                        Open QuickBooks ↗
+                                    </a>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Filter Tabs -->
-                        <div style="display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e9ecef;">
-                            <button class="schedule-tab active" onclick="filterEstimates('all')" id="estFilterAll">All</button>
-                            <button class="schedule-tab" onclick="filterEstimates('pending')" id="estFilterPending">Pending Estimates <span id="estPendingCount" class="badge" style="background: #fff3e0; color: #e65100; margin-left: 6px;">0</span></button>
-                            <button class="schedule-tab" onclick="filterEstimates('accepted')" id="estFilterAccepted">Accepted Estimates <span id="estAcceptedCount" class="badge" style="background: #c8e6c9; color: #2e7d32; margin-left: 6px;">0</span></button>
-                            <button class="schedule-tab" onclick="filterEstimates('create')" id="estFilterCreate">+ Create Estimate</button>
+                        <div style="margin-bottom: 20px;">
+                            <input type="text" id="estimatesSearchInput" class="form-input" placeholder="Search estimates by customer, estimate #, or keyword..." oninput="searchEstimates()" style="font-size: 16px; padding: 14px 16px;">
                         </div>
 
-                        <!-- All Tab Content -->
-                        <div id="estimatesAllTab">
-                            <div style="margin-bottom: 20px;">
-                                <input type="text" id="allEstimateSearch" class="form-input" placeholder="Search all estimates..." oninput="loadEstimatesList()" style="max-width: 450px;">
+                        <!-- Default view: Accepted + Pending sections -->
+                        <div id="estimatesDefaultView">
+                            <!-- Accepted Estimates (Need Action) -->
+                            <div style="margin-bottom: 24px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                    <h2 style="font-size: 16px; font-weight: 700; color: #495057; margin: 0;">Accepted — Need Jobs <span id="estAcceptedCount" class="badge" style="background: #c8e6c9; color: #2e7d32; margin-left: 6px;">0</span></h2>
+                                </div>
+                                <div class="card">
+                                    <div class="card-body" id="acceptedEstimatesList" style="padding: 0;"></div>
+                                </div>
                             </div>
+
+                            <!-- Pending Estimates -->
+                            <div style="margin-bottom: 24px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                    <h2 style="font-size: 16px; font-weight: 700; color: #495057; margin: 0;">Pending <span id="estPendingCount" class="badge" style="background: #fff3e0; color: #e65100; margin-left: 6px;">0</span></h2>
+                                </div>
+                                <div class="card">
+                                    <div class="card-body" id="pendingEstimatesList" style="padding: 0;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Search results (hidden until search) -->
+                        <div id="estimatesSearchResults" class="hidden">
                             <div class="card">
-                                <div class="card-body" id="allEstimatesList" style="padding: 0;">
-                                    <!-- Populated by JavaScript -->
-                                </div>
+                                <div class="card-body" id="estimatesSearchList" style="padding: 0;"></div>
                             </div>
                         </div>
 
-                        <!-- Pending Tab Content -->
-                        <div id="estimatesPendingTab" class="hidden">
-                            <div style="margin-bottom: 20px;">
-                                <input type="text" id="estimateSearch" class="form-input" placeholder="Search estimates by customer, location, or job number..." oninput="loadEstimatesList()" style="max-width: 450px;">
-                            </div>
-                            <div class="card">
-                                <div class="card-body" id="estimatesList" style="padding: 0;">
-                                    <!-- Populated by JavaScript -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Accepted Tab Content -->
-                        <div id="estimatesAcceptedTab" class="hidden">
-                            <div style="margin-bottom: 20px;">
-                                <input type="text" id="acceptedEstimateSearch" class="form-input" placeholder="Search accepted estimates..." oninput="loadEstimatesList()" style="max-width: 450px;">
-                            </div>
-                            <div class="card">
-                                <div class="card-body" id="acceptedEstimatesList" style="padding: 0;">
-                                    <!-- Populated by JavaScript -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Create Tab Content -->
+                        <!-- Create Estimate (hidden until button clicked) -->
                         <div id="estimatesCreateTab" class="hidden">
+                            <div style="margin-bottom: 12px;">
+                                <button class="btn btn-secondary" onclick="hideEstimateBuilder()">← Back to Estimates</button>
+                            </div>
                             <div class="card">
-                                <div class="card-body" id="createEstimateForm">
-                                    <!-- Populated by JavaScript -->
-                                </div>
+                                <div class="card-body" id="createEstimateForm"></div>
                             </div>
                         </div>
                     </div>
@@ -464,7 +459,7 @@
                     <!-- Customer Detail View -->
                     <div id="customerDetailView" class="hidden">
                         <div class="page-header">
-                            <button class="btn btn-secondary" onclick="showView('accounts')">← Back to Accounts</button>
+                            <button class="btn btn-secondary" onclick="showView('officeSearch')">← Back to Search & Browse</button>
                             <div style="display: flex; align-items: center; gap: 16px; margin-top: 16px;">
                                 <h1 class="page-title" style="margin: 0;" id="custDetailName">Lauderdale County Schools</h1>
                                 <span id="custDetailType" class="badge badge-info">County</span>
@@ -1013,11 +1008,67 @@
                         <div id="browseScreen1Office" class="browse-screen">
                             <div class="page-header">
                                 <h1 class="page-title">Search & Browse</h1>
-                                <p class="page-subtitle">Search jobs or browse by district</p>
+                                <p class="page-subtitle">Search QuickBooks customers or browse jobs</p>
                             </div>
 
-                            <div style="margin-bottom: 24px;">
-                                <input type="text" id="officeSearchInput" class="form-input" placeholder="Search by school name, job #, or keyword..." style="font-size: 16px; padding: 14px 16px;" oninput="handleBrowseSearch('office')">
+                            <div style="margin-bottom: 16px;">
+                                <input type="text" id="officeSearchInput" class="form-input" placeholder="Search by customer name, job #, or keyword..." style="font-size: 16px; padding: 14px 16px;" oninput="handleBrowseSearch('office')">
+                            </div>
+
+                            <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+                                <button class="btn btn-primary" onclick="browseShowNewCustomerForm()">+ New Customer</button>
+                                <button class="btn btn-outline" onclick="browseCreateTopLevelJob()">+ New Job</button>
+                                <button class="btn btn-outline" onclick="browseCreateEstimate()">+ Create Estimate</button>
+                            </div>
+
+                            <!-- Inline New Customer Form (hidden by default) -->
+                            <div id="browseNewCustomerFormOffice" class="hidden" style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e9ecef;">
+                                <h3 style="margin: 0 0 16px; font-size: 16px;">Create New Customer</h3>
+                                <p style="font-size: 13px; color: #6c757d; margin: 0 0 16px;">This will create the customer in QuickBooks. After creation, edits must be made in QuickBooks directly.</p>
+                                <div id="browseNewCustErrorOffice" style="color: #dc3545; font-size: 13px; margin-bottom: 8px;"></div>
+                                <div style="margin-bottom: 12px;">
+                                    <label style="display: block; font-size: 13px; font-weight: 600; color: #495057; margin-bottom: 4px;">Customer Name *</label>
+                                    <input type="text" id="browseNewCustNameOffice" class="form-input" placeholder="e.g., Wilson County Schools">
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; color: #495057; margin-bottom: 4px;">Type</label>
+                                        <select id="browseNewCustTypeOffice" class="form-input">
+                                            <option value="county">County Schools</option>
+                                            <option value="collegiate">Collegiate</option>
+                                            <option value="private">Private School</option>
+                                            <option value="contractor">Contractor</option>
+                                            <option value="government">Government</option>
+                                            <option value="worship">Worship</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; color: #495057; margin-bottom: 4px;">Territory</label>
+                                        <select id="browseNewCustTerritoryOffice" class="form-input">
+                                            <option value="Original">Original (KY/TN)</option>
+                                            <option value="Southern">Southern (AL/FL)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div style="margin-bottom: 12px;">
+                                    <label style="display: block; font-size: 13px; font-weight: 600; color: #495057; margin-bottom: 4px;">Address</label>
+                                    <input type="text" id="browseNewCustAddressOffice" class="form-input" placeholder="123 Main St, City, TN 12345">
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; color: #495057; margin-bottom: 4px;">Phone</label>
+                                        <input type="tel" id="browseNewCustPhoneOffice" class="form-input" placeholder="(615) 555-1234">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; color: #495057; margin-bottom: 4px;">Email</label>
+                                        <input type="email" id="browseNewCustEmailOffice" class="form-input" placeholder="contact@school.edu">
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button id="browseNewCustSubmitOffice" class="btn btn-primary" onclick="browseCreateNewCustomer()">Create Customer</button>
+                                    <button class="btn btn-secondary" onclick="browseShowNewCustomerForm()">Cancel</button>
+                                </div>
                             </div>
 
                             <div id="officeSearchResults" class="hidden"></div>
@@ -2338,11 +2389,67 @@
                         <div id="browseScreen1Tech" class="browse-screen">
                             <div class="page-header">
                                 <h1 class="page-title">Search & Browse</h1>
-                                <p class="page-subtitle">Search jobs or browse by district</p>
+                                <p class="page-subtitle">Search QuickBooks customers or browse jobs</p>
                             </div>
 
-                            <div style="margin-bottom: 24px;">
-                                <input type="text" id="techSearchInput" class="form-input" placeholder="Search by school name, job #, or keyword..." style="font-size: 16px; padding: 14px 16px;" oninput="handleBrowseSearch('field')">
+                            <div style="margin-bottom: 16px;">
+                                <input type="text" id="techSearchInput" class="form-input" placeholder="Search by customer name, job #, or keyword..." style="font-size: 16px; padding: 14px 16px;" oninput="handleBrowseSearch('field')">
+                            </div>
+
+                            <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+                                <button class="btn btn-primary" onclick="browseShowNewCustomerForm()">+ New Customer</button>
+                                <button class="btn btn-outline" onclick="browseCreateTopLevelJob()">+ New Job</button>
+                                <button class="btn btn-outline" onclick="browseCreateEstimate()">+ Create Estimate</button>
+                            </div>
+
+                            <!-- Inline New Customer Form (hidden by default) -->
+                            <div id="browseNewCustomerFormTech" class="hidden" style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #e9ecef;">
+                                <h3 style="margin: 0 0 16px; font-size: 16px;">Create New Customer</h3>
+                                <p style="font-size: 13px; color: #6c757d; margin: 0 0 16px;">This will create the customer in QuickBooks. After creation, edits must be made in QuickBooks directly.</p>
+                                <div id="browseNewCustErrorTech" style="color: #dc3545; font-size: 13px; margin-bottom: 8px;"></div>
+                                <div style="margin-bottom: 12px;">
+                                    <label style="display: block; font-size: 13px; font-weight: 600; color: #495057; margin-bottom: 4px;">Customer Name *</label>
+                                    <input type="text" id="browseNewCustNameTech" class="form-input" placeholder="e.g., Wilson County Schools">
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; color: #495057; margin-bottom: 4px;">Type</label>
+                                        <select id="browseNewCustTypeTech" class="form-input">
+                                            <option value="county">County Schools</option>
+                                            <option value="collegiate">Collegiate</option>
+                                            <option value="private">Private School</option>
+                                            <option value="contractor">Contractor</option>
+                                            <option value="government">Government</option>
+                                            <option value="worship">Worship</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; color: #495057; margin-bottom: 4px;">Territory</label>
+                                        <select id="browseNewCustTerritoryTech" class="form-input">
+                                            <option value="Original">Original (KY/TN)</option>
+                                            <option value="Southern">Southern (AL/FL)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div style="margin-bottom: 12px;">
+                                    <label style="display: block; font-size: 13px; font-weight: 600; color: #495057; margin-bottom: 4px;">Address</label>
+                                    <input type="text" id="browseNewCustAddressTech" class="form-input" placeholder="123 Main St, City, TN 12345">
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; color: #495057; margin-bottom: 4px;">Phone</label>
+                                        <input type="tel" id="browseNewCustPhoneTech" class="form-input" placeholder="(615) 555-1234">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; color: #495057; margin-bottom: 4px;">Email</label>
+                                        <input type="email" id="browseNewCustEmailTech" class="form-input" placeholder="contact@school.edu">
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button id="browseNewCustSubmitTech" class="btn btn-primary" onclick="browseCreateNewCustomer()">Create Customer</button>
+                                    <button class="btn btn-secondary" onclick="browseShowNewCustomerForm()">Cancel</button>
+                                </div>
                             </div>
 
                             <div id="techSearchResults" class="hidden"></div>

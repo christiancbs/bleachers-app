@@ -267,207 +267,151 @@ function renderTodayPanel(containerId) {
 // View, filter, and manage estimates
 // ==========================================
 
-// Track current estimates filter
-var currentEstimatesFilter = 'all';
-
 async function loadEstimates() {
-    // Show loading state in visible tab containers
-    const loadingHtml = '<div style="padding: 40px; text-align: center; color: #6c757d;"><div style="margin-bottom: 12px; font-size: 24px;">Loading estimates from QuickBooks...</div><div style="width: 200px; height: 4px; background: #e9ecef; border-radius: 2px; margin: 0 auto; overflow: hidden;"><div style="width: 40%; height: 100%; background: #007bff; border-radius: 2px; animation: loadingBar 1.5s ease-in-out infinite;"></div></div></div>';
-    const style = document.getElementById('estimatesLoadingStyle') || document.createElement('style');
-    if (!style.id) {
-        style.id = 'estimatesLoadingStyle';
-        style.textContent = '@keyframes loadingBar { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }';
-        document.head.appendChild(style);
-    }
-    ['allEstimatesList', 'estimatesList', 'acceptedEstimatesList'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.innerHTML = loadingHtml;
-    });
+    var acceptedList = document.getElementById('acceptedEstimatesList');
+    var pendingList = document.getElementById('pendingEstimatesList');
+    var defaultView = document.getElementById('estimatesDefaultView');
+    var searchResults = document.getElementById('estimatesSearchResults');
+    var createTab = document.getElementById('estimatesCreateTab');
 
-    // Fetch from QB API and update badge counts
+    // Show default view, hide others
+    defaultView.classList.remove('hidden');
+    searchResults.classList.add('hidden');
+    createTab.classList.add('hidden');
+
+    var loadingHtml = '<div style="padding: 30px; text-align: center; color: #6c757d;">Loading from QuickBooks...</div>';
+    acceptedList.innerHTML = loadingHtml;
+    pendingList.innerHTML = loadingHtml;
+
     try {
-        const data = await EstimatesAPI.list({ limit: 500 });
-        const estimates = data.estimates || [];
-
-        const pendingCount = estimates.filter(e => e.status === 'Pending').length;
-        const acceptedCount = estimates.filter(e => e.status === 'Accepted').length;
-
-        document.getElementById('estPendingCount').textContent = pendingCount;
-        document.getElementById('estAcceptedCount').textContent = acceptedCount;
-
-        // Store for filtering
+        // Fetch accepted and pending from QB
+        var data = await EstimatesAPI.list({ limit: 500 });
+        var estimates = data.estimates || [];
         window._qbEstimates = estimates;
+
+        var accepted = estimates.filter(function(e) { return e.status === 'Accepted'; });
+        var pending = estimates.filter(function(e) { return e.status === 'Pending'; });
+
+        document.getElementById('estAcceptedCount').textContent = accepted.length;
+        document.getElementById('estPendingCount').textContent = pending.length;
+
+        // Render accepted
+        renderEstimatesList(acceptedList, accepted, '', 'No accepted estimates needing jobs');
+
+        // Render pending
+        renderEstimatesList(pendingList, pending, '', 'No pending estimates');
     } catch (err) {
         console.error('Failed to load estimates:', err);
         window._qbEstimates = [];
-    }
-
-    // Load the current tab content
-    filterEstimates(currentEstimatesFilter);
-}
-
-function filterEstimates(filter) {
-    currentEstimatesFilter = filter;
-
-    // Update tab active states
-    document.getElementById('estFilterAll').classList.remove('active');
-    document.getElementById('estFilterPending').classList.remove('active');
-    document.getElementById('estFilterAccepted').classList.remove('active');
-    document.getElementById('estFilterCreate').classList.remove('active');
-    document.getElementById('estFilter' + filter.charAt(0).toUpperCase() + filter.slice(1)).classList.add('active');
-
-    // Hide all tab content
-    document.getElementById('estimatesAllTab').classList.add('hidden');
-    document.getElementById('estimatesPendingTab').classList.add('hidden');
-    document.getElementById('estimatesAcceptedTab').classList.add('hidden');
-    document.getElementById('estimatesCreateTab').classList.add('hidden');
-
-    // Show selected tab and load content
-    if (filter === 'all') {
-        document.getElementById('estimatesAllTab').classList.remove('hidden');
-        loadEstimatesAll();
-    } else if (filter === 'pending') {
-        document.getElementById('estimatesPendingTab').classList.remove('hidden');
-        loadEstimatesPending();
-    } else if (filter === 'accepted') {
-        document.getElementById('estimatesAcceptedTab').classList.remove('hidden');
-        loadEstimatesAccepted();
-    } else if (filter === 'create') {
-        document.getElementById('estimatesCreateTab').classList.remove('hidden');
-        initEstimateCreate();
+        acceptedList.innerHTML = '<div style="padding: 30px; text-align: center; color: #dc3545;">Failed to load estimates: ' + err.message + '</div>';
+        pendingList.innerHTML = '';
     }
 }
 
-async function loadEstimatesAll() {
-    const list = document.getElementById('allEstimatesList');
-    const searchEl = document.getElementById('allEstimateSearch');
-    const searchTerm = searchEl ? searchEl.value.toLowerCase() : '';
+function renderEstimatesList(listEl, estimates, searchTerm, emptyMessage) {
+    if (estimates.length === 0) {
+        listEl.innerHTML = '<div style="padding: 30px; text-align: center; color: #6c757d;">' +
+            (searchTerm ? 'No estimates match "' + searchTerm + '"' : (emptyMessage || 'No estimates found')) +
+            '</div>';
+        return;
+    }
 
-    // Use cached QB estimates
-    let estimates = window._qbEstimates || [];
+    listEl.innerHTML = estimates.map(function(est) {
+        var statusStyle = EstimatesAPI.statusColors[est.status] || { bg: '#e0e0e0', color: '#616161' };
+        return '<div class="inspection-item" onclick="viewQbEstimate(\'' + est.id + '\')" style="padding: 16px; border-bottom: 1px solid #e9ecef; cursor: pointer;">' +
+            '<div style="display: flex; justify-content: space-between; align-items: flex-start;">' +
+                '<div style="flex: 1; min-width: 0;">' +
+                    '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">' +
+                        '<span style="font-weight: 600; color: #007bff;">' + (est.docNumber || '') + '</span>' +
+                        '<span class="badge" style="background: ' + statusStyle.bg + '; color: ' + statusStyle.color + ';">' + (est.status || '') + '</span>' +
+                    '</div>' +
+                    '<strong style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + (est.customerName || '') + '</strong>' +
+                    '<p style="font-size: 13px; color: #6c757d; margin-top: 4px;">' +
+                        (est.lineItems ? est.lineItems.length : 0) + ' line items' +
+                        (est.txnDate ? ' &bull; ' + new Date(est.txnDate).toLocaleDateString() : '') +
+                    '</p>' +
+                '</div>' +
+                '<div style="text-align: right; flex-shrink: 0; margin-left: 16px;">' +
+                    '<span style="font-weight: 600; color: #28a745; font-size: 16px;">$' + Number(est.totalAmount || 0).toLocaleString() + '</span>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
 
-    if (searchTerm) {
-        estimates = estimates.filter(e =>
-            (e.docNumber || '').toLowerCase().includes(searchTerm) ||
-            (e.customerName || '').toLowerCase().includes(searchTerm) ||
-            (e.email || '').toLowerCase().includes(searchTerm)
-        );
+var _estimatesSearchTimeout = null;
 
-        // If no results in QB cache, search local Postgres estimates table
+function searchEstimates() {
+    var query = document.getElementById('estimatesSearchInput').value.trim().toLowerCase();
+    var defaultView = document.getElementById('estimatesDefaultView');
+    var searchResults = document.getElementById('estimatesSearchResults');
+    var searchList = document.getElementById('estimatesSearchList');
+
+    if (!query || query.length < 2) {
+        // Show default sections
+        defaultView.classList.remove('hidden');
+        searchResults.classList.add('hidden');
+        return;
+    }
+
+    // Hide default, show search results
+    defaultView.classList.add('hidden');
+    searchResults.classList.remove('hidden');
+    searchList.innerHTML = '<div style="padding: 30px; text-align: center; color: #6c757d;">Searching...</div>';
+
+    clearTimeout(_estimatesSearchTimeout);
+    _estimatesSearchTimeout = setTimeout(async function() {
+        // Search cached QB estimates first
+        var estimates = (window._qbEstimates || []).filter(function(e) {
+            return (e.docNumber || '').toLowerCase().includes(query) ||
+                (e.customerName || '').toLowerCase().includes(query) ||
+                (e.email || '').toLowerCase().includes(query);
+        });
+
+        // If nothing in cache, try local Postgres
         if (estimates.length === 0) {
             try {
-                const localData = await EstimatesAPI.listLocal({ q: searchTerm, limit: 50 });
-                const localEstimates = localData.estimates || [];
+                var localData = await EstimatesAPI.listLocal({ q: query, limit: 50 });
+                var localEstimates = localData.estimates || [];
                 if (localEstimates.length > 0) {
-                    // Merge into QB cache so detail view works
-                    const existingIds = new Set((window._qbEstimates || []).map(e => e.qbEstimateId || e.id));
-                    for (const le of localEstimates) {
+                    var existingIds = new Set((window._qbEstimates || []).map(function(e) { return e.qbEstimateId || e.id; }));
+                    for (var i = 0; i < localEstimates.length; i++) {
+                        var le = localEstimates[i];
                         if (!existingIds.has(le.qbEstimateId)) {
-                            const merged = { ...le, id: le.qbEstimateId };
+                            var merged = Object.assign({}, le, { id: le.qbEstimateId });
                             window._qbEstimates.push(merged);
                         }
                     }
-                    estimates = localEstimates.map(le => ({ ...le, id: le.qbEstimateId }));
+                    estimates = localEstimates.map(function(le) { return Object.assign({}, le, { id: le.qbEstimateId }); });
                 }
             } catch (err) {
                 console.error('Local estimate search failed:', err);
             }
         }
-    }
 
-    renderEstimatesList(list, estimates, searchTerm);
+        renderEstimatesList(searchList, estimates, query, '');
+    }, 300);
 }
 
-function renderEstimatesList(list, estimates, searchTerm) {
-    if (estimates.length === 0) {
-        list.innerHTML = `
-            <div class="empty-state" style="padding: 40px;">
-                <div class="empty-icon">📋</div>
-                <p>${searchTerm ? 'No estimates match your search' : 'No estimates found'}</p>
-                ${!searchTerm ? '<p style="font-size: 13px; color: #6c757d; margin-top: 8px;">Estimates are synced from QuickBooks</p>' : ''}
-            </div>
-        `;
-    } else {
-        list.innerHTML = estimates.map(est => {
-            const statusStyle = EstimatesAPI.statusColors[est.status] || { bg: '#e0e0e0', color: '#616161' };
-            return `
-            <div class="inspection-item" onclick="viewQbEstimate('${est.id}')" style="padding: 16px; border-bottom: 1px solid #e9ecef; cursor: pointer;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                            <span style="font-weight: 600; color: #007bff;">${est.docNumber}</span>
-                            <span class="badge" style="background: ${statusStyle.bg}; color: ${statusStyle.color};">${est.status}</span>
-                        </div>
-                        <strong style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${est.customerName}</strong>
-                        <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">
-                            ${est.lineItems?.length || 0} line items • ${new Date(est.txnDate).toLocaleDateString()}
-                        </p>
-                    </div>
-                    <div style="text-align: right; flex-shrink: 0; margin-left: 16px;">
-                        <span style="font-weight: 600; color: #28a745; font-size: 16px;">$${(est.totalAmount || 0).toLocaleString()}</span>
-                    </div>
-                </div>
-            </div>
-        `}).join('');
+function showEstimateBuilder() {
+    document.getElementById('estimatesDefaultView').classList.add('hidden');
+    document.getElementById('estimatesSearchResults').classList.add('hidden');
+    document.getElementById('estimatesCreateTab').classList.remove('hidden');
+    if (typeof initEstimateBuilder === 'function') {
+        initEstimateBuilder();
     }
 }
 
-function loadEstimatesPending() {
-    const list = document.getElementById('estimatesList');
-    const searchEl = document.getElementById('estimateSearch');
-    const searchTerm = searchEl ? searchEl.value.toLowerCase() : '';
-
-    // Filter QB estimates for Pending status
-    let estimates = (window._qbEstimates || []).filter(e => e.status === 'Pending');
-
-    if (searchTerm) {
-        estimates = estimates.filter(e =>
-            (e.docNumber || '').toLowerCase().includes(searchTerm) ||
-            (e.customerName || '').toLowerCase().includes(searchTerm) ||
-            (e.email || '').toLowerCase().includes(searchTerm)
-        );
-    }
-
-    if (estimates.length === 0) {
-        list.innerHTML = `
-            <div class="empty-state" style="padding: 40px;">
-                <div class="empty-icon">📋</div>
-                <p>${searchTerm ? 'No estimates match your search' : 'No pending estimates'}</p>
-            </div>
-        `;
-    } else {
-        list.innerHTML = estimates.map(est => `
-            <div class="inspection-item" onclick="viewQbEstimate('${est.id}')" style="padding: 16px; border-bottom: 1px solid #e9ecef; cursor: pointer;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                            <span style="font-weight: 600; color: #007bff;">${est.docNumber}</span>
-                        </div>
-                        <strong style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${est.customerName}</strong>
-                        <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">
-                            ${est.email || 'No email'} • ${new Date(est.txnDate).toLocaleDateString()}
-                        </p>
-                    </div>
-                    <div style="text-align: right; flex-shrink: 0; margin-left: 16px;">
-                        <span style="font-weight: 600; color: #28a745; font-size: 16px;">$${(est.totalAmount || 0).toLocaleString()}</span>
-                        <span class="badge badge-warning" style="display: block; margin-top: 4px;">Pending</span>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    }
+function hideEstimateBuilder() {
+    document.getElementById('estimatesCreateTab').classList.add('hidden');
+    document.getElementById('estimatesDefaultView').classList.remove('hidden');
+    document.getElementById('estimatesSearchInput').value = '';
 }
 
-function loadEstimatesList() {
-    // Called by search input - just reload current tab
-    if (currentEstimatesFilter === 'all') {
-        loadEstimatesAll();
-    } else if (currentEstimatesFilter === 'pending') {
-        loadEstimatesPending();
-    } else if (currentEstimatesFilter === 'accepted') {
-        loadEstimatesAccepted();
-    }
-}
+window.showEstimateBuilder = showEstimateBuilder;
+window.hideEstimateBuilder = hideEstimateBuilder;
+window.loadEstimates = loadEstimates;
+window.searchEstimates = searchEstimates;
 
 function viewEstimate(id) {
     const inspection = inspections.find(i => i.id === id);
@@ -664,60 +608,9 @@ function generateEstimate(inspectionId, total) {
     }
 }
 
-function loadEstimatesAccepted() {
-    const list = document.getElementById('acceptedEstimatesList');
-    const searchEl = document.getElementById('acceptedEstimateSearch');
-    const searchTerm = searchEl ? searchEl.value.toLowerCase() : '';
-
-    // Filter QB estimates for Accepted status
-    let estimates = (window._qbEstimates || []).filter(e => e.status === 'Accepted');
-
-    if (searchTerm) {
-        estimates = estimates.filter(e =>
-            (e.docNumber || '').toLowerCase().includes(searchTerm) ||
-            (e.customerName || '').toLowerCase().includes(searchTerm) ||
-            (e.email || '').toLowerCase().includes(searchTerm)
-        );
-    }
-
-    if (estimates.length === 0) {
-        list.innerHTML = `
-            <div class="empty-state" style="padding: 40px;">
-                <div class="empty-icon">✅</div>
-                <p>${searchTerm ? 'No estimates match your search' : 'No accepted estimates'}</p>
-            </div>
-        `;
-    } else {
-        list.innerHTML = estimates.map(est => `
-            <div class="inspection-item" onclick="viewQbEstimate('${est.id}')" style="padding: 16px; border-bottom: 1px solid #e9ecef; cursor: pointer;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                            <span style="font-weight: 600; color: #007bff;">${est.docNumber}</span>
-                        </div>
-                        <strong style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${est.customerName}</strong>
-                        <p style="font-size: 13px; color: #6c757d; margin-top: 4px;">
-                            ${est.email || 'No email'} • ${new Date(est.txnDate).toLocaleDateString()}
-                        </p>
-                    </div>
-                    <div style="text-align: right; flex-shrink: 0; margin-left: 16px;">
-                        <span style="font-weight: 600; color: #28a745; font-size: 16px;">$${(est.totalAmount || 0).toLocaleString()}</span>
-                        <span class="badge badge-success" style="display: block; margin-top: 4px;">Accepted</span>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    }
-}
-
-function initEstimateCreate() {
-    // Use the estimate builder module
-    if (typeof initEstimateBuilder === 'function') {
-        initEstimateBuilder();
-    } else {
-        console.error('Estimate builder not loaded');
-    }
-}
+// ARCHIVED: loadEstimatesAccepted() and initEstimateCreate() removed.
+// Replaced by section-based layout in loadEstimates() and showEstimateBuilder().
+// Archived March 2026.
 
 // View QB Estimate detail
 async function viewQbEstimate(estimateId) {
@@ -1091,9 +984,9 @@ async function createEstimateFromJob(jobId) {
         window._spawnCustomerId = job.customerId;
         window._spawnCustomerName = job.customerName;
 
-        // Navigate to the estimate create tab
+        // Navigate to estimates and open builder
         showView('estimates');
-        filterEstimates('create');
+        showEstimateBuilder();
     } catch (err) {
         console.error('Failed to load job for estimate:', err);
         alert('Failed to load job: ' + err.message);
@@ -1433,82 +1326,19 @@ function sortPipelineBy(sortType) {
 // Customer hierarchy, locations, contacts
 // ==========================================
 
-async function loadAccounts(filter = '', territory = '', typeFilter = '') {
-    const list = document.getElementById('accountsList');
-    const countEl = document.getElementById('accountCount');
-
-    // Show loading state
-    list.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading customers...</div>';
-
-    try {
-        const data = await CustomersAPI.list({
-            q: filter || undefined,
-            territory: territory || undefined,
-            type: typeFilter || undefined,
-            limit: 200
-        });
-
-        // Update global CUSTOMERS array for detail view compatibility
-        CUSTOMERS.length = 0;
-        CUSTOMERS.push(...data.customers);
-
-        const filteredCustomers = data.customers;
-        countEl.textContent = `${filteredCustomers.length} customers`;
-
-        if (filteredCustomers.length === 0) {
-            list.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No customers found</div>';
-            return;
-        }
-
-        list.innerHTML = filteredCustomers.map(customer => {
-            const typeInfo = CUSTOMER_TYPES[customer.type] || CUSTOMER_TYPES.other;
-            const typeIcon = typeInfo.icon;
-            const typeLabel = typeInfo.label;
-            const typeBadgeClass = typeInfo.badge;
-            const primaryContact = getPrimaryContact(customer.contacts);
-
-            return `
-            <div class="inspection-item" onclick="viewCustomerDetail('${customer.id}')" style="cursor: pointer;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div>
-                        <div style="margin-bottom: 8px;">
-                            <span style="font-size: 18px;">${typeIcon}</span>
-                            <strong style="margin-left: 8px; font-size: 16px;">${customer.name}</strong>
-                            <span class="badge ${typeBadgeClass}" style="margin-left: 8px;">${typeLabel}</span>
-                        </div>
-                        <p style="font-size: 13px; color: #6c757d;">${customer.address || ''}</p>
-                        <p style="font-size: 12px; color: #6c757d; margin-top: 4px;">${primaryContact.name || ''} ${primaryContact.phone ? '• ' + primaryContact.phone : customer.phone ? '• ' + customer.phone : ''}</p>
-                        <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
-                            ${(customer.locations || []).map(loc => `
-                                <span style="background: #e9ecef; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${loc.name}</span>
-                            `).join('')}
-                        </div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="font-size: 24px; font-weight: 700; color: #4CAF50;">${(customer.locations || []).length}</div>
-                        <div style="font-size: 11px; color: #6c757d;">Locations</div>
-                    </div>
-                </div>
-            </div>
-        `}).join('');
-    } catch (err) {
-        console.error('Failed to load customers:', err);
-        list.innerHTML = '<div style="padding: 40px; text-align: center; color: #dc3545;">Failed to load customers: ' + err.message + '</div>';
-    }
-}
-
-function filterAccounts() {
-    const searchTerm = document.getElementById('accountSearch').value;
-    const territory = document.getElementById('accountTerritoryFilter').value;
-    const typeFilter = document.getElementById('accountTypeFilter')?.value || '';
-    loadAccounts(searchTerm, territory, typeFilter);
-}
+// ARCHIVED: loadAccounts() and filterAccounts() removed — customers now accessed via QB-first Search & Browse.
+// See browse.js for QB search, import, and new customer creation.
+// Archived March 2026.
 
 // Store current customer ID for CRUD operations
 let currentCustomerId = null;
 
 function viewCustomerDetail(customerId) {
-    const customer = CUSTOMERS.find(c => c.id === customerId);
+    var customer = CUSTOMERS.find(c => c.id === customerId);
+    // Also check browseCustomersCache (for QB-first Search & Browse flow)
+    if (!customer && typeof browseCustomersCache !== 'undefined') {
+        customer = browseCustomersCache.find(c => c.id == customerId || c._localId == customerId);
+    }
     if (!customer) return;
 
     currentCustomerId = customerId;
@@ -1720,53 +1550,9 @@ function editLocationEquipment(customerId, locationId) {
 // CUSTOMER CRUD FUNCTIONS
 // ==========================================
 
-function showAddCustomerModal() {
-    document.getElementById('customerModalTitle').textContent = 'Add Customer';
-    document.getElementById('custName').value = '';
-    document.getElementById('custType').value = 'county';
-    document.getElementById('custAddress').value = '';
-    document.getElementById('custPhone').value = '';
-    document.getElementById('custTerritory').value = 'Original';
-    document.getElementById('customerModal').classList.remove('hidden');
-}
-
-function closeCustomerModal() {
-    document.getElementById('customerModal').classList.add('hidden');
-}
-
-async function saveCustomer() {
-    const name = document.getElementById('custName').value.trim();
-    const type = document.getElementById('custType').value;
-    const address = document.getElementById('custAddress').value.trim();
-    const phone = document.getElementById('custPhone').value.trim();
-    const territory = document.getElementById('custTerritory').value;
-
-    if (!name || !address) {
-        alert('Please fill in required fields (Name and Address)');
-        return;
-    }
-
-    try {
-        const result = await CustomersAPI.create({
-            name,
-            type,
-            address,
-            phone,
-            territory
-        });
-
-        closeCustomerModal();
-        await loadAccounts();
-
-        // Open the new customer detail to add contacts/locations
-        if (result.customer) {
-            viewCustomerDetail(result.customer.id);
-        }
-    } catch (err) {
-        console.error('Failed to create customer:', err);
-        alert('Failed to create customer: ' + err.message);
-    }
-}
+// ARCHIVED: showAddCustomerModal(), closeCustomerModal(), saveCustomer() removed.
+// Customer creation now happens via QB-first flow in browse.js (browseCreateNewCustomer).
+// Archived March 2026.
 
 // ==========================================
 // CONTACT CRUD FUNCTIONS

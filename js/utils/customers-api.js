@@ -4,6 +4,7 @@
 // ==========================================
 
 const CUSTOMERS_API_BASE = 'https://bleachers-api.vercel.app/api/customers';
+const QB_CUSTOMERS_API_BASE = 'https://bleachers-api.vercel.app/api/qb/customers';
 
 const CustomersAPI = {
     // Get headers with auth token (delegates to shared api-base.js)
@@ -188,6 +189,73 @@ const CustomersAPI = {
         }
 
         return response.json();
+    },
+
+    // Search QuickBooks customers directly (live QB query)
+    async searchQB(query) {
+        const params = new URLSearchParams();
+        if (query) params.set('search', query);
+        params.set('limit', '50');
+
+        const response = await fetch(`${QB_CUSTOMERS_API_BASE}?${params}`, {
+            headers: await this.getHeaders()
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to search QB customers');
+        }
+
+        return response.json();
+    },
+
+    // Create customer in QuickBooks, then create local Postgres record with QB ID link
+    async createInQB(customerData) {
+        // Step 1: Push to QB
+        const qbResponse = await fetch(QB_CUSTOMERS_API_BASE, {
+            method: 'POST',
+            headers: await this.getHeaders(),
+            body: JSON.stringify(customerData)
+        });
+
+        if (!qbResponse.ok) {
+            const err = await qbResponse.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to create customer in QuickBooks');
+        }
+
+        const qbResult = await qbResponse.json();
+
+        // Step 2: Create local record with QB ID link
+        var addressStr = '';
+        if (customerData.address) {
+            var parts = [customerData.address.line1, customerData.address.city, customerData.address.state, customerData.address.zip].filter(Boolean);
+            addressStr = parts.join(', ');
+        }
+
+        const localResult = await this.create({
+            name: customerData.displayName,
+            companyName: customerData.companyName || customerData.displayName,
+            address: addressStr,
+            phone: customerData.phone,
+            email: customerData.email,
+            territory: customerData.territory,
+            type: customerData.type || 'other',
+            qbCustomerId: qbResult.id
+        });
+
+        return { qb: qbResult, local: localResult };
+    },
+
+    // Find local customer by QB Customer ID (for QB-to-local bridge)
+    async findByQbId(qbId) {
+        const params = new URLSearchParams({ qbId: qbId, limit: '1' });
+        const response = await fetch(`${CUSTOMERS_API_BASE}?${params}`, {
+            headers: await this.getHeaders()
+        });
+
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data.customers && data.customers.length > 0 ? data.customers[0] : null;
     },
 
     // Run QB -> Postgres migration

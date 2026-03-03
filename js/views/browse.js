@@ -93,27 +93,14 @@ async function loadBrowseDistricts() {
     var listEl = document.getElementById('browseDistrictsList' + suffix);
     var countEl = document.getElementById('browseCount' + suffix);
 
-    listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Loading customers...</div>';
-
-    try {
-        // Use cached CUSTOMERS global if already loaded, otherwise fetch
-        if (typeof CUSTOMERS !== 'undefined' && CUSTOMERS.length > 0) {
-            browseCustomersCache = CUSTOMERS.slice();
-        } else {
-            var data = await CustomersAPI.list({ limit: 500, active: true });
-            browseCustomersCache = data.customers || [];
-        }
-
-        // Sort alphabetically
-        browseCustomersCache.sort(function(a, b) {
-            return (a.name || '').localeCompare(b.name || '');
-        });
-
-        renderDistrictList(browseCustomersCache);
-    } catch (err) {
-        console.error('Failed to load customers:', err);
-        listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: #dc3545;">Failed to load customers. Please try again.</div>';
-    }
+    // Show search prompt — no pre-loaded customer list (QB-first approach)
+    listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">' +
+        '<div style="font-size: 40px; margin-bottom: 12px;">&#128269;</div>' +
+        '<p style="font-size: 16px; font-weight: 600; margin-bottom: 6px;">Search for a customer</p>' +
+        '<p style="font-size: 13px;">Type a customer name above to search QuickBooks</p>' +
+        '</div>';
+    if (countEl) countEl.textContent = '';
+    browseCustomersCache = [];
 }
 
 function renderDistrictList(customers) {
@@ -160,22 +147,61 @@ function renderDistrictList(customers) {
     }).join('');
 }
 
+var _browseSearchTimeout = null;
+
 function filterBrowseDistricts(query) {
     if (!query || query.length < 2) {
-        renderDistrictList(browseCustomersCache);
+        loadBrowseDistricts(); // Show search prompt
         return;
     }
 
-    var q = query.toLowerCase();
-    var filtered = browseCustomersCache.filter(function(c) {
-        var searchText = (c.name + ' ' + (c.address || '')).toLowerCase();
-        if (searchText.includes(q)) return true;
-        // Also search location names
-        return (c.locations || []).some(function(loc) {
-            return (loc.name + ' ' + (loc.address || '')).toLowerCase().includes(q);
-        });
-    });
-    renderDistrictList(filtered);
+    var suffix = getSuffix();
+    var listEl = document.getElementById('browseDistrictsList' + suffix);
+    var countEl = document.getElementById('browseCount' + suffix);
+
+    listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">Searching QuickBooks...</div>';
+    if (countEl) countEl.textContent = '';
+
+    clearTimeout(_browseSearchTimeout);
+    _browseSearchTimeout = setTimeout(async function() {
+        try {
+            var data = await CustomersAPI.searchQB(query);
+            var customers = data.customers || [];
+
+            // Map QB results to shape expected by renderDistrictList
+            browseCustomersCache = customers.map(function(c) {
+                var addr = '';
+                if (c.address) {
+                    var parts = [c.address.line1, c.address.city, c.address.state, c.address.zip].filter(Boolean);
+                    addr = parts.join(', ');
+                }
+                return {
+                    id: c.id,
+                    _isQbResult: true,
+                    name: c.name || c.companyName,
+                    companyName: c.companyName,
+                    address: addr,
+                    email: c.email,
+                    phone: c.phone,
+                    locations: [],
+                    contacts: [],
+                    type: 'other'
+                };
+            });
+
+            if (customers.length === 0) {
+                listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">No customers found in QuickBooks for "' + escapeHtml(query) + '"</div>';
+                if (countEl) countEl.textContent = '0 results';
+                return;
+            }
+
+            renderDistrictList(browseCustomersCache);
+            if (countEl) countEl.textContent = customers.length + ' result' + (customers.length !== 1 ? 's' : '') + ' from QuickBooks';
+        } catch (err) {
+            console.error('QB customer search failed:', err);
+            listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: #dc3545;">Search failed: ' + escapeHtml(err.message) + '</div>';
+        }
+    }, 400);
 }
 
 // ==========================================
@@ -191,8 +217,29 @@ async function browseDrillDistrict(customerId, isBack) {
     var suffix = getSuffix();
     var customer = browseCustomersCache.find(function(c) { return c.id == customerId; });
 
+    // QB-to-local bridge: if this is a QB search result, look up local record
+    if (customer && customer._isQbResult) {
+        try {
+            var localCustomer = await CustomersAPI.findByQbId(customer.id);
+            if (localCustomer) {
+                // Found local record — use it (has locations, contacts, jobs)
+                var qbId = customer.id;
+                customer = localCustomer;
+                customer._qbId = qbId;
+                // Update cache so back navigation works
+                var idx = browseCustomersCache.findIndex(function(c) { return c.id == customerId; });
+                if (idx >= 0) {
+                    browseCustomersCache[idx] = customer;
+                    browseCustomersCache[idx]._qbId = qbId;
+                }
+            }
+        } catch (err) {
+            console.error('Failed to bridge QB customer to local:', err);
+        }
+    }
+
     if (!customer) {
-        // Fetch if not cached
+        // Fetch if not cached (direct navigation by local ID)
         try {
             customer = await CustomersAPI.get(customerId);
         } catch (err) {
@@ -218,16 +265,34 @@ async function browseDrillDistrict(customerId, isBack) {
     var schoolCountEl = document.getElementById('browseSchoolCount' + suffix);
     schoolListEl.innerHTML = '<div style="padding: 20px; text-align: center; color: #6c757d;">Loading locations...</div>';
 
-    try {
-        var jobsData = await JobsAPI.list({ q: customer.name, limit: 500 });
-        browseJobsCache[customerId] = jobsData.jobs || [];
-    } catch (err) {
-        console.error('Failed to load jobs for customer:', err);
+    // Use the local customer ID for job lookups (not the QB ID)
+    var localId = customer._isQbResult ? null : (customer.id || customerId);
+    if (localId) {
+        try {
+            var jobsData = await JobsAPI.list({ q: customer.name, limit: 500 });
+            browseJobsCache[customerId] = jobsData.jobs || [];
+        } catch (err) {
+            console.error('Failed to load jobs for customer:', err);
+            browseJobsCache[customerId] = [];
+        }
+    } else {
         browseJobsCache[customerId] = [];
     }
 
     var locations = customer.locations || [];
     var jobs = browseJobsCache[customerId] || [];
+
+    // If QB result with no local record, show import prompt
+    if (customer._isQbResult && locations.length === 0) {
+        schoolCountEl.textContent = '0 locations';
+        schoolListEl.innerHTML =
+            '<div style="padding: 24px; text-align: center;">' +
+                '<p style="font-weight: 600; margin-bottom: 8px;">This customer exists in QuickBooks but hasn\'t been set up in the app yet.</p>' +
+                '<p style="color: #6c757d; font-size: 13px; margin-bottom: 16px;">Import to add locations, contacts, and create jobs.</p>' +
+                '<button class="btn btn-primary" onclick="browseImportQbCustomer(\'' + customerId + '\')">Import Customer to App</button>' +
+            '</div>';
+        return;
+    }
 
     schoolCountEl.textContent = locations.length + ' location' + (locations.length !== 1 ? 's' : '');
 
@@ -607,6 +672,156 @@ async function browseCreateJob(jobType) {
 }
 
 // ==========================================
+// QB CUSTOMER IMPORT
+// ==========================================
+
+async function browseImportQbCustomer(qbId) {
+    var customer = browseCustomersCache.find(function(c) { return c.id == qbId; });
+    if (!customer) return;
+
+    try {
+        var result = await CustomersAPI.create({
+            name: customer.name,
+            companyName: customer.companyName || customer.name,
+            address: customer.address,
+            phone: customer.phone,
+            email: customer.email,
+            qbCustomerId: qbId
+        });
+
+        if (result.customer) {
+            var localCust = await CustomersAPI.get(result.customer.id);
+            // Update cache with local record
+            var idx = browseCustomersCache.findIndex(function(c) { return c.id == qbId; });
+            if (idx >= 0) {
+                browseCustomersCache[idx] = localCust;
+                browseCustomersCache[idx]._qbId = qbId;
+            }
+            // Re-render screen 2 with the local customer data
+            browseDrillDistrict(localCust.id, true);
+            showNotification('Customer imported to app', 'success');
+        }
+    } catch (err) {
+        console.error('Failed to import customer:', err);
+        showNotification('Failed to import: ' + err.message, 'error');
+    }
+}
+
+// ==========================================
+// NEW CUSTOMER FORM
+// ==========================================
+
+function browseShowNewCustomerForm() {
+    var suffix = getSuffix();
+    var formEl = document.getElementById('browseNewCustomerForm' + suffix);
+    if (formEl) formEl.classList.toggle('hidden');
+}
+
+function parseAddressForQB(addressString) {
+    if (!addressString) return null;
+    // Expected format: "123 Main St, City, ST 12345"
+    var parts = addressString.split(',').map(function(p) { return p.trim(); });
+    var line1 = parts[0] || '';
+    var city = parts[1] || '';
+    var stateZip = (parts[2] || '').trim().split(/\s+/);
+    var state = stateZip[0] || '';
+    var zip = stateZip[1] || '';
+    return { line1: line1, city: city, state: state, zip: zip };
+}
+
+async function browseCreateNewCustomer() {
+    var suffix = getSuffix();
+    var name = document.getElementById('browseNewCustName' + suffix).value.trim();
+    var address = document.getElementById('browseNewCustAddress' + suffix).value.trim();
+    var phone = document.getElementById('browseNewCustPhone' + suffix).value.trim();
+    var email = document.getElementById('browseNewCustEmail' + suffix).value.trim();
+    var territory = document.getElementById('browseNewCustTerritory' + suffix).value;
+    var type = document.getElementById('browseNewCustType' + suffix).value;
+    var errorEl = document.getElementById('browseNewCustError' + suffix);
+
+    if (!name) {
+        errorEl.textContent = 'Customer name is required.';
+        return;
+    }
+    errorEl.textContent = '';
+
+    var btn = document.getElementById('browseNewCustSubmit' + suffix);
+    btn.disabled = true;
+    btn.textContent = 'Creating...';
+
+    try {
+        var addressObj = parseAddressForQB(address);
+
+        var result = await CustomersAPI.createInQB({
+            displayName: name,
+            companyName: name,
+            email: email || undefined,
+            phone: phone || undefined,
+            address: addressObj,
+            territory: territory,
+            type: type
+        });
+
+        // Clear form and hide it
+        document.getElementById('browseNewCustName' + suffix).value = '';
+        document.getElementById('browseNewCustAddress' + suffix).value = '';
+        document.getElementById('browseNewCustPhone' + suffix).value = '';
+        document.getElementById('browseNewCustEmail' + suffix).value = '';
+        document.getElementById('browseNewCustomerForm' + suffix).classList.add('hidden');
+
+        showNotification('Customer created in QuickBooks', 'success');
+
+        // Drill into the new local customer
+        if (result.local && result.local.customer) {
+            browseCustomersCache = [{
+                id: result.local.customer.id,
+                name: result.local.customer.name,
+                address: result.local.customer.address,
+                type: result.local.customer.type || type,
+                territory: result.local.customer.territory || territory,
+                locations: [],
+                contacts: []
+            }];
+            browseDrillDistrict(result.local.customer.id);
+        }
+    } catch (err) {
+        console.error('Failed to create customer:', err);
+        errorEl.textContent = 'Failed: ' + err.message;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create Customer';
+    }
+}
+
+function browseCreateTopLevelJob() {
+    if (browseContext === 'office') {
+        showView('officeCreate');
+    } else {
+        showTechView('fieldCreate');
+    }
+}
+
+// Navigate to estimates view and open the builder
+function browseCreateEstimate() {
+    showView('estimates');
+    showEstimateBuilder();
+}
+
+// Bridge function: drill from global search results into browse
+function browseDrillFromSearch(qbId, name) {
+    browseCustomersCache = [{
+        id: qbId,
+        _isQbResult: true,
+        name: name,
+        locations: [],
+        contacts: []
+    }];
+    browseNavStack = [{ screen: 'districts', data: null }];
+    if (!browseContext) browseContext = 'office';
+    browseDrillDistrict(qbId);
+}
+
+// ==========================================
 // SEARCH INTEGRATION
 // ==========================================
 
@@ -675,3 +890,9 @@ window.browseViewFullJobDetail = browseViewFullJobDetail;
 window.browseAddBank = browseAddBank;
 window.browseOpenBankDetail = browseOpenBankDetail;
 window.handleBrowseSearch = handleBrowseSearch;
+window.browseImportQbCustomer = browseImportQbCustomer;
+window.browseShowNewCustomerForm = browseShowNewCustomerForm;
+window.browseCreateNewCustomer = browseCreateNewCustomer;
+window.browseCreateTopLevelJob = browseCreateTopLevelJob;
+window.browseCreateEstimate = browseCreateEstimate;
+window.browseDrillFromSearch = browseDrillFromSearch;

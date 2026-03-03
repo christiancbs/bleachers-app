@@ -263,9 +263,10 @@ function showView(view) {
         setActiveNav('projects');
         loadPipeline();
     } else if (view === 'accounts') {
-        document.getElementById('accountsView').classList.remove('hidden');
-        setActiveNav('accounts');
-        loadAccounts();
+        // ARCHIVED: Accounts view removed — redirect to Search & Browse (QB-first)
+        document.getElementById('officeSearchView').classList.remove('hidden');
+        setActiveNav('officeSearch');
+        if (typeof initBrowse === 'function') initBrowse('office');
     } else if (view === 'parts') {
         document.getElementById('partsView').classList.remove('hidden');
         setActiveNav('parts');
@@ -299,7 +300,7 @@ function showView(view) {
         setActiveNav(navMap[_woBackTarget] || _woBackTarget || 'jobs');
     } else if (view === 'customerDetail') {
         document.getElementById('customerDetailView').classList.remove('hidden');
-        setActiveNav('accounts');
+        setActiveNav('officeSearch');
     } else if (view === 'inspections') {
         document.getElementById('officeInspectionsView').classList.remove('hidden');
         setActiveNav('inspections');
