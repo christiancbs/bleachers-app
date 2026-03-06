@@ -1378,12 +1378,13 @@ function viewCustomerDetail(customerId) {
     document.getElementById('custDetailContact').textContent = primaryContact.name || 'No contacts';
     document.getElementById('custDetailPhone').textContent = primaryContact.phone || customer.phone;
 
-    // Stats
-    const totalContacts = (customer.contacts?.length || 0) +
-        customer.locations.reduce((sum, loc) => sum + (loc.contacts?.length || 0), 0);
+    // Stats — locations are known, jobs + revenue fetched async
     document.getElementById('custDetailLocations').textContent = customer.locations.length;
-    document.getElementById('custDetailJobs').textContent = Math.floor(Math.random() * 30) + 10;
-    document.getElementById('custDetailRevenue').textContent = '$' + (Math.floor(Math.random() * 50000) + 10000).toLocaleString();
+    document.getElementById('custDetailJobs').textContent = '...';
+    document.getElementById('custDetailRevenue').textContent = '...';
+
+    // Fetch real job + estimate data for stats
+    loadCustomerStats(customer);
 
     // Populate locations with contacts
     const locList = document.getElementById('custLocationsList');
@@ -1500,8 +1501,8 @@ function viewCustomerDetail(customerId) {
 
 function showCustomerTab(tab) {
     // All tab IDs
-    const tabs = ['customerLocationsTab', 'customerContactsTab', 'customerHistoryTab', 'customerEquipmentTab'];
-    const buttons = ['tabLocations', 'tabContacts', 'tabHistory', 'tabEquipment'];
+    const tabs = ['customerLocationsTab', 'customerContactsTab', 'customerEstimatesTab', 'customerHistoryTab', 'customerEquipmentTab', 'customerActivityTab'];
+    const buttons = ['tabLocations', 'tabContacts', 'tabEstimates', 'tabHistory', 'tabEquipment', 'tabActivity'];
 
     // Hide all tabs and reset button styles
     tabs.forEach(t => {
@@ -1521,8 +1522,10 @@ function showCustomerTab(tab) {
     const tabMap = {
         locations: { tab: 'customerLocationsTab', btn: 'tabLocations' },
         contacts: { tab: 'customerContactsTab', btn: 'tabContacts' },
+        estimates: { tab: 'customerEstimatesTab', btn: 'tabEstimates' },
         history: { tab: 'customerHistoryTab', btn: 'tabHistory' },
-        equipment: { tab: 'customerEquipmentTab', btn: 'tabEquipment' }
+        equipment: { tab: 'customerEquipmentTab', btn: 'tabEquipment' },
+        activity: { tab: 'customerActivityTab', btn: 'tabActivity' }
     };
 
     const selected = tabMap[tab];
@@ -1534,6 +1537,342 @@ function showCustomerTab(tab) {
             btnEl.style.borderBottom = '3px solid #4CAF50';
             btnEl.style.color = '#212529';
         }
+    }
+
+    // Lazy-load tab data
+    if (tab === 'estimates' && currentCustomerId) {
+        renderCustomerEstimates(currentCustomerId);
+    } else if (tab === 'history' && currentCustomerId) {
+        renderCustomerHistory(currentCustomerId);
+    } else if (tab === 'activity' && currentCustomerId) {
+        renderCustomerActivity(currentCustomerId);
+    }
+}
+
+// ==========================================
+// CUSTOMER DETAIL — DATA LOADERS
+// Real stats, estimates, service history, activity
+// ==========================================
+
+// Cache to avoid refetching on tab switches
+let _custJobsCache = {};
+let _custEstimatesCache = {};
+let _custActivityCache = {};
+
+async function loadCustomerStats(customer) {
+    const customerId = customer.id;
+    try {
+        // Fetch jobs by customer name (same pattern as browse.js)
+        const jobsPromise = JobsAPI.list({ q: customer.name, limit: 500 });
+        // Fetch estimates by QB customer ID if available
+        const estPromise = customer.qbCustomerId
+            ? EstimatesAPI.listLocal({ customer_id: customer.qbCustomerId, limit: 500 })
+            : Promise.resolve({ estimates: [] });
+
+        const [jobsData, estData] = await Promise.all([jobsPromise, estPromise]);
+
+        const jobs = jobsData.jobs || [];
+        const estimates = estData.estimates || [];
+
+        // Cache for other tabs
+        _custJobsCache[customerId] = jobs;
+        _custEstimatesCache[customerId] = estimates;
+
+        // Update stats
+        document.getElementById('custDetailJobs').textContent = jobs.length;
+
+        // Revenue = sum of accepted estimate amounts
+        const revenue = estimates
+            .filter(e => e.status === 'Accepted')
+            .reduce((sum, e) => sum + (parseFloat(e.totalAmount) || 0), 0);
+        document.getElementById('custDetailRevenue').textContent = '$' + Math.round(revenue).toLocaleString();
+    } catch (err) {
+        console.error('Failed to load customer stats:', err);
+        document.getElementById('custDetailJobs').textContent = '—';
+        document.getElementById('custDetailRevenue').textContent = '—';
+    }
+}
+
+function renderCustomerEstimates(customerId) {
+    const container = document.getElementById('custEstimatesList');
+    if (!container) return;
+
+    const estimates = _custEstimatesCache[customerId];
+    if (!estimates) {
+        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading estimates...</div>';
+        return;
+    }
+
+    if (estimates.length === 0) {
+        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No estimates found for this customer</div>';
+        return;
+    }
+
+    // Sort by date descending
+    const sorted = [...estimates].sort((a, b) => {
+        const da = new Date(a.txnDate || a.createdAt || 0);
+        const db = new Date(b.txnDate || b.createdAt || 0);
+        return db - da;
+    });
+
+    const statusColors = {
+        'Pending': '#FF9800',
+        'Accepted': '#4CAF50',
+        'Closed': '#6c757d',
+        'Rejected': '#f44336'
+    };
+
+    container.innerHTML = '<table class="data-table"><thead><tr>' +
+        '<th>Doc #</th><th>Date</th><th>Status</th><th style="text-align: right;">Amount</th>' +
+        '</tr></thead><tbody>' +
+        sorted.map(function(est) {
+            const date = est.txnDate ? new Date(est.txnDate).toLocaleDateString() : '—';
+            const status = est.status || 'Unknown';
+            const color = statusColors[status] || '#6c757d';
+            const amount = parseFloat(est.totalAmount) || 0;
+            return '<tr style="cursor: pointer;" onclick="viewEstimate(\'' + (est.qbEstimateId || est.id) + '\')">' +
+                '<td><span class="part-number" style="color: #0066cc;">' + (est.docNumber || est.qbEstimateId || '—') + '</span></td>' +
+                '<td>' + date + '</td>' +
+                '<td><span class="badge" style="background: ' + color + '20; color: ' + color + ';">' + status + '</span></td>' +
+                '<td style="text-align: right; font-weight: 600;">$' + amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>' +
+                '</tr>';
+        }).join('') +
+        '</tbody></table>';
+}
+
+function renderCustomerHistory(customerId) {
+    const container = document.getElementById('custHistoryList');
+    if (!container) return;
+
+    const jobs = _custJobsCache[customerId];
+    if (!jobs) {
+        container.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #6c757d;">Loading...</td></tr>';
+        return;
+    }
+
+    if (jobs.length === 0) {
+        container.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #6c757d;">No jobs found for this customer</td></tr>';
+        return;
+    }
+
+    // Sort by date descending
+    const sorted = [...jobs].sort((a, b) => {
+        const da = new Date(a.scheduledDate || a.createdAt || 0);
+        const db = new Date(b.scheduledDate || b.createdAt || 0);
+        return db - da;
+    });
+
+    const statusBadge = function(status) {
+        const colors = {
+            'completed': 'badge-success',
+            'in_progress': 'badge-info',
+            'scheduled': 'badge-warning',
+            'draft': 'badge-secondary'
+        };
+        return '<span class="badge ' + (colors[status] || 'badge-secondary') + '">' + (status || 'unknown').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + '</span>';
+    };
+
+    container.innerHTML = sorted.map(function(job) {
+        const date = job.scheduledDate ? new Date(job.scheduledDate).toLocaleDateString() : (job.createdAt ? new Date(job.createdAt).toLocaleDateString() : '—');
+        return '<tr>' +
+            '<td><span class="part-number" style="color: #0066cc;">' + (job.jobNumber || job.id) + '</span></td>' +
+            '<td>' + (job.jobType || '—').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + '</td>' +
+            '<td>' + (job.locationName || '—') + '</td>' +
+            '<td>' + (job.title || job.description || '—') + '</td>' +
+            '<td>' + statusBadge(job.status) + '</td>' +
+            '<td>' + date + '</td>' +
+            '</tr>';
+    }).join('');
+}
+
+async function renderCustomerActivity(customerId) {
+    const timeline = document.getElementById('custActivityTimeline');
+    if (!timeline) return;
+
+    // Check cache first
+    if (_custActivityCache[customerId]) {
+        renderActivityTimeline(timeline, _custActivityCache[customerId]);
+        return;
+    }
+
+    timeline.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading activity...</div>';
+
+    try {
+        const data = await ActivitiesAPI.list({ customerId: customerId, limit: 50 });
+        const activities = data.activities || [];
+        _custActivityCache[customerId] = activities;
+        renderActivityTimeline(timeline, activities);
+    } catch (err) {
+        console.error('Failed to load activities:', err);
+        timeline.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No activity yet</div>';
+    }
+}
+
+function renderActivityTimeline(container, activities) {
+    if (!activities || activities.length === 0) {
+        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No activity recorded yet. Use the buttons above to log a call, add a note, or schedule a follow-up.</div>';
+        return;
+    }
+
+    // Group by date
+    const groups = {};
+    activities.forEach(function(a) {
+        const date = new Date(a.createdAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        if (!groups[date]) groups[date] = [];
+        groups[date].push(a);
+    });
+
+    var html = '';
+    Object.keys(groups).forEach(function(date) {
+        html += '<div style="margin-bottom: 20px;">';
+        html += '<div style="font-size: 12px; font-weight: 600; color: #6c757d; text-transform: uppercase; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #e9ecef;">' + date + '</div>';
+        groups[date].forEach(function(a) {
+            var config = ActivitiesAPI.typeConfig[a.activityType] || { icon: '\uD83D\uDCCC', label: a.activityType, color: '#6c757d' };
+            var time = new Date(a.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            var user = a.userName || a.userEmail || 'System';
+
+            html += '<div style="display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">';
+            html += '<div style="font-size: 20px; flex-shrink: 0;">' + config.icon + '</div>';
+            html += '<div style="flex: 1;">';
+            html += '<div style="font-weight: 600; font-size: 14px;">' + (a.title || config.label) + '</div>';
+            if (a.body) {
+                html += '<div style="color: #495057; font-size: 13px; margin-top: 4px; white-space: pre-wrap;">' + escapeHtml(a.body) + '</div>';
+            }
+            html += '<div style="font-size: 12px; color: #6c757d; margin-top: 4px;">' + user + ' &middot; ' + time + '</div>';
+            html += '</div>';
+            html += '</div>';
+        });
+        html += '</div>';
+    });
+
+    container.innerHTML = html;
+}
+
+function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// ==========================================
+// ACTIVITY FORMS — Inline accordion
+// ==========================================
+
+let _activeActivityForm = null;
+
+function toggleActivityForm(type) {
+    var area = document.getElementById('activityFormArea');
+    if (!area) return;
+
+    // If same form is open, close it
+    if (_activeActivityForm === type) {
+        area.classList.add('hidden');
+        area.innerHTML = '';
+        _activeActivityForm = null;
+        return;
+    }
+
+    _activeActivityForm = type;
+    area.classList.remove('hidden');
+
+    if (type === 'call') {
+        area.innerHTML =
+            '<div class="card" style="border: 2px solid #4CAF50;">' +
+            '<div class="card-body">' +
+            '<h3 style="font-size: 15px; font-weight: 600; margin-bottom: 12px;">Log Call</h3>' +
+            '<div class="form-group" style="margin-bottom: 12px;">' +
+            '<label class="form-label">Who did you speak with?</label>' +
+            '<input type="text" id="actCallContact" class="form-control" placeholder="Name or title">' +
+            '</div>' +
+            '<div class="form-group" style="margin-bottom: 12px;">' +
+            '<label class="form-label">Summary</label>' +
+            '<textarea id="actCallSummary" class="form-control" rows="3" placeholder="What was discussed?"></textarea>' +
+            '</div>' +
+            '<div class="form-group" style="margin-bottom: 12px;">' +
+            '<label class="form-label">Follow-up date (optional)</label>' +
+            '<input type="date" id="actCallFollowUp" class="form-control">' +
+            '</div>' +
+            '<div style="display: flex; gap: 8px;">' +
+            '<button class="btn btn-primary" onclick="submitActivityForm(\'call\')">Save Call Log</button>' +
+            '<button class="btn btn-secondary" onclick="toggleActivityForm(\'call\')">Cancel</button>' +
+            '</div>' +
+            '</div></div>';
+    } else if (type === 'note') {
+        area.innerHTML =
+            '<div class="card" style="border: 2px solid #4CAF50;">' +
+            '<div class="card-body">' +
+            '<h3 style="font-size: 15px; font-weight: 600; margin-bottom: 12px;">Add Note</h3>' +
+            '<div class="form-group" style="margin-bottom: 12px;">' +
+            '<textarea id="actNoteBody" class="form-control" rows="4" placeholder="Type your note..."></textarea>' +
+            '</div>' +
+            '<div style="display: flex; gap: 8px;">' +
+            '<button class="btn btn-primary" onclick="submitActivityForm(\'note\')">Save Note</button>' +
+            '<button class="btn btn-secondary" onclick="toggleActivityForm(\'note\')">Cancel</button>' +
+            '</div>' +
+            '</div></div>';
+    } else if (type === 'follow_up') {
+        area.innerHTML =
+            '<div class="card" style="border: 2px solid #4CAF50;">' +
+            '<div class="card-body">' +
+            '<h3 style="font-size: 15px; font-weight: 600; margin-bottom: 12px;">Schedule Follow-up</h3>' +
+            '<div class="form-group" style="margin-bottom: 12px;">' +
+            '<label class="form-label">Follow-up date</label>' +
+            '<input type="date" id="actFollowUpDate" class="form-control" required>' +
+            '</div>' +
+            '<div class="form-group" style="margin-bottom: 12px;">' +
+            '<label class="form-label">Note (optional)</label>' +
+            '<textarea id="actFollowUpNote" class="form-control" rows="2" placeholder="What needs to happen?"></textarea>' +
+            '</div>' +
+            '<div style="display: flex; gap: 8px;">' +
+            '<button class="btn btn-primary" onclick="submitActivityForm(\'follow_up\')">Save Follow-up</button>' +
+            '<button class="btn btn-secondary" onclick="toggleActivityForm(\'follow_up\')">Cancel</button>' +
+            '</div>' +
+            '</div></div>';
+    }
+}
+
+async function submitActivityForm(type) {
+    if (!currentCustomerId) return;
+
+    var payload = {
+        entityType: 'customer',
+        entityId: String(currentCustomerId),
+        customerId: parseInt(currentCustomerId),
+        activityType: type
+    };
+
+    try {
+        if (type === 'call') {
+            var contact = document.getElementById('actCallContact').value.trim();
+            var summary = document.getElementById('actCallSummary').value.trim();
+            var followUp = document.getElementById('actCallFollowUp').value;
+            if (!summary) { alert('Please enter a call summary.'); return; }
+            payload.title = contact ? 'Call with ' + contact : 'Logged call';
+            payload.body = summary;
+            if (followUp) payload.metadata = { followUpDate: followUp };
+        } else if (type === 'note') {
+            var noteBody = document.getElementById('actNoteBody').value.trim();
+            if (!noteBody) { alert('Please enter a note.'); return; }
+            payload.title = 'Note added';
+            payload.body = noteBody;
+        } else if (type === 'follow_up') {
+            var fDate = document.getElementById('actFollowUpDate').value;
+            var fNote = document.getElementById('actFollowUpNote').value.trim();
+            if (!fDate) { alert('Please select a follow-up date.'); return; }
+            payload.title = 'Follow-up scheduled for ' + new Date(fDate + 'T00:00:00').toLocaleDateString();
+            payload.body = fNote || '';
+            payload.metadata = { followUpDate: fDate };
+        }
+
+        await ActivitiesAPI.create(payload);
+
+        // Close form and refresh timeline
+        toggleActivityForm(type);
+        delete _custActivityCache[currentCustomerId];
+        renderCustomerActivity(currentCustomerId);
+    } catch (err) {
+        console.error('Failed to create activity:', err);
+        alert('Failed to save: ' + err.message);
     }
 }
 
