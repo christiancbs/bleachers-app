@@ -582,6 +582,27 @@
             color: #fff;
         }
 
+        /* Click-to-call button */
+        .btn-call {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            background: #4CAF50;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            flex-shrink: 0;
+        }
+        .btn-call:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
+        }
+
         /* Estimate tabs */
         .est-tab {
             padding: 10px 20px;

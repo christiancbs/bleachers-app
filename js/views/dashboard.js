@@ -1428,7 +1428,7 @@ async function viewCustomerDetail(customerId) {
                         <div style="margin-top: 4px;">${roleBadges}</div>
                     </div>
                     <div style="text-align: right; font-size: 12px; color: #6c757d;">
-                        ${c.phone ? `<div>${c.phone}</div>` : ''}
+                        ${c.phone ? `<div style="display: flex; align-items: center; gap: 6px; justify-content: flex-end;"><span>${c.phone}</span><button class="btn-call" onclick="event.stopPropagation(); clickToCall('${c.phone.replace(/'/g, "\\'")}', '${c.name.replace(/'/g, "\\'")}')" title="Call ${c.name}">&#128222;</button></div>` : ''}
                         ${c.email ? `<div>${c.email}</div>` : ''}
                     </div>
                 </div>
@@ -1470,8 +1470,8 @@ async function viewCustomerDetail(customerId) {
                             <div style="margin-top: 8px;">${roleBadges}</div>
                         </div>
                         <div style="text-align: right; font-size: 13px;">
-                            ${c.phone ? `<div style="margin-bottom: 4px;"><a href="tel:${c.phone}" style="color: #0066cc;">${c.phone}</a></div>` : ''}
-                            ${c.mobile ? `<div style="margin-bottom: 4px; color: #6c757d;">${c.mobile} (mobile)</div>` : ''}
+                            ${c.phone ? `<div style="margin-bottom: 4px; display: flex; align-items: center; gap: 6px; justify-content: flex-end;"><a href="tel:${c.phone}" style="color: #0066cc;">${c.phone}</a><button class="btn-call" onclick="event.stopPropagation(); clickToCall('${c.phone.replace(/'/g, "\\'")}', '${c.name.replace(/'/g, "\\'")}')" title="Call ${c.name}">&#128222;</button></div>` : ''}
+                            ${c.mobile ? `<div style="margin-bottom: 4px; display: flex; align-items: center; gap: 6px; justify-content: flex-end;"><span style="color: #6c757d;">${c.mobile} (mobile)</span><button class="btn-call" onclick="event.stopPropagation(); clickToCall('${c.mobile.replace(/'/g, "\\'")}', '${c.name.replace(/'/g, "\\'")}')" title="Call ${c.name}">&#128222;</button></div>` : ''}
                             ${c.email ? `<div><a href="mailto:${c.email}" style="color: #0066cc;">${c.email}</a></div>` : ''}
                         </div>
                     </div>
@@ -1785,6 +1785,69 @@ function escapeHtml(str) {
 
 let _activeActivityForm = null;
 
+function clickToCall(phone, contactName) {
+    // Open phone dialer
+    window.open('tel:' + phone, '_self');
+
+    // Open the call log form pre-filled with contact name and "did they answer" field
+    _activeActivityForm = null; // force re-open
+    var area = document.getElementById('activityFormArea');
+    if (!area) return;
+
+    _activeActivityForm = 'call';
+    area.classList.remove('hidden');
+
+    area.innerHTML =
+        '<div class="card" style="border: 2px solid #4CAF50;">' +
+        '<div class="card-body">' +
+        '<h3 style="font-size: 15px; font-weight: 600; margin-bottom: 12px;">Log Call - ' + contactName + '</h3>' +
+        '<div class="form-group" style="margin-bottom: 12px;">' +
+        '<label class="form-label">Who did you speak with?</label>' +
+        '<input type="text" id="actCallContact" class="form-control" value="' + contactName.replace(/"/g, '&quot;') + '">' +
+        '</div>' +
+        '<div class="form-group" style="margin-bottom: 12px;">' +
+        '<label class="form-label">Did they answer?</label>' +
+        '<div style="display: flex; gap: 8px;">' +
+        '<button type="button" class="btn btn-outline call-answer-btn active" id="callAnswerYes" onclick="setCallAnswer(true)" style="flex: 1;">Yes</button>' +
+        '<button type="button" class="btn btn-outline call-answer-btn" id="callAnswerNo" onclick="setCallAnswer(false)" style="flex: 1;">No / Voicemail</button>' +
+        '</div>' +
+        '</div>' +
+        '<div class="form-group" style="margin-bottom: 12px;">' +
+        '<label class="form-label">Summary</label>' +
+        '<textarea id="actCallSummary" class="form-control" rows="3" placeholder="What was discussed?"></textarea>' +
+        '</div>' +
+        '<div class="form-group" style="margin-bottom: 12px;">' +
+        '<label class="form-label">Follow-up date (optional)</label>' +
+        '<input type="date" id="actCallFollowUp" class="form-control">' +
+        '</div>' +
+        '<div style="display: flex; gap: 8px;">' +
+        '<button class="btn btn-primary" onclick="submitActivityForm(\'call\')">Save Call Log</button>' +
+        '<button class="btn btn-secondary" onclick="toggleActivityForm(\'call\')">Cancel</button>' +
+        '</div>' +
+        '</div></div>';
+
+    // Scroll to the form in the activity column
+    area.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+var _callAnswered = true;
+
+function setCallAnswer(answered) {
+    _callAnswered = answered;
+    var yesBtn = document.getElementById('callAnswerYes');
+    var noBtn = document.getElementById('callAnswerNo');
+    if (yesBtn && noBtn) {
+        yesBtn.classList.toggle('active', answered);
+        yesBtn.style.background = answered ? '#4CAF50' : '';
+        yesBtn.style.color = answered ? '#fff' : '';
+        yesBtn.style.borderColor = answered ? '#4CAF50' : '';
+        noBtn.classList.toggle('active', !answered);
+        noBtn.style.background = !answered ? '#dc3545' : '';
+        noBtn.style.color = !answered ? '#fff' : '';
+        noBtn.style.borderColor = !answered ? '#dc3545' : '';
+    }
+}
+
 function toggleActivityForm(type) {
     var area = document.getElementById('activityFormArea');
     if (!area) return;
@@ -1872,9 +1935,11 @@ async function submitActivityForm(type) {
             var summary = document.getElementById('actCallSummary').value.trim();
             var followUp = document.getElementById('actCallFollowUp').value;
             if (!summary) { alert('Please enter a call summary.'); return; }
-            payload.title = contact ? 'Call with ' + contact : 'Logged call';
+            var answered = typeof _callAnswered !== 'undefined' ? _callAnswered : true;
+            payload.title = contact ? 'Call with ' + contact + (answered ? '' : ' (no answer)') : 'Logged call';
             payload.body = summary;
-            if (followUp) payload.metadata = { followUpDate: followUp };
+            payload.metadata = { answered: answered };
+            if (followUp) payload.metadata.followUpDate = followUp;
         } else if (type === 'note') {
             var noteBody = document.getElementById('actNoteBody').value.trim();
             if (!noteBody) { alert('Please enter a note.'); return; }
