@@ -128,7 +128,7 @@ function renderDistrictList(customers) {
             (c.territory === 'Southern' ? '#e3f2fd' : '#fff3e0') + '; color: ' +
             (c.territory === 'Southern' ? '#1565c0' : '#e65100') + ';">' + c.territory + '</span>' : '';
 
-        return '<div class="browse-district-item" onclick="browseDrillDistrict(\'' + c.id + '\')">' +
+        return '<div class="browse-district-item" onclick="openCustomerProfile(\'' + c.id + '\', \'' + escapeHtml(c.name).replace(/'/g, "\\'") + '\')">' +
             '<div class="browse-district-info">' +
                 '<div class="browse-district-name">' + icon + ' ' + escapeHtml(c.name) + '</div>' +
                 '<div class="browse-district-meta">' +
@@ -809,16 +809,8 @@ function browseCreateEstimate() {
 
 // Bridge function: drill from global search results into browse
 function browseDrillFromSearch(qbId, name) {
-    browseCustomersCache = [{
-        id: qbId,
-        _isQbResult: true,
-        name: name,
-        locations: [],
-        contacts: []
-    }];
-    browseNavStack = [{ screen: 'districts', data: null }];
-    if (!browseContext) browseContext = 'office';
-    browseDrillDistrict(qbId);
+    // Route to the customer profile instead of old browse drill-down
+    openCustomerProfile(qbId, name);
 }
 
 // ==========================================
