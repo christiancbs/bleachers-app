@@ -1482,6 +1482,37 @@ async function viewCustomerDetail(customerId) {
         contactsList.innerHTML = districtContactsHtml || '<div class="empty-state"><p>No district-level contacts</p></div>';
     }
 
+    // Populate contacts sidebar (compact list for left column)
+    const contactsSidebar = document.getElementById('custContactsSidebar');
+    if (contactsSidebar) {
+        // Merge district + location contacts
+        const allContacts = [...(customer.contacts || [])];
+        (customer.locations || []).forEach(loc => {
+            (loc.contacts || []).forEach(c => {
+                if (!allContacts.find(ac => ac.name === c.name)) allContacts.push(c);
+            });
+        });
+
+        if (allContacts.length === 0) {
+            contactsSidebar.innerHTML = '<div style="color: #6c757d; padding: 8px 0;">No contacts</div>';
+        } else {
+            contactsSidebar.innerHTML = allContacts.map(c => {
+                const phoneNum = c.phone || c.mobile || '';
+                const callBtn = phoneNum
+                    ? `<button class="btn-call" style="width: 22px; height: 22px; font-size: 11px;" onclick="event.stopPropagation(); clickToCall('${phoneNum.replace(/'/g, "\\'")}', '${(c.name || '').replace(/'/g, "\\'")}')" title="Call">&#128222;</button>`
+                    : '';
+                return `<div style="padding: 6px 0; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 6px;">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.name}</div>
+                        ${c.title ? `<div style="font-size: 11px; color: #6c757d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.title}</div>` : ''}
+                        ${phoneNum ? `<div style="font-size: 11px; color: #0066cc;">${phoneNum}</div>` : ''}
+                    </div>
+                    ${callBtn}
+                </div>`;
+            }).join('');
+        }
+    }
+
     // Populate equipment tab
     const equipmentList = document.getElementById('custEquipmentList');
     if (equipmentList) {
@@ -1529,8 +1560,8 @@ async function viewCustomerDetail(customerId) {
 
 function showCustomerTab(tab) {
     // All tab IDs
-    const tabs = ['customerLocationsTab', 'customerContactsTab', 'customerEstimatesTab', 'customerHistoryTab', 'customerEquipmentTab'];
-    const buttons = ['tabLocations', 'tabContacts', 'tabEstimates', 'tabHistory', 'tabEquipment'];
+    const tabs = ['customerLocationsTab', 'customerEstimatesTab', 'customerHistoryTab', 'customerEquipmentTab'];
+    const buttons = ['tabLocations', 'tabEstimates', 'tabHistory', 'tabEquipment'];
 
     // Hide all tabs and reset button styles
     tabs.forEach(t => {
@@ -1549,7 +1580,6 @@ function showCustomerTab(tab) {
     // Show selected tab
     const tabMap = {
         locations: { tab: 'customerLocationsTab', btn: 'tabLocations' },
-        contacts: { tab: 'customerContactsTab', btn: 'tabContacts' },
         estimates: { tab: 'customerEstimatesTab', btn: 'tabEstimates' },
         history: { tab: 'customerHistoryTab', btn: 'tabHistory' },
         equipment: { tab: 'customerEquipmentTab', btn: 'tabEquipment' }

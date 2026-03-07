@@ -1,7 +1,7 @@
 // Bleachers & Seats - Service Worker (Level 1: App Shell Caching)
 // Makes the app installable and caches core files for fast loading
 
-const CACHE_NAME = 'bleachers-v1';
+const CACHE_NAME = 'bleachers-v2';
 const APP_SHELL = [
     '/bleachers-app/',
     '/bleachers-app/index.html',
@@ -27,6 +27,7 @@ const APP_SHELL = [
     '/bleachers-app/js/utils/customers-api.js',
     '/bleachers-app/js/utils/parts-catalog.js',
     '/bleachers-app/js/utils/search.js',
+    '/bleachers-app/js/utils/activities-api.js',
     '/bleachers-app/bleachers-logo-icon.png',
     '/bleachers-app/bleachers-logo-full.png',
     '/bleachers-app/menu-logo-wide.png',

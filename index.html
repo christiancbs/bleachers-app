@@ -459,90 +459,86 @@
 
                     <!-- Customer Detail View -->
                     <div id="customerDetailView" class="hidden">
-                        <div class="page-header">
-                            <button class="btn btn-secondary" onclick="showView('officeSearch')">← Back to Search & Browse</button>
-                            <div style="display: flex; align-items: center; gap: 16px; margin-top: 16px;">
-                                <h1 class="page-title" style="margin: 0;" id="custDetailName">Lauderdale County Schools</h1>
-                                <span id="custDetailType" class="badge badge-info">County</span>
-                            </div>
+                        <!-- Back button -->
+                        <div style="margin-bottom: 12px;">
+                            <button class="btn btn-secondary" style="font-size: 13px;" onclick="showView('officeSearch')">← Back</button>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
-                            <!-- Customer Info -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h2 class="card-title">Customer Information</h2>
-                                </div>
-                                <div class="card-body">
-                                    <div class="form-group">
-                                        <label class="form-label">Address</label>
-                                        <p id="custDetailAddress" style="font-size: 14px;">100 S Jefferson St, Ripley, TN 38063</p>
-                                    </div>
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
-                                        <div class="form-group">
-                                            <label class="form-label">Primary Contact</label>
-                                            <p id="custDetailContact" style="font-size: 14px;"></p>
+                        <!-- 3-column layout: Info | Tabs | Activity -->
+                        <div style="display: grid; grid-template-columns: 280px 1fr 340px; gap: 16px; align-items: start;">
+
+                            <!-- LEFT: Customer Info Sidebar -->
+                            <div>
+                                <!-- Name + Type -->
+                                <div class="card" style="margin-bottom: 12px;">
+                                    <div class="card-body" style="padding: 16px;">
+                                        <h2 id="custDetailName" style="font-size: 16px; font-weight: 700; margin: 0 0 6px;">Customer Name</h2>
+                                        <span id="custDetailType" class="badge badge-info" style="font-size: 11px;">County</span>
+                                        <div style="margin-top: 12px; font-size: 13px; color: #495057;">
+                                            <div id="custDetailAddress" style="margin-bottom: 6px;"></div>
+                                            <div id="custDetailContact" style="margin-bottom: 4px;"></div>
+                                            <div id="custDetailPhone" style="color: #0066cc;"></div>
                                         </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Phone</label>
-                                            <p id="custDetailPhone" style="font-size: 14px;"></p>
+                                    </div>
+                                </div>
+
+                                <!-- Stats (compact) -->
+                                <div class="card" style="margin-bottom: 12px;">
+                                    <div class="card-body" style="padding: 12px 16px;">
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center;">
+                                            <div>
+                                                <div style="font-size: 20px; font-weight: 700; color: #4CAF50;" id="custDetailLocations">0</div>
+                                                <div style="font-size: 10px; color: #6c757d;">Locations</div>
+                                            </div>
+                                            <div>
+                                                <div style="font-size: 20px; font-weight: 700; color: #2196F3;" id="custDetailJobs">0</div>
+                                                <div style="font-size: 10px; color: #6c757d;">Jobs</div>
+                                            </div>
+                                            <div>
+                                                <div style="font-size: 20px; font-weight: 700; color: #9C27B0;" id="custDetailRevenue">$0</div>
+                                                <div style="font-size: 10px; color: #6c757d;">Revenue</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Contacts (compact list) -->
+                                <div class="card">
+                                    <div class="card-header" style="padding: 10px 16px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <h3 style="font-size: 13px; font-weight: 600; margin: 0;">Contacts</h3>
+                                            <button class="btn btn-outline" style="font-size: 10px; padding: 2px 8px;" onclick="showAddContactModal(currentCustomerId)">+ Add</button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body" style="padding: 8px 16px;">
+                                        <div id="custContactsSidebar" style="font-size: 13px;">
+                                            <div style="color: #6c757d; padding: 8px 0;">No contacts</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Stats -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h2 class="card-title">Account Stats</h2>
-                                </div>
-                                <div class="card-body">
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; text-align: center;">
-                                        <div>
-                                            <div style="font-size: 28px; font-weight: 700; color: #4CAF50;" id="custDetailLocations">4</div>
-                                            <div style="font-size: 12px; color: #6c757d;">Locations</div>
-                                        </div>
-                                        <div>
-                                            <div style="font-size: 28px; font-weight: 700; color: #2196F3;" id="custDetailJobs">28</div>
-                                            <div style="font-size: 12px; color: #6c757d;">Total Jobs</div>
-                                        </div>
-                                        <div>
-                                            <div style="font-size: 28px; font-weight: 700; color: #9C27B0;" id="custDetailRevenue">$45,230</div>
-                                            <div style="font-size: 12px; color: #6c757d;">Revenue</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Two-column: Tabs + Activity -->
-                        <div style="display: grid; grid-template-columns: 1fr 380px; gap: 24px;">
-                            <!-- Left: Tabs -->
+                            <!-- CENTER: Tabs -->
                             <div class="card">
                                 <div class="card-header" style="border-bottom: none; padding-bottom: 0;">
                                     <div style="display: flex; gap: 0;">
-                                        <button class="btn" id="tabLocations" onclick="showCustomerTab('locations')" style="border-radius: 8px 8px 0 0; border-bottom: 3px solid #4CAF50;">Locations</button>
-                                        <button class="btn" id="tabContacts" onclick="showCustomerTab('contacts')" style="border-radius: 8px 8px 0 0; background: transparent; color: #6c757d;">Contacts</button>
-                                        <button class="btn" id="tabEstimates" onclick="showCustomerTab('estimates')" style="border-radius: 8px 8px 0 0; background: transparent; color: #6c757d;">Estimates</button>
-                                        <button class="btn" id="tabHistory" onclick="showCustomerTab('history')" style="border-radius: 8px 8px 0 0; background: transparent; color: #6c757d;">Service History</button>
-                                        <button class="btn" id="tabEquipment" onclick="showCustomerTab('equipment')" style="border-radius: 8px 8px 0 0; background: transparent; color: #6c757d;">Equipment</button>
+                                        <button class="btn" id="tabLocations" onclick="showCustomerTab('locations')" style="border-radius: 8px 8px 0 0; border-bottom: 3px solid #4CAF50; font-size: 13px; padding: 8px 14px;">Locations</button>
+                                        <button class="btn" id="tabEstimates" onclick="showCustomerTab('estimates')" style="border-radius: 8px 8px 0 0; background: transparent; color: #6c757d; font-size: 13px; padding: 8px 14px;">Estimates</button>
+                                        <button class="btn" id="tabHistory" onclick="showCustomerTab('history')" style="border-radius: 8px 8px 0 0; background: transparent; color: #6c757d; font-size: 13px; padding: 8px 14px;">Service History</button>
+                                        <button class="btn" id="tabEquipment" onclick="showCustomerTab('equipment')" style="border-radius: 8px 8px 0 0; background: transparent; color: #6c757d; font-size: 13px; padding: 8px 14px;">Equipment</button>
                                     </div>
                                 </div>
                                 <div class="card-body">
                                     <!-- Locations Tab -->
                                     <div id="customerLocationsTab">
                                         <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
-                                            <button class="btn btn-primary" onclick="showAddLocationModal()">+ Add Location</button>
+                                            <button class="btn btn-primary" style="font-size: 12px;" onclick="showAddLocationModal()">+ Add Location</button>
                                         </div>
                                         <div id="custLocationsList"></div>
                                     </div>
 
-                                    <!-- Contacts Tab (District-level) -->
+                                    <!-- Contacts Tab (kept for backwards compat, hidden) -->
                                     <div id="customerContactsTab" class="hidden">
-                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                                            <p style="color: #6c757d; margin: 0;">District-level contacts (for contracts, billing, etc.)</p>
-                                            <button class="btn btn-primary" onclick="showAddContactModal(currentCustomerId)">+ Add Contact</button>
-                                        </div>
                                         <div id="custContactsList"></div>
                                     </div>
 
@@ -572,30 +568,27 @@
 
                                     <!-- Equipment Tab -->
                                     <div id="customerEquipmentTab" class="hidden">
-                                        <div style="margin-bottom: 16px;">
-                                            <p style="color: #6c757d; margin: 0;">Equipment inventory at each location</p>
-                                        </div>
                                         <div id="custEquipmentList"></div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Right: Activity (always visible) -->
+                            <!-- RIGHT: Activity (always visible) -->
                             <div class="card" style="align-self: start;">
-                                <div class="card-header">
-                                    <h2 class="card-title" style="font-size: 15px;">Activity</h2>
+                                <div class="card-header" style="padding: 10px 16px;">
+                                    <h3 style="font-size: 13px; font-weight: 600; margin: 0;">Activity</h3>
                                 </div>
-                                <div class="card-body" style="padding: 12px 16px;">
+                                <div class="card-body" style="padding: 10px 14px;">
                                     <!-- Action buttons -->
-                                    <div style="display: flex; gap: 6px; margin-bottom: 16px;">
-                                        <button class="btn btn-primary" style="font-size: 12px; padding: 6px 10px;" onclick="toggleActivityForm('call')">Log Call</button>
-                                        <button class="btn btn-primary" style="font-size: 12px; padding: 6px 10px;" onclick="toggleActivityForm('note')">Add Note</button>
-                                        <button class="btn btn-primary" style="font-size: 12px; padding: 6px 10px;" onclick="toggleActivityForm('follow_up')">Follow-up</button>
+                                    <div style="display: flex; gap: 4px; margin-bottom: 12px;">
+                                        <button class="btn btn-primary" style="font-size: 11px; padding: 5px 8px;" onclick="toggleActivityForm('call')">Log Call</button>
+                                        <button class="btn btn-primary" style="font-size: 11px; padding: 5px 8px;" onclick="toggleActivityForm('note')">Add Note</button>
+                                        <button class="btn btn-primary" style="font-size: 11px; padding: 5px 8px;" onclick="toggleActivityForm('follow_up')">Follow-up</button>
                                     </div>
                                     <!-- Inline form area -->
-                                    <div id="activityFormArea" class="hidden" style="margin-bottom: 16px;"></div>
+                                    <div id="activityFormArea" class="hidden" style="margin-bottom: 12px;"></div>
                                     <!-- Timeline -->
-                                    <div id="custActivityTimeline" style="max-height: 600px; overflow-y: auto;">
+                                    <div id="custActivityTimeline" style="max-height: 700px; overflow-y: auto;">
                                         <div style="padding: 30px; text-align: center; color: #6c757d; font-size: 13px;">Loading activity...</div>
                                     </div>
                                 </div>
