@@ -280,7 +280,7 @@ function renderSearchResults(container, results) {
                 custAddr = addrParts.join(', ');
             }
             var custName = r.data.name || r.data.companyName || '';
-            html += '<div class="card" style="margin-bottom: 8px; cursor: pointer;" onclick="browseDrillFromSearch(\'' + r.data.id + '\', \'' + custName.replace(/'/g, "\\'") + '\')">';
+            html += '<div class="card" style="margin-bottom: 8px; cursor: pointer;" onclick="openCustomerProfile(\'' + r.data.id + '\', \'' + custName.replace(/'/g, "\\'") + '\')">';
             html += '<div class="card-body" style="padding: 12px 16px;">';
             html += '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">';
             html += '<span class="badge" style="background: #e8f5e9; color: #2e7d32;">Customer</span>';
@@ -293,4 +293,23 @@ function renderSearchResults(container, results) {
     });
 
     container.innerHTML = html;
+}
+
+// Bridge: add QB customer to cache so viewCustomerDetail can find it, then navigate
+function openCustomerProfile(qbId, name) {
+    // Ensure customer is in browseCustomersCache for viewCustomerDetail to find
+    if (typeof browseCustomersCache !== 'undefined') {
+        var exists = browseCustomersCache.find(function(c) { return c.id == qbId; });
+        if (!exists) {
+            browseCustomersCache.push({
+                id: qbId,
+                _isQbResult: true,
+                name: name,
+                locations: [],
+                contacts: [],
+                type: 'other'
+            });
+        }
+    }
+    viewCustomerDetail(qbId);
 }

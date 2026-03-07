@@ -1356,11 +1356,36 @@ function sortPipelineBy(sortType) {
 // Store current customer ID for CRUD operations
 let currentCustomerId = null;
 
-function viewCustomerDetail(customerId) {
+async function viewCustomerDetail(customerId) {
     var customer = CUSTOMERS.find(c => c.id === customerId);
     // Also check browseCustomersCache (for QB-first Search & Browse flow)
     if (!customer && typeof browseCustomersCache !== 'undefined') {
         customer = browseCustomersCache.find(c => c.id == customerId || c._localId == customerId);
+    }
+
+    // QB-to-local bridge: if this is a QB search result, fetch the full local record
+    if (customer && customer._isQbResult) {
+        try {
+            var localCustomer = await CustomersAPI.findByQbId(customer.id);
+            if (localCustomer) {
+                var qbId = customer.id;
+                customer = localCustomer;
+                customer._qbId = qbId;
+                customerId = customer.id;
+            }
+        } catch (err) {
+            console.error('Failed to bridge QB customer to local:', err);
+        }
+    }
+
+    // If still no customer, try fetching by local ID
+    if (!customer) {
+        try {
+            customer = await CustomersAPI.get(customerId);
+        } catch (err) {
+            console.error('Failed to fetch customer:', err);
+            return;
+        }
     }
     if (!customer) return;
 
