@@ -96,8 +96,8 @@ async function loadBrowseDistricts() {
     // Show search prompt — no pre-loaded customer list (QB-first approach)
     listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: #6c757d;">' +
         '<div style="font-size: 40px; margin-bottom: 12px;">&#128269;</div>' +
-        '<p style="font-size: 16px; font-weight: 600; margin-bottom: 6px;">Search for a customer</p>' +
-        '<p style="font-size: 13px;">Type a customer name above to search QuickBooks</p>' +
+        '<p style="font-size: 16px; font-weight: 600; margin-bottom: 6px;">Search above to get started</p>' +
+        '<p style="font-size: 13px;">Search by customer name, job #, or keyword</p>' +
         '</div>';
     if (countEl) countEl.textContent = '';
     browseCustomersCache = [];
