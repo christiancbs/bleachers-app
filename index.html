@@ -1041,6 +1041,15 @@
                                 <input type="text" id="officeSearchInput" class="form-input" placeholder="Search by customer name, job #, or keyword..." style="font-size: 16px; padding: 14px 16px;" oninput="handleBrowseSearch('office')">
                             </div>
 
+                            <div id="searchFiltersOffice" class="search-filters" style="display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap;">
+                                <button class="search-filter-btn active" data-filter="all" onclick="setSearchFilter('all', 'office')">All</button>
+                                <button class="search-filter-btn" data-filter="customer" onclick="setSearchFilter('customer', 'office')">Customers</button>
+                                <button class="search-filter-btn" data-filter="job" onclick="setSearchFilter('job', 'office')">Jobs</button>
+                                <button class="search-filter-btn" data-filter="estimate" onclick="setSearchFilter('estimate', 'office')">Estimates</button>
+                                <button class="search-filter-btn" data-filter="inspection" onclick="setSearchFilter('inspection', 'office')">Inspections</button>
+                                <button class="search-filter-btn" data-filter="schedule" onclick="setSearchFilter('schedule', 'office')">Scheduled</button>
+                            </div>
+
                             <div style="display: flex; gap: 8px; margin-bottom: 20px;">
                                 <button class="btn btn-primary browse-action-btn" onclick="browseShowNewCustomerForm()">+ New Customer</button>
                                 <button class="btn btn-primary browse-action-btn" onclick="browseCreateTopLevelJob()">+ New Job</button>
@@ -2420,6 +2429,15 @@
 
                             <div style="margin-bottom: 16px;">
                                 <input type="text" id="techSearchInput" class="form-input" placeholder="Search by customer name, job #, or keyword..." style="font-size: 16px; padding: 14px 16px;" oninput="handleBrowseSearch('field')">
+                            </div>
+
+                            <div id="searchFiltersTech" class="search-filters" style="display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap;">
+                                <button class="search-filter-btn active" data-filter="all" onclick="setSearchFilter('all', 'field')">All</button>
+                                <button class="search-filter-btn" data-filter="customer" onclick="setSearchFilter('customer', 'field')">Customers</button>
+                                <button class="search-filter-btn" data-filter="job" onclick="setSearchFilter('job', 'field')">Jobs</button>
+                                <button class="search-filter-btn" data-filter="estimate" onclick="setSearchFilter('estimate', 'field')">Estimates</button>
+                                <button class="search-filter-btn" data-filter="inspection" onclick="setSearchFilter('inspection', 'field')">Inspections</button>
+                                <button class="search-filter-btn" data-filter="schedule" onclick="setSearchFilter('schedule', 'field')">Scheduled</button>
                             </div>
 
                             <div style="display: flex; gap: 8px; margin-bottom: 20px;">

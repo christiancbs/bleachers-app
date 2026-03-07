@@ -560,6 +560,28 @@
             box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
         }
 
+        /* Search filter pills */
+        .search-filter-btn {
+            padding: 6px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            border: 2px solid #dee2e6;
+            border-radius: 20px;
+            background: #fff;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .search-filter-btn:hover {
+            border-color: #4CAF50;
+            color: #4CAF50;
+        }
+        .search-filter-btn.active {
+            background: #4CAF50;
+            border-color: #4CAF50;
+            color: #fff;
+        }
+
         /* Estimate tabs */
         .est-tab {
             padding: 10px 20px;

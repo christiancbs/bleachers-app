@@ -4,6 +4,12 @@
 // Office search (everything: jobs, estimates, inspections, schedule)
 // ==========================================
 
+// Active filter state: 'all', 'customer', 'job', 'estimate', 'inspection', 'schedule'
+var _searchFilter = 'all';
+// Cache last search results for filtering without re-querying
+var _lastSearchResults = [];
+var _lastSearchContext = 'office';
+
 // FIELD VIEW: Job number lookup only
 async function performTechSearch() {
     const query = document.getElementById('techSearchInput').value.trim();
@@ -44,48 +50,10 @@ async function performTechSearch() {
         console.error('QB customer search failed:', err);
     }
 
-    if (results.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #6c757d;"><p>No results found for "' + query + '"</p></div>';
-        return;
-    }
-
-    var html = '<div style="font-size: 13px; color: #6c757d; margin-bottom: 12px;">' + results.length + ' result' + (results.length !== 1 ? 's' : '') + '</div>';
-
-    results.forEach(function(r) {
-        if (r.type === 'job') {
-            var statusBg = r.data.status === 'completed' ? '#c8e6c9' : r.data.status === 'draft' ? '#fff3e0' : '#e3f2fd';
-            var statusColor = r.data.status === 'completed' ? '#2e7d32' : r.data.status === 'draft' ? '#e65100' : '#1565c0';
-            html += '<div class="card" style="margin-bottom: 8px; cursor: pointer;" onclick="viewWorkOrderDetail(' + r.data.id + ', \'officeSearch\')">';
-            html += '<div class="card-body" style="padding: 12px 16px;">';
-            html += '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">';
-            html += '<span style="font-weight: 600; color: #007bff;">#' + r.data.jobNumber + '</span>';
-            html += '<span class="badge" style="background: ' + statusBg + '; color: ' + statusColor + ';">' + r.data.status + '</span>';
-            if (r.data.jobType) html += '<span class="badge badge-secondary">' + r.data.jobType + '</span>';
-            html += '</div>';
-            html += '<div style="font-weight: 500;">' + (r.data.customerName || r.data.locationName || '') + '</div>';
-            if (r.data.title) html += '<div style="font-size: 12px; color: #495057; margin-top: 4px;">' + r.data.title.substring(0, 120) + '</div>';
-            if (r.data.address) html += '<div style="font-size: 12px; color: #6c757d; margin-top: 2px;">' + r.data.address + '</div>';
-            html += '</div></div>';
-        } else if (r.type === 'customer') {
-            var custAddr = '';
-            if (r.data.address) {
-                var addrParts = [r.data.address.line1, r.data.address.city, r.data.address.state].filter(Boolean);
-                custAddr = addrParts.join(', ');
-            }
-            var custName = r.data.name || r.data.companyName || '';
-            html += '<div class="card" style="margin-bottom: 8px; cursor: pointer;" onclick="browseDrillFromSearch(\'' + r.data.id + '\', \'' + custName.replace(/'/g, "\\'") + '\')">';
-            html += '<div class="card-body" style="padding: 12px 16px;">';
-            html += '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">';
-            html += '<span class="badge" style="background: #e8f5e9; color: #2e7d32;">Customer</span>';
-            html += '<span style="font-weight: 600;">' + custName + '</span>';
-            html += '</div>';
-            if (custAddr) html += '<div style="font-size: 12px; color: #6c757d;">' + custAddr + '</div>';
-            if (r.data.phone) html += '<div style="font-size: 12px; color: #6c757d; margin-top: 2px;">' + r.data.phone + '</div>';
-            html += '</div></div>';
-        }
-    });
-
-    container.innerHTML = html;
+    // Cache results and render with current filter
+    _lastSearchResults = results;
+    _lastSearchContext = 'field';
+    renderSearchResults(container, results);
 }
 
 // ==========================================
@@ -184,14 +152,58 @@ async function performOfficeSearch() {
         console.error('QB customer search failed:', err);
     }
 
-    if (results.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #6c757d;"><p>No results found for "' + query + '"</p></div>';
+    // Cache results and render with current filter
+    _lastSearchResults = results;
+    _lastSearchContext = 'office';
+    renderSearchResults(container, results);
+}
+
+function setSearchFilter(filter, context) {
+    _searchFilter = filter;
+
+    // Update button states
+    var suffixId = context === 'office' ? 'Office' : 'Tech';
+    var filterContainer = document.getElementById('searchFilters' + suffixId);
+    if (filterContainer) {
+        var btns = filterContainer.querySelectorAll('.search-filter-btn');
+        btns.forEach(function(btn) {
+            btn.classList.toggle('active', btn.getAttribute('data-filter') === filter);
+        });
+    }
+
+    // Re-render cached results with new filter
+    var containerId = context === 'office' ? 'officeSearchResults' : 'techSearchResults';
+    var container = document.getElementById(containerId);
+    if (container && _lastSearchResults.length > 0) {
+        renderSearchResults(container, _lastSearchResults);
+    }
+}
+
+function renderSearchResults(container, results) {
+    // Apply filter
+    var filtered = results;
+    if (_searchFilter !== 'all') {
+        filtered = results.filter(function(r) {
+            // 'job' filter matches both 'job' and 'workorder' types
+            if (_searchFilter === 'job') return r.type === 'job' || r.type === 'workorder';
+            return r.type === _searchFilter;
+        });
+    }
+
+    if (filtered.length === 0) {
+        var msg = _searchFilter !== 'all'
+            ? 'No ' + _searchFilter + ' results found'
+            : 'No results found';
+        container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #6c757d;"><p>' + msg + '</p></div>';
         return;
     }
 
-    var html = '<div style="font-size: 13px; color: #6c757d; margin-bottom: 12px;">' + results.length + ' result' + (results.length !== 1 ? 's' : '') + '</div>';
+    var totalNote = _searchFilter !== 'all' && filtered.length !== results.length
+        ? ' (filtered from ' + results.length + ' total)'
+        : '';
+    var html = '<div style="font-size: 13px; color: #6c757d; margin-bottom: 12px;">' + filtered.length + ' result' + (filtered.length !== 1 ? 's' : '') + totalNote + '</div>';
 
-    results.forEach(function(r) {
+    filtered.forEach(function(r) {
         if (r.type === 'workorder') {
             html += '<div class="card" style="margin-bottom: 8px; cursor: pointer;" onclick="viewWorkOrderDetail(\'' + r.key + '\', \'officeSearch\')">';
             html += '<div class="card-body" style="padding: 12px 16px;">';
