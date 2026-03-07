@@ -1522,12 +1522,15 @@ async function viewCustomerDetail(customerId) {
     // Show detail view and default to locations tab
     showView('customerDetail');
     showCustomerTab('locations');
+
+    // Activity column loads automatically (always visible)
+    renderCustomerActivity(currentCustomerId);
 }
 
 function showCustomerTab(tab) {
     // All tab IDs
-    const tabs = ['customerLocationsTab', 'customerContactsTab', 'customerEstimatesTab', 'customerHistoryTab', 'customerEquipmentTab', 'customerActivityTab'];
-    const buttons = ['tabLocations', 'tabContacts', 'tabEstimates', 'tabHistory', 'tabEquipment', 'tabActivity'];
+    const tabs = ['customerLocationsTab', 'customerContactsTab', 'customerEstimatesTab', 'customerHistoryTab', 'customerEquipmentTab'];
+    const buttons = ['tabLocations', 'tabContacts', 'tabEstimates', 'tabHistory', 'tabEquipment'];
 
     // Hide all tabs and reset button styles
     tabs.forEach(t => {
@@ -1549,8 +1552,7 @@ function showCustomerTab(tab) {
         contacts: { tab: 'customerContactsTab', btn: 'tabContacts' },
         estimates: { tab: 'customerEstimatesTab', btn: 'tabEstimates' },
         history: { tab: 'customerHistoryTab', btn: 'tabHistory' },
-        equipment: { tab: 'customerEquipmentTab', btn: 'tabEquipment' },
-        activity: { tab: 'customerActivityTab', btn: 'tabActivity' }
+        equipment: { tab: 'customerEquipmentTab', btn: 'tabEquipment' }
     };
 
     const selected = tabMap[tab];
@@ -1569,8 +1571,6 @@ function showCustomerTab(tab) {
         renderCustomerEstimates(currentCustomerId);
     } else if (tab === 'history' && currentCustomerId) {
         renderCustomerHistory(currentCustomerId);
-    } else if (tab === 'activity' && currentCustomerId) {
-        renderCustomerActivity(currentCustomerId);
     }
 }
 
