@@ -1411,9 +1411,9 @@ async function viewCustomerDetail(customerId) {
     // Fetch real job + estimate data for stats
     loadCustomerStats(customer);
 
-    // Populate locations with contacts
+    // Populate locations with contacts (if full locations tab exists)
     const locList = document.getElementById('custLocationsList');
-    locList.innerHTML = customer.locations.map(loc => {
+    if (locList) locList.innerHTML = customer.locations.map(loc => {
         const locContact = getPrimaryContact(loc.contacts);
         const contactsHtml = (loc.contacts || []).map(c => {
             const roleBadges = (c.roles || []).map(role => {
