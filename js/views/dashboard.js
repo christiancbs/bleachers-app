@@ -1513,6 +1513,21 @@ async function viewCustomerDetail(customerId) {
         }
     }
 
+    // Populate locations sidebar (compact list for left column)
+    const locSidebar = document.getElementById('custLocationsSidebar');
+    if (locSidebar) {
+        if (!customer.locations || customer.locations.length === 0) {
+            locSidebar.innerHTML = '<div style="color: #6c757d; padding: 8px 0;">No locations</div>';
+        } else {
+            locSidebar.innerHTML = customer.locations.map(loc => {
+                return `<div style="padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
+                    <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${loc.name}</div>
+                    <div style="font-size: 11px; color: #6c757d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${loc.address || ''}</div>
+                </div>`;
+            }).join('');
+        }
+    }
+
     // Populate equipment tab
     const equipmentList = document.getElementById('custEquipmentList');
     if (equipmentList) {
@@ -1550,9 +1565,9 @@ async function viewCustomerDetail(customerId) {
         }).join('') || '<div style="padding: 40px; text-align: center; color: #6c757d;">No locations</div>';
     }
 
-    // Show detail view and default to locations tab
+    // Show detail view and default to estimates tab
     showView('customerDetail');
-    showCustomerTab('locations');
+    showCustomerTab('estimates');
 
     // Activity column loads automatically (always visible)
     renderCustomerActivity(currentCustomerId);
@@ -1560,8 +1575,8 @@ async function viewCustomerDetail(customerId) {
 
 function showCustomerTab(tab) {
     // All tab IDs
-    const tabs = ['customerLocationsTab', 'customerEstimatesTab', 'customerHistoryTab', 'customerEquipmentTab'];
-    const buttons = ['tabLocations', 'tabEstimates', 'tabHistory', 'tabEquipment'];
+    const tabs = ['customerEstimatesTab', 'customerHistoryTab', 'customerEquipmentTab'];
+    const buttons = ['tabEstimates', 'tabHistory', 'tabEquipment'];
 
     // Hide all tabs and reset button styles
     tabs.forEach(t => {
@@ -1579,7 +1594,6 @@ function showCustomerTab(tab) {
 
     // Show selected tab
     const tabMap = {
-        locations: { tab: 'customerLocationsTab', btn: 'tabLocations' },
         estimates: { tab: 'customerEstimatesTab', btn: 'tabEstimates' },
         history: { tab: 'customerHistoryTab', btn: 'tabHistory' },
         equipment: { tab: 'customerEquipmentTab', btn: 'tabEquipment' }

@@ -464,8 +464,7 @@
                             <button class="btn btn-secondary" style="font-size: 13px;" onclick="showView('officeSearch')">← Back</button>
                         </div>
 
-                        <!-- 3-column layout: Info | Tabs | Activity -->
-                        <div style="display: grid; grid-template-columns: 280px 1fr 340px; gap: 16px; align-items: start;">
+                        <div class="cust-profile-grid">
 
                             <!-- LEFT: Customer Info Sidebar -->
                             <div>
@@ -516,30 +515,56 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <!-- Locations -->
+                                <div class="card" style="margin-top: 12px;">
+                                    <div class="card-header" style="padding: 10px 16px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <h3 style="font-size: 13px; font-weight: 600; margin: 0;">Locations</h3>
+                                            <button class="btn btn-outline" style="font-size: 10px; padding: 2px 8px;" onclick="showAddLocationModal()">+ Add</button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body" style="padding: 8px 16px;">
+                                        <div id="custLocationsSidebar" style="font-size: 13px;"></div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- CENTER: Tabs -->
+                            <!-- CENTER: Activity (front and center) -->
+                            <div class="card">
+                                <div class="card-header" style="padding: 10px 16px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                                        <h3 style="font-size: 14px; font-weight: 600; margin: 0;">Activity</h3>
+                                        <div style="display: flex; gap: 4px;">
+                                            <button class="btn btn-primary" style="font-size: 11px; padding: 5px 10px;" onclick="toggleActivityForm('call')">Log Call</button>
+                                            <button class="btn btn-primary" style="font-size: 11px; padding: 5px 10px;" onclick="toggleActivityForm('note')">Add Note</button>
+                                            <button class="btn btn-primary" style="font-size: 11px; padding: 5px 10px;" onclick="toggleActivityForm('follow_up')">Follow-up</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body" style="padding: 12px 16px;">
+                                    <div id="activityFormArea" class="hidden" style="margin-bottom: 12px;"></div>
+                                    <div id="custActivityTimeline" style="max-height: 800px; overflow-y: auto;">
+                                        <div style="padding: 30px; text-align: center; color: #6c757d; font-size: 13px;">Loading activity...</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- RIGHT: Tabs (Estimates, History, Equipment) -->
                             <div class="card">
                                 <div class="card-header" style="border-bottom: none; padding-bottom: 0;">
-                                    <div style="display: flex; gap: 0;">
-                                        <button class="btn" id="tabLocations" onclick="showCustomerTab('locations')" style="border-radius: 8px 8px 0 0; border-bottom: 3px solid #4CAF50; font-size: 13px; padding: 8px 14px;">Locations</button>
-                                        <button class="btn" id="tabEstimates" onclick="showCustomerTab('estimates')" style="border-radius: 8px 8px 0 0; background: transparent; color: #6c757d; font-size: 13px; padding: 8px 14px;">Estimates</button>
+                                    <div style="display: flex; gap: 0; flex-wrap: wrap;">
+                                        <button class="btn" id="tabEstimates" onclick="showCustomerTab('estimates')" style="border-radius: 8px 8px 0 0; border-bottom: 3px solid #4CAF50; font-size: 13px; padding: 8px 12px;">Estimates</button>
                                         <button class="btn" id="tabHistory" onclick="showCustomerTab('history')" style="border-radius: 8px 8px 0 0; background: transparent; color: #6c757d; font-size: 13px; padding: 8px 14px;">Service History</button>
                                         <button class="btn" id="tabEquipment" onclick="showCustomerTab('equipment')" style="border-radius: 8px 8px 0 0; background: transparent; color: #6c757d; font-size: 13px; padding: 8px 14px;">Equipment</button>
                                     </div>
                                 </div>
                                 <div class="card-body">
-                                    <!-- Locations Tab -->
-                                    <div id="customerLocationsTab">
-                                        <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
-                                            <button class="btn btn-primary" style="font-size: 12px;" onclick="showAddLocationModal()">+ Add Location</button>
+                                    <!-- Estimates Tab (default visible) -->
+                                    <div id="customerEstimatesTab">
+                                        <div id="custEstimatesList">
+                                            <div style="padding: 40px; text-align: center; color: #6c757d;">Loading estimates...</div>
                                         </div>
-                                        <div id="custLocationsList"></div>
-                                    </div>
-
-                                    <!-- Contacts Tab (kept for backwards compat, hidden) -->
-                                    <div id="customerContactsTab" class="hidden">
-                                        <div id="custContactsList"></div>
                                     </div>
 
                                     <!-- Service History Tab -->
@@ -559,13 +584,6 @@
                                         </table>
                                     </div>
 
-                                    <!-- Estimates Tab -->
-                                    <div id="customerEstimatesTab" class="hidden">
-                                        <div id="custEstimatesList">
-                                            <div style="padding: 40px; text-align: center; color: #6c757d;">Loading estimates...</div>
-                                        </div>
-                                    </div>
-
                                     <!-- Equipment Tab -->
                                     <div id="customerEquipmentTab" class="hidden">
                                         <div id="custEquipmentList"></div>
@@ -573,26 +591,6 @@
                                 </div>
                             </div>
 
-                            <!-- RIGHT: Activity (always visible) -->
-                            <div class="card" style="align-self: start;">
-                                <div class="card-header" style="padding: 10px 16px;">
-                                    <h3 style="font-size: 13px; font-weight: 600; margin: 0;">Activity</h3>
-                                </div>
-                                <div class="card-body" style="padding: 10px 14px;">
-                                    <!-- Action buttons -->
-                                    <div style="display: flex; gap: 4px; margin-bottom: 12px;">
-                                        <button class="btn btn-primary" style="font-size: 11px; padding: 5px 8px;" onclick="toggleActivityForm('call')">Log Call</button>
-                                        <button class="btn btn-primary" style="font-size: 11px; padding: 5px 8px;" onclick="toggleActivityForm('note')">Add Note</button>
-                                        <button class="btn btn-primary" style="font-size: 11px; padding: 5px 8px;" onclick="toggleActivityForm('follow_up')">Follow-up</button>
-                                    </div>
-                                    <!-- Inline form area -->
-                                    <div id="activityFormArea" class="hidden" style="margin-bottom: 12px;"></div>
-                                    <!-- Timeline -->
-                                    <div id="custActivityTimeline" style="max-height: 700px; overflow-y: auto;">
-                                        <div style="padding: 30px; text-align: center; color: #6c757d; font-size: 13px;">Loading activity...</div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
