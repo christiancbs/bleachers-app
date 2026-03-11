@@ -1506,12 +1506,12 @@ async function viewCustomerDetail(customerId) {
                 }).join('') : '<div style="padding: 4px 0 4px 16px; color: #adb5bd; font-size: 11px;">No contacts</div>';
 
                 return `<div style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
                         <div style="flex: 1; min-width: 0;">
                             <div style="font-weight: 600;">${loc.name}</div>
                             <div style="font-size: 11px; color: #6c757d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${loc.address || ''}</div>
                         </div>
-                        <button class="btn btn-outline" style="font-size: 9px; padding: 2px 6px; white-space: nowrap;" onclick="showAddContactModal('${customer.id}', '${loc.id}')">+ Contact</button>
+                        <button class="btn btn-outline" style="font-size: 9px; padding: 2px 6px; white-space: nowrap; flex-shrink: 0; margin-top: 2px;" onclick="showAddContactModal('${customer.id}', '${loc.id}')">+ Contact</button>
                     </div>
                     ${contactsHtml}
                 </div>`;
@@ -2102,12 +2102,12 @@ function saveContact() {
         roles: roles
     };
 
-    // Find customer
-    const customer = CUSTOMERS.find(c => c.id === customerId);
-    if (!customer) {
-        alert('Customer not found');
-        return;
+    // Find customer in CUSTOMERS or browseCustomersCache
+    var customer = CUSTOMERS.find(c => c.id === customerId);
+    if (!customer && typeof browseCustomersCache !== 'undefined') {
+        customer = browseCustomersCache.find(c => c.id == customerId);
     }
+    if (!customer) return;
 
     if (locationId) {
         // Add to location
@@ -2165,11 +2165,11 @@ function saveLocation() {
         return;
     }
 
-    const customer = CUSTOMERS.find(c => c.id === customerId);
-    if (!customer) {
-        alert('Customer not found');
-        return;
+    var customer = CUSTOMERS.find(c => c.id === customerId);
+    if (!customer && typeof browseCustomersCache !== 'undefined') {
+        customer = browseCustomersCache.find(c => c.id == customerId);
     }
+    if (!customer) return;
 
     // Build contact list from optional inline contact
     const contacts = [];
