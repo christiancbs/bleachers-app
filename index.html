@@ -501,31 +501,16 @@
                                     </div>
                                 </div>
 
-                                <!-- Contacts (compact list) -->
+                                <!-- Locations & Contacts (parent-child) -->
                                 <div class="card">
-                                    <div class="card-header" style="padding: 10px 16px;">
-                                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                                            <h3 style="font-size: 13px; font-weight: 600; margin: 0;">Contacts</h3>
-                                            <button class="btn btn-outline" style="font-size: 10px; padding: 2px 8px;" onclick="showAddContactModal(currentCustomerId)">+ Add</button>
-                                        </div>
-                                    </div>
-                                    <div class="card-body" style="padding: 8px 16px;">
-                                        <div id="custContactsSidebar" style="font-size: 13px;">
-                                            <div style="color: #6c757d; padding: 8px 0;">No contacts</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Locations -->
-                                <div class="card" style="margin-top: 12px;">
                                     <div class="card-header" style="padding: 10px 16px;">
                                         <div style="display: flex; justify-content: space-between; align-items: center;">
                                             <h3 style="font-size: 13px; font-weight: 600; margin: 0;">Locations</h3>
                                             <button class="btn btn-outline" style="font-size: 10px; padding: 2px 8px;" onclick="showAddLocationModal()">+ Add</button>
                                         </div>
                                     </div>
-                                    <div class="card-body" style="padding: 8px 16px;">
-                                        <div id="custLocationsSidebar" style="font-size: 13px;"></div>
+                                    <div class="card-body" style="padding: 4px 12px; max-height: 500px; overflow-y: auto;">
+                                        <div id="custLocationsContacts" style="font-size: 12px;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -1458,6 +1443,26 @@
                             <div class="form-group">
                                 <label class="form-label">Address *</label>
                                 <input type="text" id="locationAddress" class="form-input" placeholder="123 School St, City, TN 12345">
+                            </div>
+                            <hr style="margin: 20px 0 16px; border: none; border-top: 1px solid #e9ecef;">
+                            <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #495057;">Primary Contact (optional)</h3>
+                            <div class="form-group">
+                                <label class="form-label">Contact Name</label>
+                                <input type="text" id="locContactName" class="form-input" placeholder="e.g., John Smith">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Title / Role</label>
+                                <input type="text" id="locContactTitle" class="form-input" placeholder="e.g., Coach, Office Manager, Principal">
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <div class="form-group">
+                                    <label class="form-label">Phone</label>
+                                    <input type="tel" id="locContactPhone" class="form-input" placeholder="(615) 555-1234">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" id="locContactEmail" class="form-input" placeholder="john@school.edu">
+                                </div>
                             </div>
                             <div style="display: flex; gap: 12px; margin-top: 24px;">
                                 <button class="btn btn-primary" onclick="saveLocation()" style="flex: 1;">Save Location</button>

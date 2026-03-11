@@ -1482,47 +1482,38 @@ async function viewCustomerDetail(customerId) {
         contactsList.innerHTML = districtContactsHtml || '<div class="empty-state"><p>No district-level contacts</p></div>';
     }
 
-    // Populate contacts sidebar (compact list for left column)
-    const contactsSidebar = document.getElementById('custContactsSidebar');
-    if (contactsSidebar) {
-        // Merge district + location contacts
-        const allContacts = [...(customer.contacts || [])];
-        (customer.locations || []).forEach(loc => {
-            (loc.contacts || []).forEach(c => {
-                if (!allContacts.find(ac => ac.name === c.name)) allContacts.push(c);
-            });
-        });
-
-        if (allContacts.length === 0) {
-            contactsSidebar.innerHTML = '<div style="color: #6c757d; padding: 8px 0;">No contacts</div>';
-        } else {
-            contactsSidebar.innerHTML = allContacts.map(c => {
-                const phoneNum = c.phone || c.mobile || '';
-                const callBtn = phoneNum
-                    ? `<button class="btn-call" style="width: 22px; height: 22px; font-size: 11px;" onclick="event.stopPropagation(); clickToCall('${phoneNum.replace(/'/g, "\\'")}', '${(c.name || '').replace(/'/g, "\\'")}')" title="Call">&#128222;</button>`
-                    : '';
-                return `<div style="padding: 6px 0; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 6px;">
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.name}</div>
-                        ${c.title ? `<div style="font-size: 11px; color: #6c757d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.title}</div>` : ''}
-                        ${phoneNum ? `<div style="font-size: 11px; color: #0066cc;">${phoneNum}</div>` : ''}
-                    </div>
-                    ${callBtn}
-                </div>`;
-            }).join('');
-        }
-    }
-
-    // Populate locations sidebar (compact list for left column)
-    const locSidebar = document.getElementById('custLocationsSidebar');
-    if (locSidebar) {
+    // Populate locations & contacts (parent-child tree)
+    const locContactsEl = document.getElementById('custLocationsContacts');
+    if (locContactsEl) {
         if (!customer.locations || customer.locations.length === 0) {
-            locSidebar.innerHTML = '<div style="color: #6c757d; padding: 8px 0;">No locations</div>';
+            locContactsEl.innerHTML = '<div style="color: #6c757d; padding: 8px 0;">No locations yet</div>';
         } else {
-            locSidebar.innerHTML = customer.locations.map(loc => {
-                return `<div style="padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
-                    <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${loc.name}</div>
-                    <div style="font-size: 11px; color: #6c757d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${loc.address || ''}</div>
+            locContactsEl.innerHTML = customer.locations.map(loc => {
+                const contacts = loc.contacts || [];
+                const contactsHtml = contacts.length > 0 ? contacts.map(c => {
+                    const phoneNum = c.phone || c.mobile || '';
+                    const callBtn = phoneNum
+                        ? `<button class="btn-call" style="width: 20px; height: 20px; font-size: 10px;" onclick="event.stopPropagation(); clickToCall('${phoneNum.replace(/'/g, "\\'")}', '${(c.name || '').replace(/'/g, "\\'")}')" title="Call">&#128222;</button>`
+                        : '';
+                    return `<div style="display: flex; align-items: center; gap: 6px; padding: 4px 0 4px 16px;">
+                        <div style="flex: 1; min-width: 0;">
+                            <span style="font-weight: 500;">${c.name}</span>
+                            ${c.title ? `<span style="color: #6c757d;"> - ${c.title}</span>` : ''}
+                            ${phoneNum ? `<div style="font-size: 11px; color: #0066cc;">${phoneNum}</div>` : ''}
+                        </div>
+                        ${callBtn}
+                    </div>`;
+                }).join('') : '<div style="padding: 4px 0 4px 16px; color: #adb5bd; font-size: 11px;">No contacts</div>';
+
+                return `<div style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 600;">${loc.name}</div>
+                            <div style="font-size: 11px; color: #6c757d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${loc.address || ''}</div>
+                        </div>
+                        <button class="btn btn-outline" style="font-size: 9px; padding: 2px 6px; white-space: nowrap;" onclick="showAddContactModal('${customer.id}', '${loc.id}')">+ Contact</button>
+                    </div>
+                    ${contactsHtml}
                 </div>`;
             }).join('');
         }
@@ -2054,7 +2045,7 @@ function editLocationEquipment(customerId, locationId) {
 // ==========================================
 
 function showAddContactModal(customerId, locationId = null) {
-    document.getElementById('contactModalTitle').textContent = locationId ? 'Add Location Contact' : 'Add District Contact';
+    document.getElementById('contactModalTitle').textContent = locationId ? 'Add Contact' : 'Add Contact';
     document.getElementById('contactCustomerId').value = customerId;
     document.getElementById('contactLocationId').value = locationId || '';
     document.getElementById('contactName').value = '';
@@ -2148,6 +2139,15 @@ function showAddLocationModal() {
     document.getElementById('locationCustomerId').value = currentCustomerId;
     document.getElementById('locationName').value = '';
     document.getElementById('locationAddress').value = '';
+    // Clear optional contact fields
+    var lcName = document.getElementById('locContactName');
+    var lcTitle = document.getElementById('locContactTitle');
+    var lcPhone = document.getElementById('locContactPhone');
+    var lcEmail = document.getElementById('locContactEmail');
+    if (lcName) lcName.value = '';
+    if (lcTitle) lcTitle.value = '';
+    if (lcPhone) lcPhone.value = '';
+    if (lcEmail) lcEmail.value = '';
     document.getElementById('locationModal').classList.remove('hidden');
 }
 
@@ -2171,11 +2171,29 @@ function saveLocation() {
         return;
     }
 
+    // Build contact list from optional inline contact
+    const contacts = [];
+    var lcName = document.getElementById('locContactName');
+    var lcTitle = document.getElementById('locContactTitle');
+    var lcPhone = document.getElementById('locContactPhone');
+    var lcEmail = document.getElementById('locContactEmail');
+    var contactName = lcName ? lcName.value.trim() : '';
+    if (contactName) {
+        contacts.push({
+            id: 'con' + Date.now(),
+            name: contactName,
+            title: lcTitle ? lcTitle.value.trim() : '',
+            phone: lcPhone ? lcPhone.value.trim() : '',
+            email: lcEmail ? lcEmail.value.trim() : '',
+            roles: []
+        });
+    }
+
     const newLocation = {
         id: 'loc' + Date.now(),
         name: name,
         address: address,
-        contacts: []
+        contacts: contacts
     };
 
     customer.locations.push(newLocation);
