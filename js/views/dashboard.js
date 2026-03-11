@@ -1575,8 +1575,8 @@ async function viewCustomerDetail(customerId) {
 
 function showCustomerTab(tab) {
     // All tab IDs
-    const tabs = ['customerEstimatesTab', 'customerHistoryTab', 'customerEquipmentTab'];
-    const buttons = ['tabEstimates', 'tabHistory', 'tabEquipment'];
+    const tabs = ['customerEstimatesTab', 'customerHistoryTab'];
+    const buttons = ['tabEstimates', 'tabHistory'];
 
     // Hide all tabs and reset button styles
     tabs.forEach(t => {
@@ -1596,7 +1596,6 @@ function showCustomerTab(tab) {
     const tabMap = {
         estimates: { tab: 'customerEstimatesTab', btn: 'tabEstimates' },
         history: { tab: 'customerHistoryTab', btn: 'tabHistory' },
-        equipment: { tab: 'customerEquipmentTab', btn: 'tabEquipment' }
     };
 
     const selected = tabMap[tab];

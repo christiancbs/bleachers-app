@@ -586,12 +586,35 @@
         /* Customer Profile Grid */
         .cust-profile-grid {
             display: grid;
-            grid-template-columns: 260px 1fr 340px;
-            gap: 16px;
+            grid-template-columns: 240px 1fr 340px;
+            gap: 12px;
             align-items: start;
         }
 
-        @media (max-width: 1024px) {
+        .cust-profile-grid > * {
+            min-width: 0;
+        }
+
+        .cust-profile-grid .card-body {
+            overflow-x: auto;
+        }
+
+        .cust-profile-grid .data-table {
+            table-layout: auto;
+            width: 100%;
+            font-size: 12px;
+        }
+
+        @media (max-width: 1200px) {
+            .cust-profile-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .cust-profile-grid > div:first-child {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @media (max-width: 768px) {
             .cust-profile-grid {
                 grid-template-columns: 1fr;
             }
