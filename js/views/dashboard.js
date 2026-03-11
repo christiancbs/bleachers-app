@@ -1389,6 +1389,16 @@ async function viewCustomerDetail(customerId) {
     }
     if (!customer) return;
 
+    // Ensure customer is in browseCustomersCache so save operations can find it
+    if (typeof browseCustomersCache !== 'undefined') {
+        var idx = browseCustomersCache.findIndex(c => c.id == customer.id);
+        if (idx >= 0) {
+            browseCustomersCache[idx] = customer;
+        } else {
+            browseCustomersCache.push(customer);
+        }
+    }
+
     currentCustomerId = customerId;
 
     // Populate header
@@ -2195,6 +2205,7 @@ function saveLocation() {
         contacts: contacts
     };
 
+    if (!customer.locations) customer.locations = [];
     customer.locations.push(newLocation);
     closeLocationModal();
     viewCustomerDetail(customerId); // Refresh
