@@ -1705,12 +1705,12 @@ function renderCustomerHistory(customerId) {
 
     const jobs = _custJobsCache[customerId];
     if (!jobs) {
-        container.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #6c757d;">Loading...</td></tr>';
+        container.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #6c757d;">Loading...</td></tr>';
         return;
     }
 
     if (jobs.length === 0) {
-        container.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #6c757d;">No jobs found for this customer</td></tr>';
+        container.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #6c757d;">No jobs found for this customer</td></tr>';
         return;
     }
 
@@ -1737,7 +1737,6 @@ function renderCustomerHistory(customerId) {
             '<td><span class="part-number" style="color: #0066cc;">' + (job.jobNumber || job.id) + '</span></td>' +
             '<td>' + (job.jobType || '—').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + '</td>' +
             '<td>' + (job.locationName || '—') + '</td>' +
-            '<td>' + (job.title || job.description || '—') + '</td>' +
             '<td>' + statusBadge(job.status) + '</td>' +
             '<td>' + date + '</td>' +
             '</tr>';
