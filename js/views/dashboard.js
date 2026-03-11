@@ -1413,12 +1413,7 @@ async function viewCustomerDetail(customerId) {
     document.getElementById('custDetailContact').textContent = primaryContact.name || 'No contacts';
     document.getElementById('custDetailPhone').textContent = primaryContact.phone || customer.phone;
 
-    // Stats — locations are known, jobs + revenue fetched async
-    document.getElementById('custDetailLocations').textContent = customer.locations.length;
-    document.getElementById('custDetailJobs').textContent = '...';
-    document.getElementById('custDetailRevenue').textContent = '...';
-
-    // Fetch real job + estimate data for stats
+    // Fetch real job + estimate data for tabs
     loadCustomerStats(customer);
 
     // Populate locations with contacts (if full locations tab exists)
@@ -1647,18 +1642,8 @@ async function loadCustomerStats(customer) {
         _custJobsCache[customerId] = jobs;
         _custEstimatesCache[customerId] = estimates;
 
-        // Update stats
-        document.getElementById('custDetailJobs').textContent = jobs.length;
-
-        // Revenue = sum of accepted estimate amounts
-        const revenue = estimates
-            .filter(e => e.status === 'Accepted')
-            .reduce((sum, e) => sum + (parseFloat(e.totalAmount) || 0), 0);
-        document.getElementById('custDetailRevenue').textContent = '$' + Math.round(revenue).toLocaleString();
     } catch (err) {
         console.error('Failed to load customer stats:', err);
-        document.getElementById('custDetailJobs').textContent = '—';
-        document.getElementById('custDetailRevenue').textContent = '—';
     }
 }
 
