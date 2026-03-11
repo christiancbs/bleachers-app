@@ -586,7 +586,7 @@
         /* Customer Profile Grid */
         .cust-profile-grid {
             display: grid;
-            grid-template-columns: 300px minmax(0, 280px) 1fr;
+            grid-template-columns: 280px 1fr 1fr;
             gap: 12px;
             align-items: start;
         }
