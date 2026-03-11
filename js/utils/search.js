@@ -311,5 +311,8 @@ function openCustomerProfile(qbId, name) {
             });
         }
     }
+    window._customerDetailFrom = 'officeSearch';
+    var backBtn = document.getElementById('custDetailBackBtn');
+    if (backBtn) backBtn.setAttribute('onclick', "showView('officeSearch')");
     viewCustomerDetail(qbId);
 }

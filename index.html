@@ -55,14 +55,13 @@
                     <div class="sidebar-divider" style="margin: 12px 20px; border-top: 1px solid rgba(255,255,255,0.15); position: relative;">
                         <span style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #2d3748; padding: 0 8px; font-size: 10px; color: rgba(255,255,255,0.4); white-space: nowrap; text-transform: uppercase; letter-spacing: 1px;">Sales</span>
                     </div>
+                    <div class="nav-item" data-view="customers" onclick="showView('customers')">
+                        <span>🏫</span>
+                        <span>Customers</span>
+                    </div>
                     <div class="nav-item" data-view="salesPipeline" onclick="showView('salesPipeline')">
                         <span>💼</span>
                         <span>Pipeline</span>
-                    </div>
-                    <!-- ARCHIVED: Accounts tab removed — customers now accessed via Search & Browse (QB-first) -->
-                    <div class="nav-item hidden" data-view="accounts" onclick="showView('accounts')">
-                        <span>🏫</span>
-                        <span>Accounts</span>
                     </div>
 
                     <!-- Procurement -->
@@ -457,11 +456,26 @@
                         </div>
                     </div>
 
+                    <!-- Customers View (CRM) -->
+                    <div id="customersView" class="hidden">
+                        <div class="page-header">
+                            <h1 class="page-title">Customers</h1>
+                        </div>
+                        <div style="margin-bottom: 16px; display: flex; gap: 8px;">
+                            <button class="btn btn-primary" style="font-size: 13px;" onclick="browseCreateNewCustomer()">+ New Customer</button>
+                        </div>
+                        <div class="card">
+                            <div class="card-body">
+                                <div id="customersListCRM"></div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Customer Detail View -->
                     <div id="customerDetailView" class="hidden">
                         <!-- Back button -->
                         <div style="margin-bottom: 12px;">
-                            <button class="btn btn-secondary" style="font-size: 13px;" onclick="showView('officeSearch')">← Back</button>
+                            <button class="btn btn-secondary" style="font-size: 13px;" id="custDetailBackBtn" onclick="showView('officeSearch')">← Back</button>
                         </div>
 
                         <div class="cust-profile-grid">

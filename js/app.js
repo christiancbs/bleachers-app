@@ -253,6 +253,10 @@ function showView(view) {
         document.getElementById('estimatesView').classList.remove('hidden');
         setActiveNav('estimates');
         loadEstimates();
+    } else if (view === 'customers') {
+        document.getElementById('customersView').classList.remove('hidden');
+        setActiveNav('customers');
+        if (typeof loadCustomersCRM === 'function') loadCustomersCRM();
     } else if (view === 'salesPipeline') {
         document.getElementById('salesPipelineView').classList.remove('hidden');
         setActiveNav('salesPipeline');
@@ -300,7 +304,9 @@ function showView(view) {
         setActiveNav(navMap[_woBackTarget] || _woBackTarget || 'jobs');
     } else if (view === 'customerDetail') {
         document.getElementById('customerDetailView').classList.remove('hidden');
-        setActiveNav('officeSearch');
+        // Keep the nav highlight of wherever we came from
+        var fromNav = window._customerDetailFrom || 'officeSearch';
+        setActiveNav(fromNav);
     } else if (view === 'inspections') {
         document.getElementById('officeInspectionsView').classList.remove('hidden');
         setActiveNav('inspections');
