@@ -1762,6 +1762,11 @@ async function loadCustomerStats(customer) {
         _custJobsCache[customerId] = jobs;
         _custEstimatesCache[customerId] = estimates;
 
+        // Auto-render estimates (default tab)
+        if (currentCustomerId === customerId) {
+            renderCustomerEstimates(customerId);
+        }
+
     } catch (err) {
         console.error('Failed to load customer stats:', err);
     }
