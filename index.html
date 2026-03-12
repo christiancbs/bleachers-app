@@ -461,9 +461,26 @@
                         <div class="page-header">
                             <h1 class="page-title">Customers</h1>
                         </div>
-                        <div style="margin-bottom: 16px; display: flex; gap: 8px;">
+
+                        <!-- Search -->
+                        <div class="card" style="margin-bottom: 12px;">
+                            <div class="card-body" style="padding: 12px 16px;">
+                                <input type="text" id="crmCustomerSearch" class="form-input" placeholder="Search customers..." style="width: 100%; font-size: 14px;" oninput="searchCustomersCRM(this.value)">
+                            </div>
+                        </div>
+
+                        <!-- Territory Tabs -->
+                        <div style="display: flex; gap: 0; margin-bottom: 12px; border-bottom: 2px solid #e9ecef;">
+                            <button class="schedule-tab active" id="crmTabAll" onclick="filterCustomersCRM('all')" style="font-size: 13px;">All</button>
+                            <button class="schedule-tab" id="crmTabOriginal" onclick="filterCustomersCRM('Original')" style="font-size: 13px;">Original</button>
+                            <button class="schedule-tab" id="crmTabSouthern" onclick="filterCustomersCRM('Southern')" style="font-size: 13px;">Southern</button>
+                            <button class="schedule-tab" id="crmTabHouse" onclick="filterCustomersCRM('House')" style="font-size: 13px;">House</button>
+                        </div>
+
+                        <div style="margin-bottom: 16px;">
                             <button class="btn btn-primary" style="font-size: 13px;" onclick="browseCreateNewCustomer()">+ New Customer</button>
                         </div>
+
                         <div class="card">
                             <div class="card-body">
                                 <div id="customersListCRM"></div>

@@ -1360,64 +1360,113 @@ let currentCustomerId = null;
 // CUSTOMERS CRM VIEW
 // ==========================================
 
-async function loadCustomersCRM() {
+// CRM state
+let _crmSearchResults = [];
+let _crmFilter = 'all';
+let _crmSearchTimer = null;
+
+function loadCustomersCRM() {
+    const container = document.getElementById('customersListCRM');
+    if (!container) return;
+    container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Search for a customer above</div>';
+}
+
+function searchCustomersCRM(query) {
+    clearTimeout(_crmSearchTimer);
+    if (!query || query.length < 2) {
+        _crmSearchResults = [];
+        renderCustomersCRM();
+        return;
+    }
+    _crmSearchTimer = setTimeout(async function() {
+        try {
+            const data = await CustomersAPI.list({ q: query, limit: 100 });
+            _crmSearchResults = data.customers || [];
+            // Cache for profile navigation
+            if (typeof browseCustomersCache !== 'undefined') {
+                _crmSearchResults.forEach(c => {
+                    if (!browseCustomersCache.find(bc => bc.id == c.id)) {
+                        browseCustomersCache.push(c);
+                    }
+                });
+            }
+            renderCustomersCRM();
+        } catch (err) {
+            console.error('CRM search failed:', err);
+        }
+    }, 300);
+}
+
+function filterCustomersCRM(territory) {
+    _crmFilter = territory;
+    // Update tab active states
+    ['crmTabAll', 'crmTabOriginal', 'crmTabSouthern', 'crmTabHouse'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+    });
+    var activeId = territory === 'all' ? 'crmTabAll' : 'crmTab' + territory;
+    var activeEl = document.getElementById(activeId);
+    if (activeEl) activeEl.classList.add('active');
+    renderCustomersCRM();
+}
+
+function renderCustomersCRM() {
     const container = document.getElementById('customersListCRM');
     if (!container) return;
 
-    container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading customers...</div>';
-
-    try {
-        const data = await CustomersAPI.list({ limit: 200 });
-        const customers = data.customers || [];
-
-        if (customers.length === 0) {
-            container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No customers yet</div>';
-            return;
+    if (_crmSearchResults.length === 0) {
+        var searchVal = document.getElementById('crmCustomerSearch');
+        if (searchVal && searchVal.value.length >= 2) {
+            container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No customers found</div>';
+        } else {
+            container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Search for a customer above</div>';
         }
-
-        // Cache for profile navigation
-        if (typeof browseCustomersCache !== 'undefined') {
-            customers.forEach(c => {
-                if (!browseCustomersCache.find(bc => bc.id == c.id)) {
-                    browseCustomersCache.push(c);
-                }
-            });
-        }
-
-        var typeIcons = {
-            county: '\ud83c\udfdb\ufe0f', collegiate: '\ud83c\udf93', private: '\ud83c\udfe2',
-            contractor: '\ud83d\udee0\ufe0f', government: '\ud83c\udfe3', worship: '\u26ea',
-            other: '\ud83d\udccb'
-        };
-
-        container.innerHTML = customers.map(function(c) {
-            var locCount = (c.locations || []).length;
-            var icon = typeIcons[c.type] || typeIcons.other;
-            var territory = c.territory ? '<span class="badge" style="font-size: 10px; padding: 2px 6px; background: ' +
-                (c.territory === 'Southern' ? '#e3f2fd' : '#fff3e0') + '; color: ' +
-                (c.territory === 'Southern' ? '#1565c0' : '#e65100') + ';">' + c.territory + '</span>' : '';
-
-            return '<div class="browse-district-item" onclick="openCustomerFromCRM(\'' + c.id + '\')">' +
-                '<div class="browse-district-info">' +
-                    '<div class="browse-district-name">' + icon + ' ' + (c.name || 'Unnamed') + '</div>' +
-                    '<div class="browse-district-meta">' +
-                        (c.address || '') +
-                        (territory ? ' ' + territory : '') +
-                    '</div>' +
-                '</div>' +
-                '<div style="display: flex; align-items: center; gap: 12px;">' +
-                    '<div class="browse-stat">' +
-                        '<span class="browse-stat-value">' + locCount + '</span>' +
-                        '<span class="browse-stat-label">location' + (locCount !== 1 ? 's' : '') + '</span>' +
-                    '</div>' +
-                    '<span style="font-size: 18px; color: #ccc;">\u203a</span>' +
-                '</div>' +
-            '</div>';
-        }).join('');
-    } catch (err) {
-        console.error('Failed to load customers:', err);
-        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Failed to load customers</div>';
+        return;
     }
+
+    // Filter by territory
+    var filtered = _crmSearchResults;
+    if (_crmFilter !== 'all') {
+        filtered = _crmSearchResults.filter(function(c) {
+            return (c.territory || '') === _crmFilter;
+        });
+    }
+
+    if (filtered.length === 0) {
+        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No customers in this territory</div>';
+        return;
+    }
+
+    var typeIcons = {
+        county: '\ud83c\udfdb\ufe0f', collegiate: '\ud83c\udf93', private: '\ud83c\udfe2',
+        contractor: '\ud83d\udee0\ufe0f', government: '\ud83c\udfe3', worship: '\u26ea',
+        other: '\ud83d\udccb'
+    };
+
+    container.innerHTML = filtered.map(function(c) {
+        var locCount = (c.locations || []).length;
+        var icon = typeIcons[c.type] || typeIcons.other;
+        var territory = c.territory ? '<span class="badge" style="font-size: 10px; padding: 2px 6px; background: ' +
+            (c.territory === 'Southern' ? '#e3f2fd' : '#fff3e0') + '; color: ' +
+            (c.territory === 'Southern' ? '#1565c0' : '#e65100') + ';">' + c.territory + '</span>' : '';
+
+        return '<div class="browse-district-item" onclick="openCustomerFromCRM(\'' + c.id + '\')">' +
+            '<div class="browse-district-info">' +
+                '<div class="browse-district-name">' + icon + ' ' + (c.name || 'Unnamed') + '</div>' +
+                '<div class="browse-district-meta">' +
+                    (c.address || '') +
+                    (territory ? ' ' + territory : '') +
+                '</div>' +
+            '</div>' +
+            '<div style="display: flex; align-items: center; gap: 12px;">' +
+                '<div class="browse-stat">' +
+                    '<span class="browse-stat-value">' + locCount + '</span>' +
+                    '<span class="browse-stat-label">location' + (locCount !== 1 ? 's' : '') + '</span>' +
+                '</div>' +
+                '<span style="font-size: 18px; color: #ccc;">\u203a</span>' +
+            '</div>' +
+        '</div>';
+    }).join('');
 }
 
 function openCustomerFromCRM(customerId) {
