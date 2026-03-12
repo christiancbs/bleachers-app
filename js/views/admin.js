@@ -465,6 +465,7 @@ function renderAdminPartsTable(parts) {
 
 function showAddPartModal() {
     editingPartId = null;
+    editingPartImageUrl = null;
     partImageData = null;
     document.getElementById('partModalTitle').textContent = 'Add Part';
     document.getElementById('partNumInput').value = '';
@@ -495,6 +496,7 @@ function editPart(id) {
     var part = ADMIN_PARTS.find(function(p) { return p.id == id; });
     if (!part) return;
     editingPartId = id;
+    editingPartImageUrl = part.imageUrl || null;
     partImageData = null;
     document.getElementById('partModalTitle').textContent = 'Edit Part';
     document.getElementById('partNumInput').value = part.partNumber || '';
@@ -563,6 +565,7 @@ function handlePartImagePaste(event) {
 
 function clearPartImage() {
     partImageData = null;
+    editingPartImageUrl = null;
     var preview = document.getElementById('partImagePreview');
     if (preview) preview.innerHTML = '';
     var pasteZone = document.getElementById('partImagePasteZone');
@@ -584,7 +587,8 @@ async function savePart() {
         productName: name,
         category: document.getElementById('partCategoryInput').value,
         vendor: document.getElementById('partVendorInput').value,
-        price: parseFloat(document.getElementById('partPriceInput').value) || null
+        price: parseFloat(document.getElementById('partPriceInput').value) || null,
+        imageUrl: editingPartImageUrl || null
     };
 
     try {

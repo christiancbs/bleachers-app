@@ -252,6 +252,7 @@ var ADMIN_PARTS = JSON.parse(localStorage.getItem('adminParts') || 'null') || [
 var VENDORS = JSON.parse(localStorage.getItem('vendors') || '[]');
 
 var editingPartId = null;
+var editingPartImageUrl = null;
 var editingVendorId = null;
 var csvImportData = [];
 

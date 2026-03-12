@@ -96,11 +96,12 @@ async function searchParts() {
                 ${data.parts.map(part => {
                     const price = parseFloat(part.price) || 0;
                     const priceDisplay = part.priceNote || (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
-                    const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'");
-                    const safeProductName = (part.productName || '').replace(/'/g, "\\'");
-                    const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'");
+                    const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    const safeProductName = (part.productName || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    const safeImageUrl = (part.imageUrl || '').replace(/"/g, '&quot;');
                     const imageHtml = part.imageUrl
-                        ? `<img src="${part.imageUrl}" onclick="event.stopPropagation(); showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${price}', '${safeVendor}')" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px; cursor: pointer; background: #fff;" title="Tap image to enlarge">`
+                        ? `<img src="${part.imageUrl}" onclick="event.stopPropagation(); showPartImage('${safeImageUrl}', '${safePartNumber}', '${safeProductName}', '${price}', '${safeVendor}')" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px; cursor: pointer; background: #fff;" title="Tap image to enlarge">`
                         : '';
                     return `
                         <div class="part-result" onclick="selectPart('${part.id}')" style="display: flex; align-items: flex-start;">
@@ -313,11 +314,12 @@ function renderTechParts(parts, container, currentPage, total, isSearch) {
         <p style="font-size: 12px; color: #6c757d; margin: 12px 0;">${label}</p>
         ${renderPagination('tech', currentPage, total, 'goToTechPage')}
         ${parts.map(part => {
-            const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'");
-            const safeProductName = (part.productName || '').replace(/'/g, "\\'");
-            const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'");
+            const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const safeProductName = (part.productName || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const safeImageUrl = (part.imageUrl || '').replace(/"/g, '&quot;');
             const rpJson = part.relatedParts ? encodeURIComponent(JSON.stringify(part.relatedParts)) : '';
-            const clickHandler = part.imageUrl ? `onclick="showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${safeVendor}', null, decodeURIComponent('${rpJson}'))"` : '';
+            const clickHandler = part.imageUrl ? `onclick="showPartImage('${safeImageUrl}', '${safePartNumber}', '${safeProductName}', '${safeVendor}', null, decodeURIComponent('${rpJson}'))"` : '';
             const imageHtml = part.imageUrl
                 ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px; background: #fff;">`
                 : '';
@@ -435,11 +437,12 @@ function renderOfficeParts(parts, container, currentPage, total, isSearch) {
         ${parts.map(part => {
             const price = parseFloat(part.price) || 0;
             const priceDisplay = part.priceNote || (price > 0 ? `$${price.toFixed(2)}` : 'N/A');
-            const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'");
-            const safeProductName = (part.productName || '').replace(/'/g, "\\'");
-            const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'");
+            const safePartNumber = (part.partNumber || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const safeProductName = (part.productName || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const safeVendor = (part.vendor || 'Hussey Seating Co').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const safeImageUrl = (part.imageUrl || '').replace(/"/g, '&quot;');
             const rpJson = part.relatedParts ? encodeURIComponent(JSON.stringify(part.relatedParts)) : '';
-            const clickHandler = part.imageUrl ? `onclick="showPartImage('${part.imageUrl}', '${safePartNumber}', '${safeProductName}', '${price}', '${safeVendor}', decodeURIComponent('${rpJson}'))"` : '';
+            const clickHandler = part.imageUrl ? `onclick="showPartImage('${safeImageUrl}', '${safePartNumber}', '${safeProductName}', '${price}', '${safeVendor}', decodeURIComponent('${rpJson}'))"` : '';
             const imageHtml = part.imageUrl
                 ? `<img src="${part.imageUrl}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px; margin-right: 12px; background: #fff;">`
                 : '';
