@@ -1529,9 +1529,21 @@ async function viewCustomerDetail(customerId) {
 
     // Populate info
     const primaryContact = getPrimaryContact(customer.contacts);
-    document.getElementById('custDetailAddress').textContent = customer.address || '';
+    var addrEl = document.getElementById('custDetailAddress');
+    var addr = customer.address || '';
+    if (addr) {
+        addrEl.innerHTML = '<a href="https://maps.google.com/?q=' + encodeURIComponent(addr) + '" target="_blank" rel="noopener" style="color: #0066cc; text-decoration: none;">' + addr + '</a>';
+    } else {
+        addrEl.textContent = '';
+    }
     document.getElementById('custDetailContact').textContent = primaryContact.name || 'No contacts';
-    document.getElementById('custDetailPhone').textContent = primaryContact.phone || customer.phone;
+    var phoneVal = primaryContact.phone || customer.phone || '';
+    var phoneEl = document.getElementById('custDetailPhone');
+    if (phoneVal) {
+        phoneEl.innerHTML = '<a href="tel:' + phoneVal + '" style="color: #0066cc; text-decoration: none;">' + phoneVal + '</a>';
+    } else {
+        phoneEl.textContent = '';
+    }
 
     // Fetch real job + estimate data for tabs
     loadCustomerStats(customer);
@@ -1624,7 +1636,7 @@ async function viewCustomerDetail(customerId) {
                         <div style="flex: 1; min-width: 0;">
                             <span style="font-weight: 500;">${c.name}</span>
                             ${c.title ? `<span style="color: #6c757d;"> - ${c.title}</span>` : ''}
-                            ${phoneNum ? `<div style="font-size: 11px; color: #0066cc;">${phoneNum}</div>` : ''}
+                            ${phoneNum ? `<div style="font-size: 11px;"><a href="tel:${phoneNum}" onclick="event.stopPropagation();" style="color: #0066cc; text-decoration: none;">${phoneNum}</a></div>` : ''}
                         </div>
                         ${callBtn}
                     </div>`;
@@ -1634,7 +1646,7 @@ async function viewCustomerDetail(customerId) {
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
                         <div style="flex: 1; min-width: 0;">
                             <div style="font-weight: 600;">${loc.name}</div>
-                            <div style="font-size: 11px; color: #6c757d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${loc.address || ''}</div>
+                            ${loc.address ? `<a href="https://maps.google.com/?q=${encodeURIComponent(loc.address)}" target="_blank" rel="noopener" onclick="event.stopPropagation();" style="font-size: 11px; color: #0066cc; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${loc.address}</a>` : ''}
                         </div>
                         <button class="btn btn-outline" style="font-size: 9px; padding: 2px 6px; white-space: nowrap; flex-shrink: 0; margin-top: 2px;" onclick="showAddContactModal('${customer.id}', '${loc.id}')">+ Contact</button>
                     </div>
