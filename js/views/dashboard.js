@@ -1805,32 +1805,19 @@ function renderCustomerEstimates(customerId) {
         '<th>Doc #</th><th>Date</th><th>Status</th>' +
         '</tr></thead><tbody>' +
         sorted.map(function(est, idx) {
-            const date = est.txnDate ? new Date(est.txnDate).toLocaleDateString() : '—';
-            const status = est.status || 'Unknown';
-            const color = statusColors[status] || '#6c757d';
-            return '<tr style="cursor: pointer;" onclick="toggleEstimatePreview(' + idx + ', \'' + customerId + '\')">' +
+            var date = est.txnDate ? new Date(est.txnDate).toLocaleDateString() : '—';
+            var status = est.status || 'Unknown';
+            var color = statusColors[status] || '#6c757d';
+            return '<tr style="cursor: pointer;" onclick="showEstimatePreview(' + idx + ', \'' + customerId + '\')">' +
                 '<td><span style="color: #0066cc; font-weight: 500;">' + (est.docNumber || est.qbEstimateId || '—') + '</span></td>' +
                 '<td>' + date + '</td>' +
                 '<td><span class="badge" style="background: ' + color + '20; color: ' + color + '; font-size: 11px;">' + status + '</span></td>' +
-                '</tr>' +
-                '<tr id="estPreview_' + idx + '" class="hidden"><td colspan="3" style="padding: 0; border-top: none;"><div id="estPreviewContent_' + idx + '"></div></td></tr>';
+                '</tr>';
         }).join('') +
         '</tbody></table>';
 }
 
-function toggleEstimatePreview(idx, customerId) {
-    var row = document.getElementById('estPreview_' + idx);
-    var content = document.getElementById('estPreviewContent_' + idx);
-    if (!row || !content) return;
-
-    if (!row.classList.contains('hidden')) {
-        row.classList.add('hidden');
-        return;
-    }
-
-    document.querySelectorAll('[id^="estPreview_"]').forEach(function(el) { el.classList.add('hidden'); });
-    row.classList.remove('hidden');
-
+function showEstimatePreview(idx, customerId) {
     var estimates = _custEstimatesCache[customerId];
     var sorted = [].concat(estimates).sort(function(a, b) { return new Date(b.txnDate || b.createdAt || 0) - new Date(a.txnDate || a.createdAt || 0); });
     var est = sorted[idx];
@@ -1841,30 +1828,104 @@ function toggleEstimatePreview(idx, customerId) {
     var color = sc[est.status] || '#6c757d';
     var qbId = est.qbEstimateId || est.id;
     var qbUrl = 'https://qbo.intuit.com/app/estimate?txnId=' + qbId;
+    var date = est.txnDate ? new Date(est.txnDate).toLocaleDateString() : '—';
 
     var items = est.lineItems || [];
     var lineItemsHtml = items.length > 0
         ? items.map(function(li) {
-            return '<div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f0f0f0; font-size: 12px;">' +
+            return '<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px;">' +
                 '<span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' + (li.description || li.itemName || '—') + '</span>' +
                 '<span style="font-weight: 500; margin-left: 12px; white-space: nowrap;">$' + (parseFloat(li.amount) || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</span>' +
                 '</div>';
         }).join('')
-        : '<div style="font-size: 12px; color: #6c757d;">No line items</div>';
+        : '<div style="font-size: 13px; color: #6c757d; padding: 12px 0;">No line items</div>';
 
-    content.innerHTML =
-        '<div style="background: #f8f9fa; padding: 12px; border-radius: 0 0 8px 8px;">' +
-            '<div style="display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 10px;">' +
-                '<a href="' + qbUrl + '" target="_blank" rel="noopener" style="font-size: 11px; color: #0066cc; text-decoration: none; padding: 3px 8px; border: 1px solid #0066cc; border-radius: 4px;">Open in QuickBooks ↗</a>' +
-                '<button class="btn btn-outline" style="font-size: 11px; padding: 3px 8px;" onclick="event.stopPropagation(); viewEstimate(\'' + qbId + '\')">Open in App →</button>' +
+    showCrmPreview({
+        title: 'Estimate ' + (est.docNumber || qbId),
+        badge: { label: est.status || 'Unknown', color: color },
+        topRight: '<a href="' + qbUrl + '" target="_blank" rel="noopener" onclick="event.stopPropagation();" style="font-size: 12px; color: #0066cc; text-decoration: none; padding: 4px 10px; border: 1px solid #0066cc; border-radius: 6px; margin-right: 8px;">Open in QuickBooks ↗</a>' +
+            '<button class="btn btn-outline" style="font-size: 12px; padding: 4px 10px;" onclick="event.stopPropagation(); closeCrmPreview(); viewEstimate(\'' + qbId + '\');">Open in App →</button>',
+        fields: [
+            { label: 'Date', value: date },
+            { label: 'Total', value: '$' + amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}), bold: true },
+            { label: 'Customer', value: est.customerName || '—' }
+        ],
+        body: '<div style="margin-top: 4px;"><div style="font-size: 11px; font-weight: 600; color: #6c757d; text-transform: uppercase; margin-bottom: 6px;">Line Items</div>' + lineItemsHtml + '</div>' +
+            (est.customerMemo ? '<div style="margin-top: 12px; font-size: 12px; color: #6c757d; font-style: italic; border-top: 1px solid #e9ecef; padding-top: 8px;">' + est.customerMemo + '</div>' : '')
+    });
+}
+
+function showJobPreview(idx, customerId) {
+    var jobs = _custJobsCache[customerId];
+    var sorted = [].concat(jobs).sort(function(a, b) { return new Date(b.scheduledDate || b.createdAt || 0) - new Date(a.scheduledDate || a.createdAt || 0); });
+    var job = sorted[idx];
+    if (!job) return;
+
+    var statusColors = { 'completed': '#4CAF50', 'in_progress': '#2196F3', 'scheduled': '#FF9800', 'draft': '#6c757d' };
+    var color = statusColors[job.status] || '#6c757d';
+    var statusLabel = (job.status || 'unknown').replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+    var date = job.scheduledDate ? new Date(job.scheduledDate).toLocaleDateString() : (job.createdAt ? new Date(job.createdAt).toLocaleDateString() : '—');
+
+    var fields = [
+        { label: 'Type', value: (job.jobType || '—').replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); }) },
+        { label: 'Location', value: job.locationName || '—' },
+        { label: 'Date', value: date }
+    ];
+    if (job.assignedTo) fields.push({ label: 'Assigned To', value: job.assignedTo });
+    if (job.territory) fields.push({ label: 'Territory', value: job.territory });
+
+    var bodyHtml = '';
+    if (job.description) bodyHtml += '<div style="margin-top: 4px; font-size: 13px; color: #495057;">' + job.description + '</div>';
+    if (job.notes) bodyHtml += '<div style="margin-top: 8px; font-size: 12px; color: #6c757d; font-style: italic; border-top: 1px solid #e9ecef; padding-top: 8px;">' + job.notes + '</div>';
+
+    showCrmPreview({
+        title: 'Job ' + (job.jobNumber || job.id),
+        badge: { label: statusLabel, color: color },
+        topRight: '<button class="btn btn-outline" style="font-size: 12px; padding: 4px 10px;" onclick="event.stopPropagation(); closeCrmPreview(); viewJob(\'' + job.id + '\');">Open in App →</button>',
+        fields: fields,
+        body: bodyHtml
+    });
+}
+
+// Shared CRM preview overlay (parts catalog style)
+function showCrmPreview(opts) {
+    closeCrmPreview();
+    var overlay = document.createElement('div');
+    overlay.id = 'crmPreviewOverlay';
+    overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px;';
+    overlay.onclick = function(e) { if (e.target === overlay) closeCrmPreview(); };
+
+    var fieldsHtml = (opts.fields || []).map(function(f) {
+        return '<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">' +
+            '<span style="font-size: 12px; color: #6c757d;">' + f.label + '</span>' +
+            '<span style="font-size: 13px;' + (f.bold ? ' font-weight: 700; font-size: 15px;' : '') + ' color: #212529;">' + f.value + '</span>' +
+            '</div>';
+    }).join('');
+
+    overlay.innerHTML =
+        '<div onclick="event.stopPropagation();" style="background: #fff; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto; animation: fadeIn 0.15s ease;">' +
+            '<div style="padding: 16px 20px; border-bottom: 1px solid #e9ecef;">' +
+                '<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">' +
+                    '<div>' +
+                        '<div style="font-size: 16px; font-weight: 700; color: #212529;">' + opts.title + '</div>' +
+                        '<span class="badge" style="background: ' + opts.badge.color + '20; color: ' + opts.badge.color + '; margin-top: 6px; display: inline-block;">' + opts.badge.label + '</span>' +
+                    '</div>' +
+                    '<button onclick="closeCrmPreview();" style="background: none; border: none; font-size: 20px; color: #6c757d; cursor: pointer; padding: 0; line-height: 1;">✕</button>' +
+                '</div>' +
+                '<div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px;">' + (opts.topRight || '') + '</div>' +
             '</div>' +
-            '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">' +
-                '<span class="badge" style="background: ' + color + '20; color: ' + color + ';">' + (est.status || 'Unknown') + '</span>' +
-                '<span style="font-size: 16px; font-weight: 700;">$' + amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</span>' +
+            '<div style="padding: 16px 20px;">' +
+                fieldsHtml +
+                (opts.body || '') +
             '</div>' +
-            '<div style="max-height: 200px; overflow-y: auto;">' + lineItemsHtml + '</div>' +
-            (est.customerMemo ? '<div style="margin-top: 8px; font-size: 11px; color: #6c757d; font-style: italic;">' + est.customerMemo + '</div>' : '') +
         '</div>';
+
+    document.body.appendChild(overlay);
+}
+
+function closeCrmPreview() {
+    var existing = document.getElementById('crmPreviewOverlay');
+    if (existing) existing.remove();
 }
 
 function renderCustomerHistory(customerId) {
@@ -1899,11 +1960,11 @@ function renderCustomerHistory(customerId) {
         return '<span class="badge ' + (colors[status] || 'badge-secondary') + '">' + (status || 'unknown').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + '</span>';
     };
 
-    container.innerHTML = sorted.map(function(job) {
-        const date = job.scheduledDate ? new Date(job.scheduledDate).toLocaleDateString() : (job.createdAt ? new Date(job.createdAt).toLocaleDateString() : '—');
-        return '<tr>' +
-            '<td><span class="part-number" style="color: #0066cc;">' + (job.jobNumber || job.id) + '</span></td>' +
-            '<td>' + (job.jobType || '—').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + '</td>' +
+    container.innerHTML = sorted.map(function(job, idx) {
+        var date = job.scheduledDate ? new Date(job.scheduledDate).toLocaleDateString() : (job.createdAt ? new Date(job.createdAt).toLocaleDateString() : '—');
+        return '<tr style="cursor: pointer;" onclick="showJobPreview(' + idx + ', \'' + customerId + '\')">' +
+            '<td><span style="color: #0066cc; font-weight: 500;">' + (job.jobNumber || job.id) + '</span></td>' +
+            '<td>' + (job.jobType || '—').replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); }) + '</td>' +
             '<td>' + (job.locationName || '—') + '</td>' +
             '<td>' + statusBadge(job.status) + '</td>' +
             '<td>' + date + '</td>' +
