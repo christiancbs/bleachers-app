@@ -2309,7 +2309,7 @@ function closeContactModal() {
     document.getElementById('contactModal').classList.add('hidden');
 }
 
-function saveContact() {
+async function saveContact() {
     const customerId = document.getElementById('contactCustomerId').value;
     const locationId = document.getElementById('contactLocationId').value;
     const name = document.getElementById('contactName').value.trim();
@@ -2332,38 +2332,28 @@ function saveContact() {
     if (document.getElementById('roleAccess').checked) roles.push('access');
     if (document.getElementById('rolePrimary').checked) roles.push('primary');
 
-    const newContact = {
-        id: 'con' + Date.now(),
-        name: name,
-        title: title,
-        phone: phone,
-        mobile: mobile,
-        email: email,
-        roles: roles
-    };
+    var saveBtn = document.querySelector('#contactModal .btn-primary, #contactModal [onclick*="saveContact"]');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
 
-    // Find customer in CUSTOMERS or browseCustomersCache
-    var customer = CUSTOMERS.find(c => c.id === customerId);
-    if (!customer && typeof browseCustomersCache !== 'undefined') {
-        customer = browseCustomersCache.find(c => c.id == customerId);
+    try {
+        await CustomersAPI.addContact({
+            customerId: customerId,
+            locationId: locationId || null,
+            name: name,
+            title: title,
+            phone: phone,
+            mobile: mobile,
+            email: email,
+            roles: roles
+        });
+
+        closeContactModal();
+        viewCustomerDetail(customerId); // Refresh with fresh data from API
+    } catch (err) {
+        console.error('Failed to save contact:', err);
+        alert('Failed to save contact: ' + err.message);
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Contact'; }
     }
-    if (!customer) return;
-
-    if (locationId) {
-        // Add to location
-        const location = customer.locations.find(l => l.id === locationId);
-        if (location) {
-            if (!location.contacts) location.contacts = [];
-            location.contacts.push(newContact);
-        }
-    } else {
-        // Add to customer (district level)
-        if (!customer.contacts) customer.contacts = [];
-        customer.contacts.push(newContact);
-    }
-
-    closeContactModal();
-    viewCustomerDetail(customerId); // Refresh the view
 }
 
 // ==========================================
