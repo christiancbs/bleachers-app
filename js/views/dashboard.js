@@ -1532,7 +1532,7 @@ async function viewCustomerDetail(customerId) {
     var addrEl = document.getElementById('custDetailAddress');
     var addr = customer.address || '';
     if (addr) {
-        addrEl.innerHTML = '<a href="https://maps.google.com/?q=' + encodeURIComponent(addr) + '" target="_blank" rel="noopener" style="color: #0066cc; text-decoration: none;">' + addr + '</a>';
+        addrEl.innerHTML = '<a href="#" onclick="event.preventDefault(); openMapsPicker(\'' + addr.replace(/'/g, "\\'") + '\');" style="color: #0066cc; text-decoration: none;">' + addr + '</a>';
     } else {
         addrEl.textContent = '';
     }
@@ -1646,7 +1646,7 @@ async function viewCustomerDetail(customerId) {
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
                         <div style="flex: 1; min-width: 0;">
                             <div style="font-weight: 600;">${loc.name}</div>
-                            ${loc.address ? `<a href="https://maps.google.com/?q=${encodeURIComponent(loc.address)}" target="_blank" rel="noopener" onclick="event.stopPropagation();" style="font-size: 11px; color: #0066cc; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${loc.address}</a>` : ''}
+                            ${loc.address ? `<a href="#" onclick="event.preventDefault(); event.stopPropagation(); openMapsPicker('${loc.address.replace(/'/g, "\\'")}');" style="font-size: 11px; color: #0066cc; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${loc.address}</a>` : ''}
                         </div>
                         <button class="btn btn-outline" style="font-size: 9px; padding: 2px 6px; white-space: nowrap; flex-shrink: 0; margin-top: 2px;" onclick="showAddContactModal('${customer.id}', '${loc.id}')">+ Contact</button>
                     </div>
@@ -1938,6 +1938,25 @@ function showCrmPreview(opts) {
 function closeCrmPreview() {
     var existing = document.getElementById('crmPreviewOverlay');
     if (existing) existing.remove();
+}
+
+function openMapsPicker(address) {
+    var encoded = encodeURIComponent(address);
+    var overlay = document.createElement('div');
+    overlay.id = 'mapsPickerOverlay';
+    overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px;';
+    overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML =
+        '<div onclick="event.stopPropagation();" style="background: #fff; border-radius: 16px; padding: 24px; max-width: 300px; width: 100%; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">' +
+            '<div style="font-size: 15px; font-weight: 600; margin-bottom: 6px;">Open in Maps</div>' +
+            '<div style="font-size: 12px; color: #6c757d; margin-bottom: 20px;">' + address + '</div>' +
+            '<div style="display: flex; flex-direction: column; gap: 10px;">' +
+                '<a href="maps://maps.apple.com/?q=' + encoded + '" onclick="document.getElementById(\'mapsPickerOverlay\').remove();" style="display: block; padding: 12px; background: #000; color: #fff; border-radius: 10px; text-decoration: none; font-size: 14px; font-weight: 600;">Apple Maps</a>' +
+                '<a href="https://maps.google.com/?q=' + encoded + '" target="_blank" rel="noopener" onclick="document.getElementById(\'mapsPickerOverlay\').remove();" style="display: block; padding: 12px; background: #4285F4; color: #fff; border-radius: 10px; text-decoration: none; font-size: 14px; font-weight: 600;">Google Maps</a>' +
+            '</div>' +
+            '<div onclick="document.getElementById(\'mapsPickerOverlay\').remove();" style="margin-top: 16px; font-size: 13px; color: #6c757d; cursor: pointer;">Cancel</div>' +
+        '</div>';
+    document.body.appendChild(overlay);
 }
 
 function renderCustomerHistory(customerId) {
