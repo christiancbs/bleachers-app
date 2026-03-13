@@ -1801,22 +1801,70 @@ function renderCustomerEstimates(customerId) {
         'Rejected': '#f44336'
     };
 
-    container.innerHTML = '<table class="data-table"><thead><tr>' +
-        '<th>Doc #</th><th>Date</th><th>Status</th><th style="text-align: right;">Amount</th>' +
+    container.innerHTML = '<table class="data-table" style="font-size: 12px;"><thead><tr>' +
+        '<th>Doc #</th><th>Date</th><th>Status</th>' +
         '</tr></thead><tbody>' +
-        sorted.map(function(est) {
+        sorted.map(function(est, idx) {
             const date = est.txnDate ? new Date(est.txnDate).toLocaleDateString() : '—';
             const status = est.status || 'Unknown';
             const color = statusColors[status] || '#6c757d';
-            const amount = parseFloat(est.totalAmount) || 0;
-            return '<tr style="cursor: pointer;" onclick="viewEstimate(\'' + (est.qbEstimateId || est.id) + '\')">' +
-                '<td><span class="part-number" style="color: #0066cc;">' + (est.docNumber || est.qbEstimateId || '—') + '</span></td>' +
+            return '<tr style="cursor: pointer;" onclick="toggleEstimatePreview(' + idx + ', \'' + customerId + '\')">' +
+                '<td><span style="color: #0066cc; font-weight: 500;">' + (est.docNumber || est.qbEstimateId || '—') + '</span></td>' +
                 '<td>' + date + '</td>' +
-                '<td><span class="badge" style="background: ' + color + '20; color: ' + color + ';">' + status + '</span></td>' +
-                '<td style="text-align: right; font-weight: 600;">$' + amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>' +
-                '</tr>';
+                '<td><span class="badge" style="background: ' + color + '20; color: ' + color + '; font-size: 11px;">' + status + '</span></td>' +
+                '</tr>' +
+                '<tr id="estPreview_' + idx + '" class="hidden"><td colspan="3" style="padding: 0; border-top: none;"><div id="estPreviewContent_' + idx + '"></div></td></tr>';
         }).join('') +
         '</tbody></table>';
+}
+
+function toggleEstimatePreview(idx, customerId) {
+    var row = document.getElementById('estPreview_' + idx);
+    var content = document.getElementById('estPreviewContent_' + idx);
+    if (!row || !content) return;
+
+    if (!row.classList.contains('hidden')) {
+        row.classList.add('hidden');
+        return;
+    }
+
+    document.querySelectorAll('[id^="estPreview_"]').forEach(function(el) { el.classList.add('hidden'); });
+    row.classList.remove('hidden');
+
+    var estimates = _custEstimatesCache[customerId];
+    var sorted = [].concat(estimates).sort(function(a, b) { return new Date(b.txnDate || b.createdAt || 0) - new Date(a.txnDate || a.createdAt || 0); });
+    var est = sorted[idx];
+    if (!est) return;
+
+    var amount = parseFloat(est.totalAmount) || 0;
+    var sc = { 'Pending': '#FF9800', 'Accepted': '#4CAF50', 'Closed': '#6c757d', 'Rejected': '#f44336' };
+    var color = sc[est.status] || '#6c757d';
+    var qbId = est.qbEstimateId || est.id;
+    var qbUrl = 'https://qbo.intuit.com/app/estimate?txnId=' + qbId;
+
+    var items = est.lineItems || [];
+    var lineItemsHtml = items.length > 0
+        ? items.map(function(li) {
+            return '<div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f0f0f0; font-size: 12px;">' +
+                '<span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' + (li.description || li.itemName || '—') + '</span>' +
+                '<span style="font-weight: 500; margin-left: 12px; white-space: nowrap;">$' + (parseFloat(li.amount) || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</span>' +
+                '</div>';
+        }).join('')
+        : '<div style="font-size: 12px; color: #6c757d;">No line items</div>';
+
+    content.innerHTML =
+        '<div style="background: #f8f9fa; padding: 12px; border-radius: 0 0 8px 8px;">' +
+            '<div style="display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 10px;">' +
+                '<a href="' + qbUrl + '" target="_blank" rel="noopener" style="font-size: 11px; color: #0066cc; text-decoration: none; padding: 3px 8px; border: 1px solid #0066cc; border-radius: 4px;">Open in QuickBooks ↗</a>' +
+                '<button class="btn btn-outline" style="font-size: 11px; padding: 3px 8px;" onclick="event.stopPropagation(); viewEstimate(\'' + qbId + '\')">Open in App →</button>' +
+            '</div>' +
+            '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">' +
+                '<span class="badge" style="background: ' + color + '20; color: ' + color + ';">' + (est.status || 'Unknown') + '</span>' +
+                '<span style="font-size: 16px; font-weight: 700;">$' + amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</span>' +
+            '</div>' +
+            '<div style="max-height: 200px; overflow-y: auto;">' + lineItemsHtml + '</div>' +
+            (est.customerMemo ? '<div style="margin-top: 8px; font-size: 11px; color: #6c757d; font-style: italic;">' + est.customerMemo + '</div>' : '') +
+        '</div>';
 }
 
 function renderCustomerHistory(customerId) {
