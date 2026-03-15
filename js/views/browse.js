@@ -379,6 +379,9 @@ async function browseDrillSchool(customerId, locationId, isBack) {
     });
 
     renderSchoolJobsTable(locationJobs, suffix);
+
+    // Fetch and render estimates for this customer
+    renderSchoolEstimates(customer, location, suffix);
 }
 
 function renderSchoolJobsTable(jobs, suffix) {
@@ -430,6 +433,61 @@ function renderSchoolJobsTable(jobs, suffix) {
             '</tr></thead>' +
             '<tbody>' + rows + '</tbody>' +
         '</table>';
+}
+
+async function renderSchoolEstimates(customer, location, suffix) {
+    var estimatesEl = document.getElementById('browseEstimatesSection' + suffix);
+    if (!estimatesEl) return;
+
+    estimatesEl.innerHTML = '<div style="padding: 12px; color: #6c757d; font-size: 13px;">Loading estimates...</div>';
+
+    try {
+        var estData = await EstimatesAPI.listLocal({ q: customer.name, limit: 50 });
+        var estimates = estData.estimates || [];
+
+        if (estimates.length === 0) {
+            estimatesEl.innerHTML = '<div style="padding: 12px; color: #6c757d; font-size: 13px;">No estimates found for this customer.</div>';
+            return;
+        }
+
+        var statusColors = EstimatesAPI.statusColors || {
+            Pending: { bg: '#fff3e0', color: '#e65100' },
+            Accepted: { bg: '#c8e6c9', color: '#2e7d32' },
+            Closed: { bg: '#f5f5f5', color: '#9e9e9e' },
+            Rejected: { bg: '#ffcdd2', color: '#c62828' }
+        };
+
+        var rows = estimates.map(function(est) {
+            var sc = statusColors[est.status] || { bg: '#e0e0e0', color: '#616161' };
+            var amount = '$' + Number(est.totalAmount || 0).toLocaleString();
+            var date = est.txnDate ? new Date(est.txnDate).toLocaleDateString() : '';
+            var lineCount = est.lineItems ? est.lineItems.length : 0;
+
+            return '<tr onclick="navigateToEstimate(\'' + (est.docNumber || est.qbEstimateId) + '\')" style="cursor: pointer;">' +
+                '<td><strong style="color: #007bff;">#' + (est.docNumber || '') + '</strong></td>' +
+                '<td><span class="badge" style="background: ' + sc.bg + '; color: ' + sc.color + ';">' + (est.status || '') + '</span></td>' +
+                '<td>' + lineCount + ' line item' + (lineCount !== 1 ? 's' : '') + '</td>' +
+                '<td style="font-weight: 600; color: #28a745;">' + amount + '</td>' +
+                '<td class="browse-hide-mobile">' + date + '</td>' +
+            '</tr>';
+        }).join('');
+
+        estimatesEl.innerHTML =
+            '<div style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 8px;">' + estimates.length + ' estimate' + (estimates.length !== 1 ? 's' : '') + '</div>' +
+            '<table class="browse-jobs-table">' +
+                '<thead><tr>' +
+                    '<th>Estimate #</th>' +
+                    '<th>Status</th>' +
+                    '<th>Items</th>' +
+                    '<th>Amount</th>' +
+                    '<th class="browse-hide-mobile">Date</th>' +
+                '</tr></thead>' +
+                '<tbody>' + rows + '</tbody>' +
+            '</table>';
+    } catch (err) {
+        console.error('Failed to load estimates for school:', err);
+        estimatesEl.innerHTML = '<div style="padding: 12px; color: #6c757d; font-size: 13px;">Could not load estimates.</div>';
+    }
 }
 
 function browseViewJobDetail(jobId) {
@@ -813,6 +871,50 @@ function browseDrillFromSearch(qbId, name) {
     openCustomerProfile(qbId, name);
 }
 
+// Drill to school detail from search results
+async function drillToSchoolFromSearch(customerId, locationId) {
+    if (!customerId || !locationId) return;
+
+    // Ensure browse is initialized in office context
+    if (!browseContext) browseContext = 'office';
+
+    try {
+        // Fetch the full customer with locations
+        var customer = await CustomersAPI.get(customerId);
+        if (!customer) {
+            showNotification('Customer not found', 'error');
+            return;
+        }
+
+        // Cache the customer so browse navigation works
+        var idx = browseCustomersCache.findIndex(function(c) { return c.id == customerId; });
+        if (idx >= 0) {
+            browseCustomersCache[idx] = customer;
+        } else {
+            browseCustomersCache.push(customer);
+        }
+
+        // Load jobs for the customer
+        var jobsData = await JobsAPI.list({ q: customer.name, limit: 500 });
+        browseJobsCache[customerId] = jobsData.jobs || [];
+
+        // Show the Search & Browse view, then drill to school
+        showView('officeSearch');
+
+        // Reset nav stack to district > school
+        browseNavStack = [
+            { screen: 'districts', data: null },
+            { screen: 'district', data: { customerId: customerId } },
+            { screen: 'school', data: { customerId: customerId, locationId: locationId } }
+        ];
+
+        browseDrillSchool(customerId, locationId, true);
+    } catch (err) {
+        console.error('Failed to drill to school:', err);
+        showNotification('Failed to load school: ' + err.message, 'error');
+    }
+}
+
 // ==========================================
 // SEARCH INTEGRATION
 // ==========================================
@@ -888,3 +990,4 @@ window.browseCreateNewCustomer = browseCreateNewCustomer;
 window.browseCreateTopLevelJob = browseCreateTopLevelJob;
 window.browseCreateEstimate = browseCreateEstimate;
 window.browseDrillFromSearch = browseDrillFromSearch;
+window.drillToSchoolFromSearch = drillToSchoolFromSearch;

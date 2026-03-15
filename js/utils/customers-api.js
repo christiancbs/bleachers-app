@@ -258,6 +258,21 @@ const CustomersAPI = {
         return data.customers && data.customers.length > 0 ? data.customers[0] : null;
     },
 
+    // Search locations (schools) by name
+    async searchLocations(query, limit = 20) {
+        const params = new URLSearchParams({ q: query, limit: limit });
+        const response = await fetch(`${CUSTOMERS_API_BASE}/locations?${params}`, {
+            headers: await this.getHeaders()
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to search locations');
+        }
+
+        return response.json();
+    },
+
     // Run QB -> Postgres migration
     async migrate() {
         const response = await fetch(`${CUSTOMERS_API_BASE}/migrate`, {

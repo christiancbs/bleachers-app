@@ -1036,6 +1036,7 @@
                                 <button class="search-filter-btn" data-filter="estimate" onclick="setSearchFilter('estimate', 'office')">Estimates</button>
                                 <button class="search-filter-btn" data-filter="inspection" onclick="setSearchFilter('inspection', 'office')">Inspections</button>
                                 <button class="search-filter-btn" data-filter="job" onclick="setSearchFilter('job', 'office')">Jobs</button>
+                                <button class="search-filter-btn" data-filter="school" onclick="setSearchFilter('school', 'office')">Schools</button>
                             </div>
 
                             <div style="display: flex; gap: 8px; margin-bottom: 20px;">
@@ -1139,6 +1140,14 @@
                                     <span id="browseJobCountOffice" class="badge badge-info"></span>
                                 </div>
                                 <div id="browseJobsTableOffice"></div>
+                            </div>
+
+                            <!-- Estimates for this school -->
+                            <div class="card" style="margin-top: 16px;">
+                                <div class="card-header">
+                                    <h2 class="card-title">Estimates</h2>
+                                </div>
+                                <div id="browseEstimatesSectionOffice"></div>
                             </div>
 
                             <!-- New Job Type Selector Modal -->
@@ -2440,6 +2449,7 @@
                                 <button class="search-filter-btn active" data-filter="all" onclick="setSearchFilter('all', 'field')">All</button>
                                 <button class="search-filter-btn" data-filter="inspection" onclick="setSearchFilter('inspection', 'field')">Inspections</button>
                                 <button class="search-filter-btn" data-filter="job" onclick="setSearchFilter('job', 'field')">Jobs</button>
+                                <button class="search-filter-btn" data-filter="school" onclick="setSearchFilter('school', 'field')">Schools</button>
                             </div>
 
                             <div style="display: flex; gap: 8px; margin-bottom: 20px;">
@@ -2543,6 +2553,14 @@
                                     <span id="browseJobCountTech" class="badge badge-info"></span>
                                 </div>
                                 <div id="browseJobsTableTech"></div>
+                            </div>
+
+                            <!-- Estimates for this school -->
+                            <div class="card" style="margin-top: 16px;">
+                                <div class="card-header">
+                                    <h2 class="card-title">Estimates</h2>
+                                </div>
+                                <div id="browseEstimatesSectionTech"></div>
                             </div>
 
                             <!-- New Job Type Selector Modal -->

@@ -1793,7 +1793,7 @@ async function viewCustomerDetail(customerId) {
                     ${contactsHtml || '<p style="font-size: 12px; color: #999; margin-top: 8px;">No contacts at this location</p>'}
                 </div>
                 <div style="display: flex; gap: 8px;">
-                    <button class="btn btn-outline" style="font-size: 12px; padding: 6px 12px;">View Jobs</button>
+                    <button class="btn btn-outline" style="font-size: 12px; padding: 6px 12px;" onclick="event.stopPropagation(); drillToSchoolFromSearch('${customer.id}', '${loc.id}')">View Jobs</button>
                 </div>
             </div>
         </div>

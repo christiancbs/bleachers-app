@@ -50,6 +50,16 @@ async function performTechSearch() {
         console.error('QB customer search failed:', err);
     }
 
+    // Search Locations/Schools (Postgres)
+    try {
+        var locData = await CustomersAPI.searchLocations(query);
+        (locData.locations || []).forEach(function(loc) {
+            results.push({ type: 'school', data: loc });
+        });
+    } catch (err) {
+        console.error('Location search failed:', err);
+    }
+
     // Cache results and render with current filter
     _lastSearchResults = results;
     _lastSearchContext = 'field';
@@ -150,6 +160,16 @@ async function performOfficeSearch() {
         });
     } catch (err) {
         console.error('QB customer search failed:', err);
+    }
+
+    // Search Locations/Schools (Postgres)
+    try {
+        var locData = await CustomersAPI.searchLocations(query);
+        (locData.locations || []).forEach(function(loc) {
+            results.push({ type: 'school', data: loc });
+        });
+    } catch (err) {
+        console.error('Location search failed:', err);
     }
 
     // Cache results and render with current filter
@@ -272,6 +292,24 @@ function renderSearchResults(container, results) {
             html += '<div style="font-weight: 500;">' + (r.data.school || '') + '</div>';
             html += '<div style="font-size: 12px; color: #495057; line-height: 1.4; margin-top: 4px;">' + (r.data.details || '').substring(0, 150) + (r.data.details && r.data.details.length > 150 ? '...' : '') + '</div>';
             if (r.data.tech) html += '<div style="font-size: 12px; color: #6c757d; margin-top: 4px;">Tech: ' + r.data.tech + '</div>';
+            html += '</div></div>';
+        } else if (r.type === 'school') {
+            var schoolName = r.data.name || '';
+            var schoolCust = r.data.customerName || 'Unassigned';
+            var schoolAddr = r.data.address || '';
+            var schoolTerritory = r.data.territory || '';
+            var terrBadge = schoolTerritory ? '<span class="badge" style="font-size: 10px; padding: 2px 6px; background: ' +
+                (schoolTerritory === 'Southern' ? '#e3f2fd' : '#fff3e0') + '; color: ' +
+                (schoolTerritory === 'Southern' ? '#1565c0' : '#e65100') + ';">' + schoolTerritory + '</span>' : '';
+            html += '<div class="card" style="margin-bottom: 8px; cursor: pointer;" onclick="drillToSchoolFromSearch(\'' + r.data.customerId + '\', \'' + r.data.id + '\')">';
+            html += '<div class="card-body" style="padding: 12px 16px;">';
+            html += '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">';
+            html += '<span class="badge" style="background: #f3e5f5; color: #7b1fa2;">School</span>';
+            html += '<span style="font-weight: 600;">' + escapeHtml(schoolName) + '</span>';
+            html += terrBadge;
+            html += '</div>';
+            html += '<div style="font-size: 13px; color: #495057;">' + escapeHtml(schoolCust) + '</div>';
+            if (schoolAddr) html += '<div style="font-size: 12px; color: #6c757d; margin-top: 2px;">' + escapeHtml(schoolAddr) + '</div>';
             html += '</div></div>';
         } else if (r.type === 'customer') {
             var custAddr = '';
