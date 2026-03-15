@@ -1476,6 +1476,215 @@ function openCustomerFromCRM(customerId) {
     viewCustomerDetail(customerId);
 }
 
+// ==========================================
+// SCHOOL TREE EDITOR
+// ==========================================
+
+var _treeMode = false;
+var _treeData = null;
+var _treeUnassigned = [];
+var _allDistricts = []; // for reassign dropdown
+
+function toggleCustomerTree() {
+    _treeMode = !_treeMode;
+    var listMode = document.getElementById('crmListMode');
+    var treeMode = document.getElementById('crmTreeMode');
+    var btn = document.getElementById('crmTreeToggle');
+    if (_treeMode) {
+        listMode.classList.add('hidden');
+        treeMode.classList.remove('hidden');
+        btn.textContent = 'Customer List';
+        btn.classList.add('btn-primary');
+        btn.classList.remove('btn-outline');
+        loadTree();
+    } else {
+        listMode.classList.remove('hidden');
+        treeMode.classList.add('hidden');
+        btn.textContent = 'School Tree';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-outline');
+    }
+}
+
+async function loadTree(searchQuery) {
+    var url = '/api/customers/tree';
+    if (searchQuery) url += '?q=' + encodeURIComponent(searchQuery);
+
+    try {
+        var data = await fetchAPI(url);
+        _treeData = data.tree || [];
+        _allDistricts = _treeData.map(function(d) { return { id: d.id, name: d.name }; });
+
+        // Update unassigned count
+        var countEl = document.getElementById('treeUnassignedCount');
+        if (countEl) countEl.textContent = '(' + data.unassignedCount + ')';
+
+        // Load unassigned
+        if (data.unassignedCount > 0 && !searchQuery) {
+            loadUnassigned();
+        }
+
+        renderTree(_treeData);
+    } catch (err) {
+        console.error('Load tree failed:', err);
+    }
+}
+
+async function loadUnassigned() {
+    try {
+        var data = await fetchAPI('/api/customers/tree?unassigned=true');
+        _treeUnassigned = data.unassigned || [];
+        renderUnassigned(_treeUnassigned);
+    } catch (err) {
+        console.error('Load unassigned failed:', err);
+    }
+}
+
+function renderUnassigned(schools) {
+    var container = document.getElementById('treeUnassignedList');
+    if (!container) return;
+
+    if (schools.length === 0) {
+        container.innerHTML = '<div style="padding: 16px; text-align: center; color: #6c757d; font-size: 13px;">All schools assigned</div>';
+        return;
+    }
+
+    container.innerHTML = schools.map(function(s) {
+        var addr = s.address || '';
+        return '<div style="padding: 8px 16px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; gap: 8px;">' +
+            '<div style="flex: 1; min-width: 0;">' +
+                '<div style="font-size: 13px; font-weight: 500;">' + escapeHtml(s.name) + '</div>' +
+                (addr ? '<div style="font-size: 11px; color: #6c757d;">' + escapeHtml(addr) + '</div>' : '') +
+            '</div>' +
+            '<select style="font-size: 11px; padding: 4px 8px; border: 1px solid #dee2e6; border-radius: 4px; max-width: 200px;" onchange="reassignSchool(' + s.id + ', this.value)">' +
+                '<option value="">Assign to...</option>' +
+                _allDistricts.map(function(d) {
+                    return '<option value="' + d.id + '">' + escapeHtml(d.name) + '</option>';
+                }).join('') +
+            '</select>' +
+        '</div>';
+    }).join('');
+}
+
+function renderTree(tree) {
+    var container = document.getElementById('treeDistrictList');
+    if (!container) return;
+
+    if (tree.length === 0) {
+        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No districts found</div>';
+        return;
+    }
+
+    // Only show districts with >1 location (skip 1:1 clones)
+    var withSchools = tree.filter(function(d) { return d.locations.length > 1; });
+    var singleLoc = tree.filter(function(d) { return d.locations.length <= 1; });
+
+    container.innerHTML = withSchools.map(function(d) {
+        var locCount = d.locations.length;
+        // Filter out the 1:1 clone location (same name as district)
+        var schools = d.locations.filter(function(l) { return l.name.toLowerCase() !== d.name.toLowerCase(); });
+        var territory = d.territory ? '<span class="badge" style="font-size: 10px; padding: 2px 6px; margin-left: 8px; background: ' +
+            (d.territory === 'Southern' ? '#e3f2fd' : '#fff3e0') + '; color: ' +
+            (d.territory === 'Southern' ? '#1565c0' : '#e65100') + ';">' + d.territory + '</span>' : '';
+
+        return '<div class="card" style="margin-bottom: 8px;">' +
+            '<div class="card-header" style="padding: 10px 16px; cursor: pointer;" onclick="toggleTreeSection(\'dist-' + d.id + '\')">' +
+                '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+                    '<div style="display: flex; align-items: center;">' +
+                        '<span style="font-size: 13px; font-weight: 600;">' + escapeHtml(d.name) + '</span>' +
+                        territory +
+                    '</div>' +
+                    '<div style="display: flex; align-items: center; gap: 8px;">' +
+                        '<span style="font-size: 12px; color: #6c757d;">' + schools.length + ' school' + (schools.length !== 1 ? 's' : '') + '</span>' +
+                        '<span id="arrow-dist-' + d.id + '" style="font-size: 14px; color: #6c757d;">&#9654;</span>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div id="section-dist-' + d.id + '" class="hidden" style="max-height: 400px; overflow-y: auto;">' +
+                schools.map(function(l) {
+                    var isMigrated = l.source === 'servicepal_migration';
+                    var dot = isMigrated ? '<span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #FF9800; margin-right: 6px;" title="ServicePal import"></span>' : '';
+                    return '<div style="padding: 6px 16px 6px 32px; border-bottom: 1px solid #f8f9fa; display: flex; justify-content: space-between; align-items: center;">' +
+                        '<div style="font-size: 12px;">' + dot + escapeHtml(l.name) + '</div>' +
+                        '<button class="btn btn-outline" style="font-size: 10px; padding: 2px 8px;" onclick="event.stopPropagation(); showReassignSchool(' + l.id + ', \'' + escapeHtml(l.name).replace(/'/g, "\\'") + '\', ' + d.id + ')">Move</button>' +
+                    '</div>';
+                }).join('') +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+function toggleTreeSection(sectionId) {
+    var section = document.getElementById('section-' + sectionId);
+    var arrow = document.getElementById('arrow-' + sectionId);
+    if (!section) {
+        // Unassigned section
+        var list = document.getElementById('treeUnassignedList');
+        var uArrow = document.getElementById('treeUnassignedArrow');
+        if (list) {
+            var isHidden = list.style.display === 'none';
+            list.style.display = isHidden ? '' : 'none';
+            if (uArrow) uArrow.innerHTML = isHidden ? '&#9660;' : '&#9654;';
+        }
+        return;
+    }
+    var isHidden = section.classList.contains('hidden');
+    section.classList.toggle('hidden');
+    if (arrow) arrow.innerHTML = isHidden ? '&#9660;' : '&#9654;';
+}
+
+async function reassignSchool(locationId, newCustomerId) {
+    if (!newCustomerId) return;
+    try {
+        await fetchAPI('/api/customers/locations?id=' + locationId, {
+            method: 'PUT',
+            body: JSON.stringify({ customerId: parseInt(newCustomerId) })
+        });
+        // Reload tree
+        loadTree(document.getElementById('treeSearch')?.value || '');
+    } catch (err) {
+        console.error('Reassign failed:', err);
+        alert('Failed to reassign: ' + err.message);
+    }
+}
+
+function showReassignSchool(locationId, schoolName, currentDistrictId) {
+    var newDistrict = prompt('Move "' + schoolName + '" to which district?\n\nType part of the district name:');
+    if (!newDistrict) return;
+
+    var matches = _allDistricts.filter(function(d) {
+        return d.name.toLowerCase().includes(newDistrict.toLowerCase()) && d.id !== currentDistrictId;
+    });
+
+    if (matches.length === 0) {
+        alert('No matching district found for "' + newDistrict + '"');
+        return;
+    }
+    if (matches.length === 1) {
+        if (confirm('Move to "' + matches[0].name + '"?')) {
+            reassignSchool(locationId, matches[0].id);
+        }
+        return;
+    }
+    // Multiple matches - let user pick
+    var msg = 'Multiple matches:\n';
+    matches.slice(0, 10).forEach(function(d, i) { msg += (i + 1) + '. ' + d.name + '\n'; });
+    msg += '\nEnter number:';
+    var pick = prompt(msg);
+    var idx = parseInt(pick) - 1;
+    if (idx >= 0 && idx < matches.length) {
+        reassignSchool(locationId, matches[idx].id);
+    }
+}
+
+var _treeSearchTimer;
+function searchTree(query) {
+    clearTimeout(_treeSearchTimer);
+    _treeSearchTimer = setTimeout(function() {
+        loadTree(query || '');
+    }, 300);
+}
+
 async function viewCustomerDetail(customerId) {
     var customer = CUSTOMERS.find(c => c.id === customerId);
     // Also check browseCustomersCache (for QB-first Search & Browse flow)
