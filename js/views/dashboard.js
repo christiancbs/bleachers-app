@@ -1604,9 +1604,27 @@ function renderTree(tree) {
                 schools.map(function(l) {
                     var isMigrated = l.source === 'servicepal_migration';
                     var dot = isMigrated ? '<span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #FF9800; margin-right: 6px;" title="ServicePal import"></span>' : '';
+                    var lAddr = l.address || '';
+                    var contactsHtml = '';
+                    if (l.contacts && l.contacts.length > 0) {
+                        contactsHtml = '<div style="margin-top: 3px;">' +
+                            l.contacts.map(function(c) {
+                                var parts = [];
+                                if (c.name) parts.push('<span style="font-weight: 500;">' + escapeHtml(c.name) + '</span>');
+                                if (c.title) parts.push('<span style="color: #999;">' + escapeHtml(c.title) + '</span>');
+                                if (c.phone) parts.push('<a href="tel:' + escapeHtml(c.phone) + '" style="color: #0d6efd; text-decoration: none;" onclick="event.stopPropagation();">' + escapeHtml(c.phone) + '</a>');
+                                if (c.email) parts.push('<a href="mailto:' + escapeHtml(c.email) + '" style="color: #0d6efd; text-decoration: none;" onclick="event.stopPropagation();">' + escapeHtml(c.email) + '</a>');
+                                return '<div style="font-size: 11px; color: #555;">' + parts.join(' &middot; ') + '</div>';
+                            }).join('') +
+                        '</div>';
+                    }
                     return '<div style="padding: 6px 16px 6px 32px; border-bottom: 1px solid #f8f9fa; display: flex; justify-content: space-between; align-items: center;">' +
-                        '<div style="font-size: 12px;">' + dot + escapeHtml(l.name) + '</div>' +
-                        '<button class="btn btn-outline" style="font-size: 10px; padding: 2px 8px;" onclick="event.stopPropagation(); showReassignSchool(' + l.id + ', \'' + escapeHtml(l.name).replace(/'/g, "\\'") + '\', ' + d.id + ')">Move</button>' +
+                        '<div style="flex: 1; min-width: 0;">' +
+                            '<div style="font-size: 12px;">' + dot + escapeHtml(l.name) + '</div>' +
+                            (lAddr ? '<div style="font-size: 11px; color: #6c757d;">' + escapeHtml(lAddr) + '</div>' : '') +
+                            contactsHtml +
+                        '</div>' +
+                        '<button class="btn btn-outline" style="font-size: 10px; padding: 2px 8px; flex-shrink: 0;" onclick="event.stopPropagation(); showReassignSchool(' + l.id + ', \'' + escapeHtml(l.name).replace(/'/g, "\\'") + '\', ' + d.id + ')">Move</button>' +
                     '</div>';
                 }).join('') +
             '</div>' +
