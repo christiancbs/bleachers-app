@@ -1494,7 +1494,7 @@ function loadCustomersCRM() {
 async function loadCRMDashboard() {
     try {
         var headers = await getApiHeaders();
-        var resp = await fetch(API_BASE + '/customers/dashboard', { headers: headers });
+        var resp = await fetch('https://bleachers-api.vercel.app/api/customers/dashboard', { headers: headers });
         if (!resp.ok) throw new Error('Failed to load dashboard');
         var data = await resp.json();
 
