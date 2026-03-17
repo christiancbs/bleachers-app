@@ -1590,13 +1590,7 @@ function renderCRMRecentActivity(activities) {
 }
 
 function dashboardOpenCustomer(id, name, territory) {
-    // Ensure customer is in browseCustomersCache so viewCustomerDetail can find it
-    if (typeof browseCustomersCache !== 'undefined') {
-        var exists = browseCustomersCache.find(function(c) { return c.id == id; });
-        if (!exists) {
-            browseCustomersCache.push({ id: id, name: name, territory: territory, locations: [], contacts: [] });
-        }
-    }
+    // Don't cache a stub — let viewCustomerDetail fetch the full record from API
     var backBtn = document.getElementById('custDetailBackBtn');
     if (backBtn) backBtn.setAttribute('onclick', "showView('customers')");
     viewCustomerDetail(id);
