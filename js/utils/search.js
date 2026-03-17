@@ -210,6 +210,34 @@ function renderSearchResults(container, results) {
         });
     }
 
+    // De-duplicate: hide School cards when a matching Customer card exists in "All" view
+    if (_searchFilter === 'all') {
+        var customerNames = {};
+        filtered.forEach(function(r) {
+            if (r.type === 'customer') {
+                var n = (r.data.name || r.data.companyName || '').toLowerCase().replace(/\s*\([a-z]{2}\)\s*$/i, '');
+                customerNames[n] = true;
+            }
+        });
+        filtered = filtered.filter(function(r) {
+            if (r.type !== 'school') return true;
+            var schoolName = (r.data.name || '').toLowerCase().replace(/\s*\([a-z]{2}\)\s*$/i, '');
+            return !customerNames[schoolName];
+        });
+    }
+
+    // Sort by date (most recent first)
+    filtered.sort(function(a, b) {
+        function getDate(r) {
+            if (r.type === 'estimate') return new Date(r.data.txnDate || 0);
+            if (r.type === 'job' || r.type === 'workorder' || r.type === 'inspection') return new Date(r.data.createdAt || r.data.scheduledDate || 0);
+            if (r.type === 'schedule') return new Date(r.date || 0);
+            // Customers and schools sort last (no date)
+            return new Date(0);
+        }
+        return getDate(b) - getDate(a);
+    });
+
     if (filtered.length === 0) {
         var msg = _searchFilter !== 'all'
             ? 'No ' + _searchFilter + ' results found'
