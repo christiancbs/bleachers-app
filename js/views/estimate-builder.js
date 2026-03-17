@@ -877,9 +877,13 @@ async function submitEstimateToQb() {
         // Build QB estimate payload
         const { total } = calculateTotals();
 
+        // Extract state code from QB customer billing address
+        const custState = (estimateBuilderState.qbCustomer.BillAddr?.CountrySubDivisionCode || '').toUpperCase().trim();
+
         const estimateData = {
             customerId: estimateBuilderState.qbCustomer.Id,
             customerName: estimateBuilderState.qbCustomer.DisplayName,
+            state: custState,
             lineItems: estimateBuilderState.lineItems.map(item => ({
                 itemName: item.itemName,
                 description: item.description,
