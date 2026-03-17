@@ -618,6 +618,9 @@
             .cust-profile-grid {
                 grid-template-columns: 1fr;
             }
+            .cust-profile-grid > div:nth-child(1) { order: 3; }
+            .cust-profile-grid > div:nth-child(2) { order: 1; }
+            .cust-profile-grid > div:nth-child(3) { order: 2; }
         }
 
         .btn-call {
