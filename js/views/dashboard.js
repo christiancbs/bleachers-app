@@ -1002,11 +1002,10 @@ function createEstimateFromCRM() {
     var customer = browseCustomersCache.find(function(c) { return c.id == currentCustomerId; });
     if (!customer) return;
 
-    // Init builder state
+    // Init builder state with CRM context (skips Estimates tab rendering)
     if (typeof initEstimateBuilder === 'function') {
-        initEstimateBuilder();
+        initEstimateBuilder(null, 'crm');
     }
-    estimateBuilderState.context = 'crm';
 
     // Build customer object for builder state
     // Extract real state code from address string (e.g. "Nashville, TN 37201" → "TN")

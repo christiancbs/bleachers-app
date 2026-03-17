@@ -32,7 +32,7 @@ function builderEl(id) {
 const DEFAULT_LABOR_RATE = 65;
 
 // Initialize the estimate builder
-function initEstimateBuilder(prefillData = null) {
+function initEstimateBuilder(prefillData = null, context = 'tab') {
     // Reset state
     estimateBuilderState = {
         qbCustomer: null,
@@ -43,7 +43,7 @@ function initEstimateBuilder(prefillData = null) {
         procurementNotes: [],
         stockParts: [],
         dismissedSuggestions: new Set(),
-        context: 'tab',
+        context: context,
         docNumber: ''
     };
 
@@ -66,7 +66,10 @@ function initEstimateBuilder(prefillData = null) {
         })();
     }
 
-    renderEstimateBuilder();
+    // Only render the Estimates tab builder — CRM modal renders its own body
+    if (estimateBuilderState.context !== 'crm') {
+        renderEstimateBuilder();
+    }
 }
 
 // Pre-fill from inspection data
@@ -641,11 +644,36 @@ async function searchPartsForEstimate() {
     }, 300);
 }
 
-// Prompt for part quantity
+// Show inline quantity picker for part
 function promptPartQuantity(partId, part) {
-    const quantity = parseInt(prompt(`How many "${part.partNumber || part.productName}"?`, '1'));
-    if (quantity && quantity > 0) {
-        addPartToEstimate(part, quantity);
+    // Show inline quantity row instead of browser prompt
+    var existingPicker = document.getElementById('partQtyPicker');
+    if (existingPicker) existingPicker.remove();
+
+    var resultsDiv = document.getElementById('estPartsResults');
+    var picker = document.createElement('div');
+    picker.id = 'partQtyPicker';
+    picker.style.cssText = 'padding: 12px 16px; background: #e8f5e9; border-radius: 8px; margin: 8px 0; display: flex; align-items: center; gap: 10px;';
+    picker.innerHTML =
+        '<span style="font-weight: 600; font-size: 13px; flex: 1;">' + (part.partNumber || part.productName || 'Part') + '</span>' +
+        '<label style="font-size: 13px; color: #495057;">Qty:</label>' +
+        '<input type="number" id="partQtyInput" class="form-input" value="1" min="1" style="width: 60px; padding: 4px 8px; font-size: 14px; text-align: center;">' +
+        '<button class="btn btn-primary" style="font-size: 12px; padding: 6px 14px;" onclick="confirmPartQuantity()">Add</button>' +
+        '<button class="btn btn-outline" style="font-size: 12px; padding: 6px 10px;" onclick="document.getElementById(\'partQtyPicker\').remove()">Cancel</button>';
+
+    resultsDiv.insertBefore(picker, resultsDiv.firstChild);
+    document.getElementById('partQtyInput').focus();
+    document.getElementById('partQtyInput').select();
+
+    // Store part data for confirm
+    window._pendingPart = part;
+}
+
+function confirmPartQuantity() {
+    var qty = parseInt(document.getElementById('partQtyInput').value) || 1;
+    if (qty > 0 && window._pendingPart) {
+        addPartToEstimate(window._pendingPart, qty);
+        window._pendingPart = null;
         closeAddPartModal();
     }
 }
