@@ -633,6 +633,42 @@ function addLaborFromModal() {
     addLaborToEstimate(hours, rate, description);
 }
 
+// Inspection modal
+function openAddInspectionModal() {
+    document.getElementById('addInspectionModal').classList.remove('hidden');
+    document.getElementById('inspectionDescription').value = 'Using manufacturer certified technicians inspect telescoping bleachers to ensure safe operation and compliance with industry standards.';
+    document.getElementById('inspectionPrice').value = '470';
+    document.getElementById('inspectionPrice').focus();
+}
+
+function closeAddInspectionModal() {
+    document.getElementById('addInspectionModal').classList.add('hidden');
+}
+
+function addInspectionFromModal() {
+    const description = document.getElementById('inspectionDescription').value.trim();
+    const price = parseFloat(document.getElementById('inspectionPrice').value) || 0;
+
+    if (price <= 0) {
+        alert('Please enter a price');
+        return;
+    }
+
+    const lineItem = {
+        type: 'inspection',
+        itemName: 'Inspection',
+        description: description,
+        quantity: 1,
+        unitPrice: price,
+        amount: price
+    };
+    estimateBuilderState.lineItems.push(lineItem);
+    closeAddInspectionModal();
+    renderLineItems();
+    renderTotals();
+    updateSubmitButton();
+}
+
 // Custom item modal
 function openAddCustomModal() {
     document.getElementById('addCustomModal').classList.remove('hidden');
@@ -708,6 +744,7 @@ function renderEstimateBuilder() {
                 <div style="display: flex; gap: 8px;">
                     <button class="btn btn-outline" onclick="openAddPartModal()">+ Part</button>
                     <button class="btn btn-outline" onclick="openAddLaborModal()">+ Labor</button>
+                    <button class="btn btn-outline" onclick="openAddInspectionModal()">+ Inspection</button>
                     <button class="btn btn-outline" onclick="openAddCustomModal()">+ Custom</button>
                 </div>
             </div>
@@ -793,7 +830,7 @@ function renderLineItems() {
                     return `
                     <tr>
                         <td>
-                            <span class="badge" style="background: ${item.type === 'part' ? '#e3f2fd' : item.type === 'labor' ? '#fff3e0' : '#f3e5f5'}; color: ${item.type === 'part' ? '#1565c0' : item.type === 'labor' ? '#e65100' : '#7b1fa2'}; font-size: 10px; margin-right: 6px;">
+                            <span class="badge" style="background: ${item.type === 'part' ? '#e3f2fd' : item.type === 'labor' ? '#fff3e0' : item.type === 'inspection' ? '#e8f5e9' : '#f3e5f5'}; color: ${item.type === 'part' ? '#1565c0' : item.type === 'labor' ? '#e65100' : item.type === 'inspection' ? '#2e7d32' : '#7b1fa2'}; font-size: 10px; margin-right: 6px;">
                                 ${item.type.toUpperCase()}
                             </span>
                             ${item.itemName}
@@ -1014,6 +1051,9 @@ window.promptPartQuantity = promptPartQuantity;
 window.openAddLaborModal = openAddLaborModal;
 window.closeAddLaborModal = closeAddLaborModal;
 window.addLaborFromModal = addLaborFromModal;
+window.openAddInspectionModal = openAddInspectionModal;
+window.closeAddInspectionModal = closeAddInspectionModal;
+window.addInspectionFromModal = addInspectionFromModal;
 window.openAddCustomModal = openAddCustomModal;
 window.closeAddCustomModal = closeAddCustomModal;
 window.addCustomFromModal = addCustomFromModal;

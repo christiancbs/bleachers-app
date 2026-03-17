@@ -169,12 +169,14 @@
                             </div>
                         </div>
 
-                        <div style="margin-bottom: 12px;">
-                            <input type="text" id="estimatesSearchInput" class="form-input" placeholder="Search all estimates by customer, estimate #, or keyword..." oninput="searchEstimates()" style="font-size: 16px; padding: 14px 16px;">
-                        </div>
+                        <div id="estimatesTopControls">
+                            <div style="margin-bottom: 12px;">
+                                <input type="text" id="estimatesSearchInput" class="form-input" placeholder="Search all estimates by customer, estimate #, or keyword..." oninput="searchEstimates()" style="font-size: 16px; padding: 14px 16px;">
+                            </div>
 
-                        <div style="margin-bottom: 20px;">
-                            <button class="btn btn-primary browse-action-btn" onclick="showEstimateBuilder()">+ Create Estimate</button>
+                            <div style="margin-bottom: 20px;">
+                                <button class="btn btn-primary browse-action-btn" onclick="showEstimateBuilder()">+ Create Estimate</button>
+                            </div>
                         </div>
 
                         <!-- Default view: Tabs for Accepted + Pending -->
@@ -605,6 +607,9 @@
                                             <tbody id="custHistoryList"></tbody>
                                         </table>
                                     </div>
+
+                                    <!-- Inline Estimate Builder (CRM) -->
+                                    <div id="crmEstimateBuilder" class="hidden"></div>
 
                                 </div>
                             </div>
@@ -4305,6 +4310,29 @@
                 </div>
                 <div style="margin-top: 20px;">
                     <button class="btn btn-primary" onclick="addLaborFromModal()" style="width: 100%;">Add Labor</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estimate Builder - Add Inspection Modal -->
+    <div id="addInspectionModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2>Add Inspection</h2>
+                <button class="btn btn-outline" style="padding: 4px 12px;" onclick="closeAddInspectionModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="inspectionDescription" class="form-input" rows="3" placeholder="Inspection scope description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Price ($)</label>
+                    <input type="number" id="inspectionPrice" class="form-input" min="0" step="1" value="470">
+                </div>
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="addInspectionFromModal()" style="width: 100%;">Add Inspection</button>
                 </div>
             </div>
         </div>
