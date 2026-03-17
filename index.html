@@ -524,23 +524,23 @@
                             <button class="btn btn-secondary" style="font-size: 13px;" id="custDetailBackBtn" onclick="showView('officeSearch')">← Back</button>
                         </div>
 
+                        <!-- Customer Info Card (always on top) -->
+                        <div class="card" style="margin-bottom: 12px;">
+                            <div class="card-body" style="padding: 16px;">
+                                <h2 id="custDetailName" style="font-size: 16px; font-weight: 700; margin: 0 0 6px;">Customer Name</h2>
+                                <span id="custDetailType" class="badge badge-info" style="font-size: 11px;">County</span>
+                                <div style="margin-top: 12px; font-size: 13px; color: #495057;">
+                                    <div id="custDetailAddress" style="margin-bottom: 6px;"></div>
+                                    <div id="custDetailContact" style="margin-bottom: 4px;"></div>
+                                    <div id="custDetailPhone" style="color: #0066cc;"></div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="cust-profile-grid">
 
-                            <!-- LEFT: Customer Info Sidebar -->
+                            <!-- LEFT: Locations & Contacts -->
                             <div>
-                                <!-- Name + Type -->
-                                <div class="card" style="margin-bottom: 12px;">
-                                    <div class="card-body" style="padding: 16px;">
-                                        <h2 id="custDetailName" style="font-size: 16px; font-weight: 700; margin: 0 0 6px;">Customer Name</h2>
-                                        <span id="custDetailType" class="badge badge-info" style="font-size: 11px;">County</span>
-                                        <div style="margin-top: 12px; font-size: 13px; color: #495057;">
-                                            <div id="custDetailAddress" style="margin-bottom: 6px;"></div>
-                                            <div id="custDetailContact" style="margin-bottom: 4px;"></div>
-                                            <div id="custDetailPhone" style="color: #0066cc;"></div>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <!-- Locations & Contacts (parent-child) -->
                                 <div class="card">
                                     <div class="card-header" style="padding: 10px 16px;">
