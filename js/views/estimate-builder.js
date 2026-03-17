@@ -697,7 +697,7 @@ function addLaborFromModal() {
     const description = document.getElementById('laborDescription').value;
 
     if (hours <= 0) {
-        alert('Please enter valid hours');
+        showNotification('Please enter valid hours', 'error');
         return;
     }
 
@@ -723,7 +723,7 @@ function addInspectionFromModal() {
     const price = parseFloat(document.getElementById('inspectionPrice').value) || 0;
 
     if (price <= 0) {
-        alert('Please enter a price');
+        showNotification('Please enter a price', 'error');
         return;
     }
 
@@ -773,7 +773,7 @@ function addCustomFromModal() {
     const unitPrice = parseFloat(document.getElementById('customItemPrice').value) || 0;
 
     if (!name) {
-        alert('Please enter an item name');
+        showNotification('Please enter an item name', 'error');
         return;
     }
 
@@ -991,12 +991,12 @@ function updateSubmitButton() {
 
 async function submitEstimateToQb() {
     if (!estimateBuilderState.qbCustomer) {
-        alert('Please select a customer');
+        showNotification('Please select a customer', 'error');
         return;
     }
 
     if (estimateBuilderState.lineItems.length === 0) {
-        alert('Please add at least one line item');
+        showNotification('Please add at least one line item', 'error');
         return;
     }
 
@@ -1089,7 +1089,7 @@ async function submitEstimateToQb() {
         }
 
         // Success
-        alert(`Estimate created successfully!\nEstimate ${result.docNumber || result.id || 'N/A'}`);
+        showNotification('Estimate ' + (result.docNumber || result.id || '') + ' created in QuickBooks', 'success');
 
         // Clear cache and refresh
         EstimatesAPI.clearCache();
@@ -1100,7 +1100,7 @@ async function submitEstimateToQb() {
 
     } catch (err) {
         console.error('Failed to create estimate:', err);
-        alert(`Failed to create estimate: ${err.message}`);
+        showNotification('Failed to create estimate: ' + err.message, 'error');
     } finally {
         estimateBuilderState.isSubmitting = false;
         updateSubmitButton();
