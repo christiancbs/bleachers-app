@@ -1006,17 +1006,17 @@ function createEstimateFromCRM() {
     if (typeof initEstimateBuilder === 'function') {
         initEstimateBuilder();
     }
+    estimateBuilderState.context = 'crm';
 
-    // Auto-select this customer
+    // Build customer object for builder state
     var custObj = {
         id: customer.qbCustomerId || customer._qbId || customer.id,
         name: customer.name,
         email: null,
         address: customer.address ? { state: (customer.territory === 'Original' ? 'TN' : 'AL') } : null
     };
-    if (typeof selectQbCustomer === 'function') {
-        selectQbCustomer(custObj);
-    }
+    // Set customer directly on state (don't call selectQbCustomer — it targets Estimates tab DOM)
+    estimateBuilderState.qbCustomer = custObj;
 
     // Render builder into modal body
     var modalBody = document.getElementById('crmEstimateModalBody');
@@ -1024,6 +1024,13 @@ function createEstimateFromCRM() {
         '<div style="padding: 12px; background: #e8f5e9; border-radius: 8px; margin-bottom: 20px;">' +
             '<div style="font-weight: 600; color: #2e7d32;">' + escapeHtml(customer.name) + '</div>' +
             '<div style="font-size: 12px; color: #6c757d;">' + escapeHtml(customer.address || '') + '</div>' +
+        '</div>' +
+        '<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">' +
+            '<span style="font-size: 13px; color: #6c757d;">Estimate #</span>' +
+            '<input type="text" id="estimateDocNumber" class="form-input" ' +
+                'value="" placeholder="Loading..." ' +
+                'oninput="onDocNumberChange(this)" ' +
+                'style="width: 200px; font-weight: 600; font-size: 15px; padding: 4px 10px; border: 1px dashed #ced4da; border-radius: 6px; background: transparent;">' +
         '</div>' +
         '<div style="margin-bottom: 20px;">' +
             '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">' +
@@ -1058,6 +1065,9 @@ function createEstimateFromCRM() {
     renderProcurementNotes();
     renderTotals();
     updateSubmitButton();
+
+    // Fetch preview doc number (async — will fill in when ready)
+    fetchPreviewDocNumber(custObj);
 }
 
 async function submitCRMEstimate() {
@@ -1076,6 +1086,8 @@ function closeCRMEstimateModal() {
     estimateBuilderState.shippingCost = 0;
     estimateBuilderState.procurementNotes = [];
     estimateBuilderState.stockParts = [];
+    estimateBuilderState.docNumber = '';
+    estimateBuilderState.context = 'tab';
 }
 
 window.createEstimateFromCRM = createEstimateFromCRM;

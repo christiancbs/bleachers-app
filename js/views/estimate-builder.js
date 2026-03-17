@@ -12,8 +12,21 @@ let estimateBuilderState = {
     isSubmitting: false,
     procurementNotes: [],    // { id, text, source: 'auto'|'manual', category, dismissed }
     stockParts: [],          // { lineItemIndex, stockLocation, verified: false }
-    dismissedSuggestions: new Set()  // IDs of dismissed auto-suggestions
+    dismissedSuggestions: new Set(),  // IDs of dismissed auto-suggestions
+    context: 'tab'           // 'tab' or 'crm' — which UI is hosting the builder
 };
+
+// Find element by ID, scoped to the active builder context
+function builderEl(id) {
+    if (estimateBuilderState.context === 'crm') {
+        var modal = document.getElementById('crmEstimateModalBody');
+        if (modal) {
+            var el = modal.querySelector('#' + id);
+            if (el) return el;
+        }
+    }
+    return document.getElementById(id);
+}
 
 // Default labor rate (editable per estimate)
 const DEFAULT_LABOR_RATE = 65;
@@ -29,7 +42,9 @@ function initEstimateBuilder(prefillData = null) {
         isSubmitting: false,
         procurementNotes: [],
         stockParts: [],
-        dismissedSuggestions: new Set()
+        dismissedSuggestions: new Set(),
+        context: 'tab',
+        docNumber: ''
     };
 
     // If pre-filling from inspection, load that data
@@ -126,22 +141,50 @@ function selectQbCustomer(customer) {
     const searchInput = document.getElementById('qbCustomerSearch');
     const selectedDiv = document.getElementById('selectedQbCustomer');
 
-    resultsDiv.innerHTML = '';
-    resultsDiv.classList.add('hidden');
-    searchInput.value = '';
+    if (resultsDiv) { resultsDiv.innerHTML = ''; resultsDiv.classList.add('hidden'); }
+    if (searchInput) { searchInput.value = ''; }
 
-    selectedDiv.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #e8f5e9; border-radius: 8px; margin-top: 12px;">
-            <div>
-                <div style="font-weight: 600; color: #2e7d32;">${customer.name}</div>
-                ${customer.email ? `<div style="font-size: 13px; color: #6c757d;">${customer.email}</div>` : ''}
+    if (selectedDiv) {
+        selectedDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #e8f5e9; border-radius: 8px; margin-top: 12px;">
+                <div>
+                    <div style="font-weight: 600; color: #2e7d32;">${customer.name}</div>
+                    ${customer.email ? `<div style="font-size: 13px; color: #6c757d;">${customer.email}</div>` : ''}
+                </div>
+                <button class="btn btn-outline" style="font-size: 12px;" onclick="clearQbCustomer()">Change</button>
             </div>
-            <button class="btn btn-outline" style="font-size: 12px;" onclick="clearQbCustomer()">Change</button>
-        </div>
-    `;
-    selectedDiv.classList.remove('hidden');
+        `;
+        selectedDiv.classList.remove('hidden');
+    }
+
+    // Fetch and show preview doc number
+    fetchPreviewDocNumber(customer);
 
     updateSubmitButton();
+}
+
+async function fetchPreviewDocNumber(customer) {
+    var state = (customer.address?.state || '').toUpperCase().trim();
+    if (!state) state = 'TN';
+    try {
+        var headers = typeof EstimatesAPI !== 'undefined' ? await EstimatesAPI.getHeaders() : {};
+        var resp = await fetch('https://bleachers-api.vercel.app/api/qb/estimates?preview=nextNumber&state=' + state, { headers: headers });
+        var data = await resp.json();
+        estimateBuilderState.docNumber = data.docNumber || '';
+    } catch (e) {
+        estimateBuilderState.docNumber = '';
+    }
+    renderDocNumber();
+}
+
+function renderDocNumber() {
+    var el = builderEl('estimateDocNumber');
+    if (!el) return;
+    el.value = estimateBuilderState.docNumber;
+}
+
+function onDocNumberChange(input) {
+    estimateBuilderState.docNumber = input.value.trim();
 }
 
 // Clear selected customer
@@ -243,7 +286,7 @@ function calculateTotals() {
 
 // Update shipping cost
 function updateShipping() {
-    const input = document.getElementById('estShipping');
+    const input = builderEl('estShipping');
     estimateBuilderState.shippingCost = parseFloat(input.value) || 0;
     renderTotals();
 }
@@ -429,7 +472,7 @@ function removeStockMark(lineItemIndex) {
 
 // Toggle procurement notes dropdown
 function toggleProcurementDropdown() {
-    const dropdown = document.getElementById('procurementNoteDropdown');
+    const dropdown = builderEl('procurementNoteDropdown');
     if (dropdown) {
         dropdown.classList.toggle('hidden');
     }
@@ -437,7 +480,7 @@ function toggleProcurementDropdown() {
 
 // Render procurement notes section
 function renderProcurementNotes() {
-    const container = document.getElementById('procurementNotesContainer');
+    const container = builderEl('procurementNotesContainer');
     if (!container) return;
 
     const suggestions = runProcurementDetection();
@@ -749,6 +792,16 @@ function renderEstimateBuilder() {
             </div>
         </div>
 
+        <!-- Estimate Number -->
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+            <span style="font-size: 13px; color: #6c757d;">Estimate #</span>
+            <input type="text" id="estimateDocNumber" class="form-input"
+                   value="${estimateBuilderState.docNumber || ''}"
+                   placeholder="Auto-generated on submit"
+                   oninput="onDocNumberChange(this)"
+                   style="width: 200px; font-weight: 600; font-size: 15px; padding: 4px 10px; border: 1px dashed #ced4da; border-radius: 6px; background: transparent;">
+        </div>
+
         <!-- Line Items -->
         <div class="card" style="margin-bottom: 20px;">
             <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
@@ -807,7 +860,7 @@ function renderEstimateBuilder() {
 }
 
 function renderLineItems() {
-    const container = document.getElementById('estimateLineItemsContainer');
+    const container = builderEl('estimateLineItemsContainer');
     if (!container) return;
 
     if (estimateBuilderState.lineItems.length === 0) {
@@ -863,7 +916,7 @@ function renderLineItems() {
 }
 
 function renderTotals() {
-    const container = document.getElementById('estimateTotalsContainer');
+    const container = builderEl('estimateTotalsContainer');
     if (!container) return;
 
     const { subtotal, shipping, total } = calculateTotals();
@@ -889,7 +942,7 @@ function renderTotals() {
 }
 
 function updateSubmitButton() {
-    const btn = document.getElementById('submitEstimateBtn');
+    const btn = builderEl('submitEstimateBtn');
     if (!btn) return;
 
     const hasCustomer = !!estimateBuilderState.qbCustomer;
@@ -933,6 +986,7 @@ async function submitEstimateToQb() {
             customerId: estimateBuilderState.qbCustomer.id,
             customerName: estimateBuilderState.qbCustomer.name,
             state: custState,
+            docNumber: estimateBuilderState.docNumber || undefined,
             lineItems: estimateBuilderState.lineItems.map(item => ({
                 itemName: item.itemName,
                 description: item.description,
@@ -1082,3 +1136,5 @@ window.removeProcurementNote = removeProcurementNote;
 window.markAsStockPart = markAsStockPart;
 window.removeStockMark = removeStockMark;
 window.toggleProcurementDropdown = toggleProcurementDropdown;
+window.onDocNumberChange = onDocNumberChange;
+window.fetchPreviewDocNumber = fetchPreviewDocNumber;
