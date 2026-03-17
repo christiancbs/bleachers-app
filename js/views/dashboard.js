@@ -996,6 +996,16 @@ async function navigateToEstimate(qbEstimateId) {
 }
 
 // Create a follow-up estimate spawned from a job
+function createEstimateFromCRM() {
+    var customer = browseCustomersCache.find(function(c) { return c.id == currentCustomerId; });
+    if (!customer) return;
+
+    window._spawnFromCustomerName = customer.name;
+    showView('estimates');
+    showEstimateBuilder();
+}
+window.createEstimateFromCRM = createEstimateFromCRM;
+
 async function createEstimateFromJob(jobId) {
     try {
         const jobData = await JobsAPI.get(jobId);
