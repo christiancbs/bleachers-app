@@ -1030,6 +1030,20 @@ async function submitEstimateToQb() {
 
         const result = await EstimatesAPI.create(estimateData);
 
+        // Always upsert local estimate record so it shows in customer profile
+        try {
+            await EstimatesAPI.upsertLocal({
+                qbEstimateId: String(result.id),
+                docNumber: result.docNumber || null,
+                status: 'Pending',
+                customerId: estimateBuilderState.qbCustomer.id,
+                customerName: estimateBuilderState.qbCustomer.name,
+                totalAmount: total
+            });
+        } catch (upsertErr) {
+            console.warn('Failed to upsert local estimate:', upsertErr);
+        }
+
         // If built from an inspection, link the estimate to the inspection job
         const inspectionDbId = estimateBuilderState.sourceInspection?._apiId;
         if (inspectionDbId && result.id) {
