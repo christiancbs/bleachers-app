@@ -608,8 +608,7 @@
                                         </table>
                                     </div>
 
-                                    <!-- Inline Estimate Builder (CRM) -->
-                                    <div id="crmEstimateBuilder" class="hidden"></div>
+                                    <!-- CRM Estimate Builder lives in modal below -->
 
                                 </div>
                             </div>
@@ -4275,7 +4274,7 @@
     </div>
 
     <!-- Estimate Builder - Add Part Modal -->
-    <div id="addPartModal" class="modal-backdrop hidden">
+    <div id="addPartModal" class="modal-backdrop hidden" style="z-index: 1100;">
         <div class="modal" style="max-width: 600px;">
             <div class="modal-header">
                 <h2>Add Part</h2>
@@ -4289,7 +4288,7 @@
     </div>
 
     <!-- Estimate Builder - Add Labor Modal -->
-    <div id="addLaborModal" class="modal-backdrop hidden">
+    <div id="addLaborModal" class="modal-backdrop hidden" style="z-index: 1100;">
         <div class="modal" style="max-width: 400px;">
             <div class="modal-header">
                 <h2>Add Labor</h2>
@@ -4315,14 +4314,29 @@
         </div>
     </div>
 
+    <!-- CRM Estimate Builder Modal -->
+    <div id="crmEstimateModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header" style="position: sticky; top: 0; background: white; z-index: 10;">
+                <h2>New Estimate</h2>
+                <button class="btn btn-outline" style="padding: 4px 12px;" onclick="closeCRMEstimateModal()">✕</button>
+            </div>
+            <div class="modal-body" id="crmEstimateModalBody"></div>
+        </div>
+    </div>
+
     <!-- Estimate Builder - Add Inspection Modal -->
-    <div id="addInspectionModal" class="modal-backdrop hidden">
+    <div id="addInspectionModal" class="modal-backdrop hidden" style="z-index: 1100;">
         <div class="modal" style="max-width: 450px;">
             <div class="modal-header">
                 <h2>Add Inspection</h2>
                 <button class="btn btn-outline" style="padding: 4px 12px;" onclick="closeAddInspectionModal()">✕</button>
             </div>
             <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">School / Location</label>
+                    <input type="text" id="inspectionSchoolName" class="form-input" placeholder="e.g., Brentwood Academy">
+                </div>
                 <div class="form-group">
                     <label class="form-label">Description</label>
                     <textarea id="inspectionDescription" class="form-input" rows="3" placeholder="Inspection scope description"></textarea>
@@ -4339,7 +4353,7 @@
     </div>
 
     <!-- Estimate Builder - Add Custom Item Modal -->
-    <div id="addCustomModal" class="modal-backdrop hidden">
+    <div id="addCustomModal" class="modal-backdrop hidden" style="z-index: 1100;">
         <div class="modal" style="max-width: 450px;">
             <div class="modal-header">
                 <h2>Add Custom Item</h2>

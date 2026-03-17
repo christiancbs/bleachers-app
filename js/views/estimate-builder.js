@@ -636,9 +636,10 @@ function addLaborFromModal() {
 // Inspection modal
 function openAddInspectionModal() {
     document.getElementById('addInspectionModal').classList.remove('hidden');
+    document.getElementById('inspectionSchoolName').value = '';
     document.getElementById('inspectionDescription').value = 'Using manufacturer certified technicians inspect telescoping bleachers to ensure safe operation and compliance with industry standards.';
     document.getElementById('inspectionPrice').value = '470';
-    document.getElementById('inspectionPrice').focus();
+    document.getElementById('inspectionSchoolName').focus();
 }
 
 function closeAddInspectionModal() {
@@ -646,6 +647,7 @@ function closeAddInspectionModal() {
 }
 
 function addInspectionFromModal() {
+    const schoolName = document.getElementById('inspectionSchoolName').value.trim();
     const description = document.getElementById('inspectionDescription').value.trim();
     const price = parseFloat(document.getElementById('inspectionPrice').value) || 0;
 
@@ -654,10 +656,20 @@ function addInspectionFromModal() {
         return;
     }
 
-    const lineItem = {
+    var itemName = 'Inspection';
+    if (schoolName) itemName = 'Inspection - ' + schoolName;
+
+    var fullDescription = description;
+    if (schoolName && description) {
+        fullDescription = schoolName + ': ' + description;
+    } else if (schoolName) {
+        fullDescription = schoolName;
+    }
+
+    var lineItem = {
         type: 'inspection',
-        itemName: 'Inspection',
-        description: description,
+        itemName: itemName,
+        description: fullDescription,
         quantity: 1,
         unitPrice: price,
         amount: price

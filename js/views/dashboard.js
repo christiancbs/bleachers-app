@@ -1002,21 +1002,12 @@ function createEstimateFromCRM() {
     var customer = browseCustomersCache.find(function(c) { return c.id == currentCustomerId; });
     if (!customer) return;
 
-    // Hide tabs, show inline builder
-    document.getElementById('customerEstimatesTab').classList.add('hidden');
-    document.getElementById('customerHistoryTab').classList.add('hidden');
-    var tabHeader = document.getElementById('tabEstimates').parentElement;
-    tabHeader.classList.add('hidden');
-
-    var builderDiv = document.getElementById('crmEstimateBuilder');
-    builderDiv.classList.remove('hidden');
-
-    // Pre-select the customer in the estimate builder state
+    // Init builder state
     if (typeof initEstimateBuilder === 'function') {
         initEstimateBuilder();
     }
 
-    // Auto-select this customer (use QB ID if available, otherwise search by name)
+    // Auto-select this customer
     var custObj = {
         id: customer.qbCustomerId || customer._qbId || customer.id,
         name: customer.name,
@@ -1027,68 +1018,42 @@ function createEstimateFromCRM() {
         selectQbCustomer(custObj);
     }
 
-    // Render the builder into the CRM container instead of the estimates page
-    window._crmEstimateMode = true;
-    if (typeof renderEstimateBuilder === 'function') {
-        var origContainer = document.getElementById('createEstimateForm');
-        // Temporarily swap the render target
-        window._crmBuilderTarget = builderDiv;
-        renderCRMEstimateBuilder(builderDiv, customer);
-    }
-}
+    // Render builder into modal body
+    var modalBody = document.getElementById('crmEstimateModalBody');
+    modalBody.innerHTML =
+        '<div style="padding: 12px; background: #e8f5e9; border-radius: 8px; margin-bottom: 20px;">' +
+            '<div style="font-weight: 600; color: #2e7d32;">' + escapeHtml(customer.name) + '</div>' +
+            '<div style="font-size: 12px; color: #6c757d;">' + escapeHtml(customer.address || '') + '</div>' +
+        '</div>' +
+        '<div style="margin-bottom: 20px;">' +
+            '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">' +
+                '<h3 style="margin: 0;">Line Items</h3>' +
+                '<div style="display: flex; gap: 6px; flex-wrap: wrap;">' +
+                    '<button class="btn btn-outline" style="font-size: 12px; padding: 4px 10px;" onclick="openAddPartModal()">+ Part</button>' +
+                    '<button class="btn btn-outline" style="font-size: 12px; padding: 4px 10px;" onclick="openAddLaborModal()">+ Labor</button>' +
+                    '<button class="btn btn-outline" style="font-size: 12px; padding: 4px 10px;" onclick="openAddInspectionModal()">+ Inspection</button>' +
+                    '<button class="btn btn-outline" style="font-size: 12px; padding: 4px 10px;" onclick="openAddCustomModal()">+ Custom</button>' +
+                '</div>' +
+            '</div>' +
+            '<div id="estimateLineItemsContainer"></div>' +
+        '</div>' +
+        '<div style="margin-bottom: 20px;">' +
+            '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">' +
+                '<h3 style="margin: 0;">Procurement Notes</h3>' +
+                '<button class="btn btn-outline" style="font-size: 12px; padding: 4px 10px;" onclick="toggleProcurementDropdown()">+ Add Note</button>' +
+            '</div>' +
+            '<div id="procurementNotesContainer"></div>' +
+        '</div>' +
+        '<div id="estimateTotalsContainer" style="margin-bottom: 20px;"></div>' +
+        '<div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid #dee2e6;">' +
+            '<button class="btn btn-secondary" onclick="closeCRMEstimateModal()">Cancel</button>' +
+            '<button class="btn btn-primary" id="submitEstimateBtn" onclick="submitCRMEstimate()" disabled>Create in QuickBooks</button>' +
+        '</div>';
 
-function renderCRMEstimateBuilder(container, customer) {
-    // Render a compact version of the estimate builder
-    container.innerHTML = `
-        <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0;">New Estimate</h3>
-            <button class="btn btn-outline" style="font-size: 12px;" onclick="cancelCRMEstimate()">Cancel</button>
-        </div>
-        <div style="padding: 10px; background: #e8f5e9; border-radius: 8px; margin-bottom: 16px;">
-            <div style="font-weight: 600; color: #2e7d32;">${escapeHtml(customer.name)}</div>
-            <div style="font-size: 12px; color: #6c757d;">${escapeHtml(customer.address || '')}</div>
-        </div>
+    // Show the modal
+    document.getElementById('crmEstimateModal').classList.remove('hidden');
 
-        <!-- Line Items -->
-        <div style="margin-bottom: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <strong>Line Items</strong>
-                <div style="display: flex; gap: 6px;">
-                    <button class="btn btn-outline" style="font-size: 11px; padding: 4px 8px;" onclick="openAddPartModal()">+ Part</button>
-                    <button class="btn btn-outline" style="font-size: 11px; padding: 4px 8px;" onclick="openAddLaborModal()">+ Labor</button>
-                    <button class="btn btn-outline" style="font-size: 11px; padding: 4px 8px;" onclick="openAddInspectionModal()">+ Inspection</button>
-                    <button class="btn btn-outline" style="font-size: 11px; padding: 4px 8px;" onclick="openAddCustomModal()">+ Custom</button>
-                </div>
-            </div>
-            <div id="estimateLineItemsContainer"></div>
-        </div>
-
-        <!-- Procurement Notes -->
-        <div style="margin-bottom: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <strong>Procurement Notes</strong>
-                <div style="position: relative;">
-                    <button class="btn btn-outline" style="font-size: 11px; padding: 4px 8px;" onclick="toggleProcurementDropdown()">+ Add Note</button>
-                    <div id="procurementNoteDropdown" class="hidden" style="position: absolute; right: 0; top: 100%; margin-top: 4px; background: white; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 320px; z-index: 100; max-height: 300px; overflow-y: auto;">
-                        ${(typeof COMMON_PROCUREMENT_NOTES !== 'undefined' ? COMMON_PROCUREMENT_NOTES : []).map(function(note) {
-                            return '<div style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f5f5f5; font-size: 13px;" onmouseover="this.style.background=\'#f8f9fa\'" onmouseout="this.style.background=\'white\'" onclick="addProcurementNote(\'' + note.text.replace(/'/g, "\\'") + '\', \'' + note.category + '\'); toggleProcurementDropdown();">' + note.text + '</div>';
-                        }).join('')}
-                        <div style="padding: 10px 14px; cursor: pointer; font-size: 13px; color: #1565c0; font-weight: 600;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'" onclick="addCustomProcurementNote(); toggleProcurementDropdown();">Custom note...</div>
-                    </div>
-                </div>
-            </div>
-            <div id="procurementNotesContainer"></div>
-        </div>
-
-        <!-- Totals -->
-        <div id="estimateTotalsContainer" style="margin-bottom: 16px;"></div>
-
-        <!-- Submit -->
-        <div style="display: flex; justify-content: flex-end;">
-            <button class="btn btn-primary" id="submitEstimateBtn" onclick="submitCRMEstimate()" disabled>Create in QuickBooks</button>
-        </div>
-    `;
-
+    // Render dynamic content
     renderLineItems();
     renderProcurementNotes();
     renderTotals();
@@ -1096,41 +1061,25 @@ function renderCRMEstimateBuilder(container, customer) {
 }
 
 async function submitCRMEstimate() {
-    // Use the existing submit logic
     await submitEstimateToQb();
-
-    // If successful (builder state will be cleared), restore CRM view
     if (!estimateBuilderState.isSubmitting) {
-        cancelCRMEstimate();
-        // Refresh the customer detail to show the new estimate
+        closeCRMEstimateModal();
         viewCustomerDetail(currentCustomerId);
     }
 }
 
-function cancelCRMEstimate() {
-    window._crmEstimateMode = false;
-    var builderDiv = document.getElementById('crmEstimateBuilder');
-    builderDiv.classList.add('hidden');
-    builderDiv.innerHTML = '';
-
-    // Restore tabs
-    document.getElementById('customerEstimatesTab').classList.remove('hidden');
-    var tabHeader = document.getElementById('tabEstimates').parentElement;
-    tabHeader.classList.remove('hidden');
-    showCustomerTab('estimates');
-
-    // Reset builder state
-    if (typeof initEstimateBuilder === 'function') {
-        estimateBuilderState.lineItems = [];
-        estimateBuilderState.qbCustomer = null;
-        estimateBuilderState.shippingCost = 0;
-        estimateBuilderState.procurementNotes = [];
-        estimateBuilderState.stockParts = [];
-    }
+function closeCRMEstimateModal() {
+    document.getElementById('crmEstimateModal').classList.add('hidden');
+    document.getElementById('crmEstimateModalBody').innerHTML = '';
+    estimateBuilderState.lineItems = [];
+    estimateBuilderState.qbCustomer = null;
+    estimateBuilderState.shippingCost = 0;
+    estimateBuilderState.procurementNotes = [];
+    estimateBuilderState.stockParts = [];
 }
 
 window.createEstimateFromCRM = createEstimateFromCRM;
-window.cancelCRMEstimate = cancelCRMEstimate;
+window.closeCRMEstimateModal = closeCRMEstimateModal;
 window.submitCRMEstimate = submitCRMEstimate;
 
 async function createEstimateFromJob(jobId) {
