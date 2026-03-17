@@ -1051,9 +1051,17 @@ function createEstimateFromCRM() {
             '<div id="estimateLineItemsContainer"></div>' +
         '</div>' +
         '<div style="margin-bottom: 20px;">' +
-            '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">' +
+            '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; position: relative;">' +
                 '<h3 style="margin: 0;">Procurement Notes</h3>' +
                 '<button class="btn btn-outline" style="font-size: 12px; padding: 4px 10px;" onclick="toggleProcurementDropdown()">+ Add Note</button>' +
+                '<div id="procurementNoteDropdown" class="hidden" style="position: absolute; right: 0; top: 100%; margin-top: 4px; background: white; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 320px; z-index: 100; max-height: 300px; overflow-y: auto;">' +
+                    (typeof COMMON_PROCUREMENT_NOTES !== 'undefined' ? COMMON_PROCUREMENT_NOTES.map(function(note) {
+                        return '<div style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f5f5f5; font-size: 13px;" onmouseover="this.style.background=\'#f8f9fa\'" onmouseout="this.style.background=\'white\'" onclick="addProcurementNote(\'' + note.text.replace(/'/g, "\\'") + '\', \'' + note.category + '\'); toggleProcurementDropdown();">' + note.text + '</div>';
+                    }).join('') : '') +
+                    '<div style="padding: 10px 14px; border-top: 2px solid #dee2e6;">' +
+                        '<input type="text" class="form-input" placeholder="Custom note..." style="width: 100%; font-size: 13px;" onkeydown="if(event.key===\'Enter\'){addCustomProcurementNote(this.value);this.value=\'\';toggleProcurementDropdown();}">' +
+                    '</div>' +
+                '</div>' +
             '</div>' +
             '<div id="procurementNotesContainer"></div>' +
         '</div>' +

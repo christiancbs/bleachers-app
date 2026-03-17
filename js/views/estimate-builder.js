@@ -600,7 +600,7 @@ async function searchPartsForEstimate() {
         resultsDiv.innerHTML = '<div style="padding: 12px; color: #6c757d;">Searching...</div>';
 
         try {
-            const result = await PartsAPI.search({ query, limit: 20 });
+            const result = await PartsAPI.search(query, null, null, 20);
 
             if (!result.parts || result.parts.length === 0) {
                 resultsDiv.innerHTML = '<div style="padding: 12px; color: #6c757d;">No parts found</div>';
