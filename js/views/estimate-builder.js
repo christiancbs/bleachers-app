@@ -108,8 +108,8 @@ async function searchQbCustomers(query) {
 
             resultsDiv.innerHTML = result.customers.map(c => `
                 <div class="customer-result-item" onclick="selectQbCustomer(${JSON.stringify(c).replace(/"/g, '&quot;')})">
-                    <div style="font-weight: 600;">${c.DisplayName}</div>
-                    ${c.PrimaryEmailAddr ? `<div style="font-size: 12px; color: #6c757d;">${c.PrimaryEmailAddr.Address || c.PrimaryEmailAddr}</div>` : ''}
+                    <div style="font-weight: 600;">${c.name}</div>
+                    ${c.email ? `<div style="font-size: 12px; color: #6c757d;">${c.email}</div>` : ''}
                 </div>
             `).join('');
         } catch (err) {
@@ -133,8 +133,8 @@ function selectQbCustomer(customer) {
     selectedDiv.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #e8f5e9; border-radius: 8px; margin-top: 12px;">
             <div>
-                <div style="font-weight: 600; color: #2e7d32;">${customer.DisplayName}</div>
-                ${customer.PrimaryEmailAddr ? `<div style="font-size: 13px; color: #6c757d;">${customer.PrimaryEmailAddr.Address || customer.PrimaryEmailAddr}</div>` : ''}
+                <div style="font-weight: 600; color: #2e7d32;">${customer.name}</div>
+                ${customer.email ? `<div style="font-size: 13px; color: #6c757d;">${customer.email}</div>` : ''}
             </div>
             <button class="btn btn-outline" style="font-size: 12px;" onclick="clearQbCustomer()">Change</button>
         </div>
@@ -692,7 +692,7 @@ function renderEstimateBuilder() {
                     ${estimateBuilderState.qbCustomer ? `
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #e8f5e9; border-radius: 8px; margin-top: 12px;">
                             <div>
-                                <div style="font-weight: 600; color: #2e7d32;">${estimateBuilderState.qbCustomer.DisplayName}</div>
+                                <div style="font-weight: 600; color: #2e7d32;">${estimateBuilderState.qbCustomer.name}</div>
                             </div>
                             <button class="btn btn-outline" style="font-size: 12px;" onclick="clearQbCustomer()">Change</button>
                         </div>
@@ -878,11 +878,11 @@ async function submitEstimateToQb() {
         const { total } = calculateTotals();
 
         // Extract state code from QB customer billing address
-        const custState = (estimateBuilderState.qbCustomer.BillAddr?.CountrySubDivisionCode || '').toUpperCase().trim();
+        const custState = (estimateBuilderState.qbCustomer.address?.state || '').toUpperCase().trim();
 
         const estimateData = {
-            customerId: estimateBuilderState.qbCustomer.Id,
-            customerName: estimateBuilderState.qbCustomer.DisplayName,
+            customerId: estimateBuilderState.qbCustomer.id,
+            customerName: estimateBuilderState.qbCustomer.name,
             state: custState,
             lineItems: estimateBuilderState.lineItems.map(item => ({
                 itemName: item.itemName,
@@ -908,8 +908,8 @@ async function submitEstimateToQb() {
                     qbEstimateId: String(result.id),
                     docNumber: result.docNumber || null,
                     status: 'Pending',
-                    customerId: estimateBuilderState.qbCustomer.Id,
-                    customerName: estimateBuilderState.qbCustomer.DisplayName,
+                    customerId: estimateBuilderState.qbCustomer.id,
+                    customerName: estimateBuilderState.qbCustomer.name,
                     totalAmount: total,
                     spawnedFromJobId: inspectionDbId
                 });
@@ -942,8 +942,8 @@ async function submitEstimateToQb() {
                     qbEstimateId: String(result.id),
                     docNumber: result.docNumber || null,
                     status: 'Pending',
-                    customerId: estimateBuilderState.qbCustomer.Id,
-                    customerName: estimateBuilderState.qbCustomer.DisplayName,
+                    customerId: estimateBuilderState.qbCustomer.id,
+                    customerName: estimateBuilderState.qbCustomer.name,
                     totalAmount: total,
                     spawnedFromJobId: window._spawnFromJobId
                 });
