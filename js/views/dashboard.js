@@ -2011,7 +2011,8 @@ async function viewCustomerDetail(customerId) {
     // If still no customer, try fetching by local ID
     if (!customer) {
         try {
-            customer = await CustomersAPI.get(customerId);
+            var result = await CustomersAPI.get(customerId);
+            customer = result.customer || result;
         } catch (err) {
             console.error('Failed to fetch customer:', err);
             return;
