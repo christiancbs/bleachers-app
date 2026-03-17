@@ -1009,11 +1009,17 @@ function createEstimateFromCRM() {
     estimateBuilderState.context = 'crm';
 
     // Build customer object for builder state
+    // Extract real state code from address string (e.g. "Nashville, TN 37201" → "TN")
+    var stateCode = '';
+    if (customer.address) {
+        var stateMatch = customer.address.match(/\b([A-Z]{2})\b(?:\s*\d{5})?/);
+        if (stateMatch) stateCode = stateMatch[1];
+    }
     var custObj = {
         id: customer.qbCustomerId || customer._qbId || customer.id,
         name: customer.name,
         email: null,
-        address: customer.address ? { state: (customer.territory === 'Original' ? 'TN' : 'AL') } : null
+        address: stateCode ? { state: stateCode } : null
     };
     // Set customer directly on state (don't call selectQbCustomer — it targets Estimates tab DOM)
     estimateBuilderState.qbCustomer = custObj;
