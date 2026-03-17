@@ -1591,6 +1591,7 @@ function renderCRMRecentActivity(activities) {
 
 function dashboardOpenCustomer(id, name, territory) {
     // Don't cache a stub — let viewCustomerDetail fetch the full record from API
+    window._customerDetailFrom = 'customers';
     var backBtn = document.getElementById('custDetailBackBtn');
     if (backBtn) backBtn.setAttribute('onclick', "showView('customers')");
     viewCustomerDetail(id);
