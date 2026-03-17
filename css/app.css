@@ -2268,3 +2268,13 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* CRM Dashboard responsive */
+@media (max-width: 768px) {
+    #crmStatsRow {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    #crmDashboard > div:nth-child(2) {
+        grid-template-columns: 1fr !important;
+    }
+}

@@ -1479,17 +1479,194 @@ let _crmSearchTimer = null;
 
 function loadCustomersCRM() {
     const container = document.getElementById('customersListCRM');
+    if (container) container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Search for a customer above</div>';
+
+    // Show dashboard, hide search results
+    var dashboard = document.getElementById('crmDashboard');
+    var searchResults = document.getElementById('crmSearchResults');
+    if (dashboard) dashboard.classList.remove('hidden');
+    if (searchResults) searchResults.classList.add('hidden');
+
+    // Load dashboard stats
+    loadCRMDashboard();
+}
+
+async function loadCRMDashboard() {
+    try {
+        var headers = await getApiHeaders();
+        var resp = await fetch(API_BASE + '/customers/dashboard', { headers: headers });
+        if (!resp.ok) throw new Error('Failed to load dashboard');
+        var data = await resp.json();
+
+        // At-a-Glance Stats
+        var el;
+        el = document.getElementById('statCustomers');
+        if (el) el.textContent = (data.stats.customers.total || 0).toLocaleString();
+        el = document.getElementById('statLocations');
+        if (el) el.textContent = (data.stats.locations || 0).toLocaleString();
+        el = document.getElementById('statJobs');
+        if (el) el.textContent = (data.stats.jobs.total || 0).toLocaleString();
+        el = document.getElementById('statActivity30d');
+        if (el) el.textContent = (data.stats.activity30d.total || 0).toLocaleString();
+
+        // Needs Attention
+        renderNeedsAttention(data.needsAttention);
+
+        // Recent Activity
+        renderCRMRecentActivity(data.recentActivity);
+
+        // Active Customers
+        renderActiveCustomers(data.recentCustomers);
+    } catch (err) {
+        console.error('Dashboard load failed:', err);
+        var statsRow = document.getElementById('crmStatsRow');
+        if (statsRow) {
+            // Leave the -- placeholders, don't break the page
+        }
+    }
+}
+
+function renderNeedsAttention(needsAttention) {
+    var container = document.getElementById('crmNeedsAttention');
+    var countBadge = document.getElementById('attentionCount');
     if (!container) return;
-    container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Search for a customer above</div>';
+
+    var items = needsAttention.followUpsDue || [];
+
+    if (countBadge) countBadge.textContent = items.length;
+
+    if (items.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #adb5bd; padding: 20px; font-size: 13px;">All caught up</div>';
+        return;
+    }
+
+    var html = '';
+    items.forEach(function(item) {
+        var age = timeSince(item.createdAt);
+        html += '<div style="padding: 8px 0; border-bottom: 1px solid #f1f3f5; cursor: pointer;" onclick="dashboardOpenCustomer(' + item.customerId + ', \'' + escapeHtml(item.customerName || '').replace(/'/g, "\\'") + '\')">';
+        html += '<div style="font-size: 13px; font-weight: 500; color: #212529;">' + escapeHtml(item.title || 'Follow-up') + '</div>';
+        html += '<div style="font-size: 12px; color: #6c757d; margin-top: 2px;">';
+        if (item.customerName) html += escapeHtml(item.customerName) + ' &middot; ';
+        html += age;
+        html += '</div>';
+        if (item.body) {
+            html += '<div style="font-size: 12px; color: #868e96; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' + escapeHtml(item.body) + '</div>';
+        }
+        html += '</div>';
+    });
+    container.innerHTML = html;
+}
+
+function renderCRMRecentActivity(activities) {
+    var container = document.getElementById('crmRecentActivity');
+    if (!container) return;
+
+    if (!activities || activities.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #adb5bd; padding: 20px; font-size: 13px;">No recent activity</div>';
+        return;
+    }
+
+    var typeIcons = {
+        call: '📞', note: '📝', follow_up: '🔔', email: '📧',
+        estimate_created: '💰', status_change: '🔄', job_created: '🛠️'
+    };
+
+    var html = '';
+    activities.forEach(function(a) {
+        var icon = typeIcons[a.activityType] || '📋';
+        var age = timeSince(a.createdAt);
+        html += '<div style="padding: 8px 0; border-bottom: 1px solid #f1f3f5; display: flex; gap: 8px; align-items: flex-start;' + (a.customerId ? ' cursor: pointer;' : '') + '"' + (a.customerId ? ' onclick="dashboardOpenCustomer(' + a.customerId + ', \'' + escapeHtml(a.customerName || '').replace(/'/g, "\\'") + '\')"' : '') + '>';
+        html += '<span style="font-size: 14px; flex-shrink: 0; margin-top: 1px;">' + icon + '</span>';
+        html += '<div style="flex: 1; min-width: 0;">';
+        html += '<div style="font-size: 13px; color: #212529; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' + escapeHtml(a.title || a.activityType) + '</div>';
+        html += '<div style="font-size: 12px; color: #6c757d; margin-top: 1px;">';
+        if (a.customerName) html += escapeHtml(a.customerName) + ' &middot; ';
+        if (a.userName) html += escapeHtml(a.userName) + ' &middot; ';
+        html += age;
+        html += '</div>';
+        html += '</div></div>';
+    });
+    container.innerHTML = html;
+}
+
+function dashboardOpenCustomer(id, name, territory) {
+    // Ensure customer is in browseCustomersCache so viewCustomerDetail can find it
+    if (typeof browseCustomersCache !== 'undefined') {
+        var exists = browseCustomersCache.find(function(c) { return c.id == id; });
+        if (!exists) {
+            browseCustomersCache.push({ id: id, name: name, territory: territory, locations: [], contacts: [] });
+        }
+    }
+    var backBtn = document.getElementById('custDetailBackBtn');
+    if (backBtn) backBtn.setAttribute('onclick', "showView('customers')");
+    viewCustomerDetail(id);
+}
+
+function renderActiveCustomers(customers) {
+    var container = document.getElementById('crmActiveCustomers');
+    if (!container) return;
+
+    if (!customers || customers.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #adb5bd; padding: 20px; font-size: 13px;">No customer activity in the last 30 days</div>';
+        return;
+    }
+
+    var html = '<table style="width: 100%; font-size: 13px;">';
+    html += '<thead><tr style="background: #f8f9fa;">';
+    html += '<th style="padding: 8px 16px; text-align: left; font-weight: 600; color: #495057;">Customer</th>';
+    html += '<th style="padding: 8px 12px; text-align: left; font-weight: 600; color: #495057;">Territory</th>';
+    html += '<th style="padding: 8px 12px; text-align: center; font-weight: 600; color: #495057;">Activities</th>';
+    html += '<th style="padding: 8px 16px; text-align: right; font-weight: 600; color: #495057;">Last Active</th>';
+    html += '</tr></thead><tbody>';
+
+    customers.forEach(function(c) {
+        var territoryColor = c.territory === 'Original' ? '#1565c0' : '#e65100';
+        var territoryBg = c.territory === 'Original' ? '#e3f2fd' : '#fff3e0';
+        html += '<tr style="border-bottom: 1px solid #f1f3f5; cursor: pointer;" onclick="dashboardOpenCustomer(' + c.id + ', \'' + escapeHtml(c.name || '').replace(/'/g, "\\'") + '\', \'' + (c.territory || '') + '\')">';
+        html += '<td style="padding: 10px 16px; font-weight: 500;">' + escapeHtml(c.name) + '</td>';
+        html += '<td style="padding: 10px 12px;"><span style="background: ' + territoryBg + '; color: ' + territoryColor + '; font-size: 11px; padding: 2px 8px; border-radius: 4px;">' + (c.territory || '—') + '</span></td>';
+        html += '<td style="padding: 10px 12px; text-align: center;">' + c.activityCount + '</td>';
+        html += '<td style="padding: 10px 16px; text-align: right; color: #6c757d;">' + timeSince(c.lastActivity) + '</td>';
+        html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+function timeSince(dateStr) {
+    if (!dateStr) return '';
+    var now = new Date();
+    var date = new Date(dateStr);
+    var seconds = Math.floor((now - date) / 1000);
+    if (seconds < 60) return 'just now';
+    var minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return minutes + 'm ago';
+    var hours = Math.floor(minutes / 60);
+    if (hours < 24) return hours + 'h ago';
+    var days = Math.floor(hours / 24);
+    if (days < 7) return days + 'd ago';
+    if (days < 30) return Math.floor(days / 7) + 'w ago';
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function searchCustomersCRM(query) {
     clearTimeout(_crmSearchTimer);
+    var dashboard = document.getElementById('crmDashboard');
+    var searchResults = document.getElementById('crmSearchResults');
+
     if (!query || query.length < 2) {
         _crmSearchResults = [];
         renderCustomersCRM();
+        // Show dashboard when search is cleared
+        if (dashboard) dashboard.classList.remove('hidden');
+        if (searchResults) searchResults.classList.add('hidden');
         return;
     }
+
+    // Hide dashboard, show search results when typing
+    if (dashboard) dashboard.classList.add('hidden');
+    if (searchResults) searchResults.classList.remove('hidden');
     _crmSearchTimer = setTimeout(async function() {
         try {
             const data = await CustomersAPI.list({ q: query, limit: 100 });

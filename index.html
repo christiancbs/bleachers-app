@@ -59,7 +59,8 @@
                         <span>🏫</span>
                         <span>Customers</span>
                     </div>
-                    <div class="nav-item" data-view="salesPipeline" onclick="showView('salesPipeline')">
+                    <!-- Pipeline archived — merged into Customers dashboard -->
+                    <div class="nav-item hidden" data-view="salesPipeline" onclick="showView('salesPipeline')">
                         <span>💼</span>
                         <span>Pipeline</span>
                     </div>
@@ -92,7 +93,8 @@
                         <span>📅</span>
                         <span>Scheduling</span>
                     </div>
-                    <div class="nav-item" data-view="projects" onclick="showView('projects')">
+                    <!-- Project Tracker archived — will revisit in V2 -->
+                    <div class="nav-item hidden" data-view="projects" onclick="showView('projects')">
                         <span>📊</span>
                         <span>Project Tracker</span>
                     </div>
@@ -468,26 +470,102 @@
                         <!-- CRM List Mode -->
                         <div id="crmListMode">
                             <!-- Search -->
-                            <div class="card" style="margin-bottom: 12px;">
+                            <div class="card" style="margin-bottom: 16px;">
                                 <div class="card-body" style="padding: 12px 16px;">
                                     <input type="text" id="crmCustomerSearch" class="form-input" placeholder="Search customers..." style="width: 100%; font-size: 14px;" oninput="searchCustomersCRM(this.value)">
                                 </div>
                             </div>
 
-                            <!-- Territory Tabs -->
-                            <div style="display: flex; gap: 0; margin-bottom: 12px; border-bottom: 2px solid #e9ecef;">
-                                <button class="schedule-tab active" id="crmTabAll" onclick="filterCustomersCRM('all')" style="font-size: 13px;">All</button>
-                                <button class="schedule-tab" id="crmTabOriginal" onclick="filterCustomersCRM('Original')" style="font-size: 13px;">Original</button>
-                                <button class="schedule-tab" id="crmTabSouthern" onclick="filterCustomersCRM('Southern')" style="font-size: 13px;">Southern</button>
+                            <!-- Dashboard Stats (loaded from API) -->
+                            <div id="crmDashboard">
+                                <!-- At-a-Glance Stats -->
+                                <div id="crmStatsRow" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
+                                    <div class="card" style="text-align: center;">
+                                        <div class="card-body" style="padding: 16px 12px;">
+                                            <div id="statCustomers" style="font-size: 28px; font-weight: 700; color: #1a73e8;">--</div>
+                                            <div style="font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">Customers</div>
+                                        </div>
+                                    </div>
+                                    <div class="card" style="text-align: center;">
+                                        <div class="card-body" style="padding: 16px 12px;">
+                                            <div id="statLocations" style="font-size: 28px; font-weight: 700; color: #2e7d32;">--</div>
+                                            <div style="font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">Schools</div>
+                                        </div>
+                                    </div>
+                                    <div class="card" style="text-align: center;">
+                                        <div class="card-body" style="padding: 16px 12px;">
+                                            <div id="statJobs" style="font-size: 28px; font-weight: 700; color: #e65100;">--</div>
+                                            <div style="font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">Total Jobs</div>
+                                        </div>
+                                    </div>
+                                    <div class="card" style="text-align: center;">
+                                        <div class="card-body" style="padding: 16px 12px;">
+                                            <div id="statActivity30d" style="font-size: 28px; font-weight: 700; color: #7b1fa2;">--</div>
+                                            <div style="font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">Activity (30d)</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Needs Attention + Recent Activity side by side -->
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                                    <!-- Needs Attention -->
+                                    <div class="card">
+                                        <div class="card-header" style="padding: 12px 16px; border-bottom: 1px solid #e9ecef;">
+                                            <h3 style="font-size: 14px; font-weight: 600; margin: 0; display: flex; align-items: center; gap: 6px;">
+                                                <span style="color: #e65100;">Needs Attention</span>
+                                                <span id="attentionCount" style="background: #fff3e0; color: #e65100; font-size: 11px; padding: 2px 8px; border-radius: 10px;">0</span>
+                                            </h3>
+                                        </div>
+                                        <div class="card-body" style="padding: 0; max-height: 300px; overflow-y: auto;">
+                                            <div id="crmNeedsAttention" style="padding: 12px 16px;">
+                                                <div style="text-align: center; color: #adb5bd; padding: 20px; font-size: 13px;">Loading...</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Recent Activity -->
+                                    <div class="card">
+                                        <div class="card-header" style="padding: 12px 16px; border-bottom: 1px solid #e9ecef;">
+                                            <h3 style="font-size: 14px; font-weight: 600; margin: 0;">Recent Activity</h3>
+                                        </div>
+                                        <div class="card-body" style="padding: 0; max-height: 300px; overflow-y: auto;">
+                                            <div id="crmRecentActivity" style="padding: 12px 16px;">
+                                                <div style="text-align: center; color: #adb5bd; padding: 20px; font-size: 13px;">Loading...</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Active Customers (recent activity) -->
+                                <div class="card" style="margin-bottom: 16px;">
+                                    <div class="card-header" style="padding: 12px 16px; border-bottom: 1px solid #e9ecef;">
+                                        <h3 style="font-size: 14px; font-weight: 600; margin: 0;">Active Customers <span style="font-weight: 400; color: #6c757d; font-size: 12px;">(last 30 days)</span></h3>
+                                    </div>
+                                    <div class="card-body" style="padding: 0;">
+                                        <div id="crmActiveCustomers">
+                                            <div style="text-align: center; color: #adb5bd; padding: 20px; font-size: 13px;">Loading...</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div style="margin-bottom: 16px;">
-                                <button class="btn btn-primary" style="font-size: 13px;" onclick="browseCreateNewCustomer()">+ New Customer</button>
-                            </div>
+                            <!-- Territory Tabs + Customer List (shown when searching) -->
+                            <div id="crmSearchResults" class="hidden">
+                                <!-- Territory Tabs -->
+                                <div style="display: flex; gap: 0; margin-bottom: 12px; border-bottom: 2px solid #e9ecef;">
+                                    <button class="schedule-tab active" id="crmTabAll" onclick="filterCustomersCRM('all')" style="font-size: 13px;">All</button>
+                                    <button class="schedule-tab" id="crmTabOriginal" onclick="filterCustomersCRM('Original')" style="font-size: 13px;">Original</button>
+                                    <button class="schedule-tab" id="crmTabSouthern" onclick="filterCustomersCRM('Southern')" style="font-size: 13px;">Southern</button>
+                                </div>
 
-                            <div class="card">
-                                <div class="card-body">
-                                    <div id="customersListCRM"></div>
+                                <div style="margin-bottom: 16px;">
+                                    <button class="btn btn-primary" style="font-size: 13px;" onclick="browseCreateNewCustomer()">+ New Customer</button>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div id="customersListCRM"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
