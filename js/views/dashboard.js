@@ -1491,39 +1491,45 @@ function loadCustomersCRM() {
     loadCRMDashboard();
 }
 
+var _crmDashboardCache = null;
+var _crmDashboardCacheTime = null;
+var _crmDashboardCacheDuration = 5 * 60 * 1000; // 5 min cache
+
 async function loadCRMDashboard() {
+    // Show cached data instantly if available
+    if (_crmDashboardCache && _crmDashboardCacheTime && (Date.now() - _crmDashboardCacheTime < _crmDashboardCacheDuration)) {
+        renderDashboardData(_crmDashboardCache);
+        return;
+    }
+
     try {
         var headers = await getApiHeaders();
         var resp = await fetch('https://bleachers-api.vercel.app/api/customers/dashboard', { headers: headers });
         if (!resp.ok) throw new Error('Failed to load dashboard');
         var data = await resp.json();
 
-        // At-a-Glance Stats
-        var el;
-        el = document.getElementById('statCustomers');
-        if (el) el.textContent = (data.stats.customers.total || 0).toLocaleString();
-        el = document.getElementById('statLocations');
-        if (el) el.textContent = (data.stats.locations || 0).toLocaleString();
-        el = document.getElementById('statJobs');
-        if (el) el.textContent = (data.stats.jobs.total || 0).toLocaleString();
-        el = document.getElementById('statActivity30d');
-        if (el) el.textContent = (data.stats.activity30d.total || 0).toLocaleString();
-
-        // Needs Attention
-        renderNeedsAttention(data.needsAttention);
-
-        // Recent Activity
-        renderCRMRecentActivity(data.recentActivity);
-
-        // Active Customers
-        renderActiveCustomers(data.recentCustomers);
+        _crmDashboardCache = data;
+        _crmDashboardCacheTime = Date.now();
+        renderDashboardData(data);
     } catch (err) {
         console.error('Dashboard load failed:', err);
-        var statsRow = document.getElementById('crmStatsRow');
-        if (statsRow) {
-            // Leave the -- placeholders, don't break the page
-        }
     }
+}
+
+function renderDashboardData(data) {
+    var el;
+    el = document.getElementById('statCustomers');
+    if (el) el.textContent = (data.stats.customers.total || 0).toLocaleString();
+    el = document.getElementById('statLocations');
+    if (el) el.textContent = (data.stats.locations || 0).toLocaleString();
+    el = document.getElementById('statJobs');
+    if (el) el.textContent = (data.stats.jobs.total || 0).toLocaleString();
+    el = document.getElementById('statActivity30d');
+    if (el) el.textContent = (data.stats.activity30d.total || 0).toLocaleString();
+
+    renderNeedsAttention(data.needsAttention);
+    renderCRMRecentActivity(data.recentActivity);
+    renderActiveCustomers(data.recentCustomers);
 }
 
 function renderNeedsAttention(needsAttention) {
