@@ -287,13 +287,15 @@ async function loadEstimates() {
     pendingList.innerHTML = loadingHtml;
 
     try {
-        // Fetch accepted and pending from QB
-        var data = await EstimatesAPI.list({ limit: 500 });
-        var estimates = data.estimates || [];
-        window._qbEstimates = estimates;
+        // Fetch accepted and pending separately from QB (server-side filtered, auto-paginated)
+        var [acceptedData, pendingData] = await Promise.all([
+            EstimatesAPI.listAll({ status: 'Accepted' }),
+            EstimatesAPI.listAll({ status: 'Pending' })
+        ]);
 
-        var accepted = estimates.filter(function(e) { return e.status === 'Accepted'; });
-        var pending = estimates.filter(function(e) { return e.status === 'Pending'; });
+        var accepted = acceptedData.estimates || [];
+        var pending = pendingData.estimates || [];
+        window._qbEstimates = accepted.concat(pending);
 
         document.getElementById('estAcceptedCount').textContent = accepted.length;
         document.getElementById('estPendingCount').textContent = pending.length;

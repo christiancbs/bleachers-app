@@ -86,22 +86,49 @@ const EstimatesAPI = {
         return { estimates: filtered, count: filtered.length };
     },
 
-    // Fetch all estimates for a specific QB customer (server-side filter, no 1000 cap issue)
-    async listByCustomer(qbCustomerId) {
-        const params = new URLSearchParams();
-        params.set('customerId', qbCustomerId);
-        params.set('limit', 1000);
+    // Auto-paginating fetch — gets ALL results by looping through QB's 1000-per-page limit
+    async listAll(options = {}) {
+        const { status, customerName, customerId } = options;
+        const pageSize = 1000;
+        let allEstimates = [];
+        let startPosition = 1;
+        let hasMore = true;
 
-        const response = await fetch(`${QB_API_BASE}/estimates?${params}`, {
-            headers: await this.getHeaders()
-        });
+        while (hasMore) {
+            const params = new URLSearchParams();
+            params.set('limit', pageSize);
+            params.set('startPosition', startPosition);
+            if (status) params.set('status', status);
+            if (customerName) params.set('customerName', customerName);
+            if (customerId) params.set('customerId', customerId);
 
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({}));
-            throw new Error(err.error || 'Failed to fetch customer estimates');
+            const response = await fetch(`${QB_API_BASE}/estimates?${params}`, {
+                headers: await this.getHeaders()
+            });
+
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.error || 'Failed to fetch estimates');
+            }
+
+            const data = await response.json();
+            const page = data.estimates || [];
+            allEstimates = allEstimates.concat(page);
+
+            // If we got fewer than pageSize, we've reached the end
+            if (page.length < pageSize) {
+                hasMore = false;
+            } else {
+                startPosition += pageSize;
+            }
         }
 
-        return response.json();
+        return { estimates: allEstimates, count: allEstimates.length };
+    },
+
+    // Fetch all estimates for a specific QB customer (uses auto-pagination)
+    async listByCustomer(qbCustomerId) {
+        return this.listAll({ customerId: qbCustomerId });
     },
 
     // Create new estimate in QB
