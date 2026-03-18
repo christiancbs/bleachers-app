@@ -367,7 +367,7 @@ function renderTransactionsList(listEl, transactions, type, emptyMessage) {
     });
 
     // Pagination
-    var pageSize = 20;
+    var pageSize = 10;
     var pageKey = '_txnPage_' + type;
     window[pageKey] = window[pageKey] || 1;
     var currentPage = window[pageKey];
@@ -420,22 +420,21 @@ function renderTransactionsList(listEl, transactions, type, emptyMessage) {
         '</div>';
     }).join('');
 
-    // Pagination controls
+    // Pagination controls — compact, at bottom
     var pagHtml = '';
     if (totalPages > 1) {
-        pagHtml = '<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; font-size: 12px; color: #6c757d; border-bottom: 1px solid #e9ecef;">' +
-            '<span>Showing ' + (startIdx + 1) + '–' + Math.min(startIdx + pageSize, sorted.length) + ' of ' + sorted.length + '</span>' +
-            '<div style="display: flex; gap: 4px;">';
+        pagHtml = '<div style="display: flex; justify-content: center; align-items: center; gap: 8px; padding: 10px 0; font-size: 11px; color: #999;">';
         if (currentPage > 1) {
-            pagHtml += '<button class="btn btn-outline" style="font-size: 11px; padding: 3px 8px;" onclick="event.stopPropagation(); window._txnPage_' + type + ' = ' + (currentPage - 1) + '; loadQbTransactions();">← Prev</button>';
+            pagHtml += '<a href="#" onclick="event.preventDefault(); event.stopPropagation(); window._txnPage_' + type + ' = ' + (currentPage - 1) + '; loadQbTransactions();" style="color: #2e7d32; text-decoration: none;">← Prev</a>';
         }
+        pagHtml += '<span>' + currentPage + ' / ' + totalPages + '</span>';
         if (currentPage < totalPages) {
-            pagHtml += '<button class="btn btn-outline" style="font-size: 11px; padding: 3px 8px;" onclick="event.stopPropagation(); window._txnPage_' + type + ' = ' + (currentPage + 1) + '; loadQbTransactions();">Next →</button>';
+            pagHtml += '<a href="#" onclick="event.preventDefault(); event.stopPropagation(); window._txnPage_' + type + ' = ' + (currentPage + 1) + '; loadQbTransactions();" style="color: #2e7d32; text-decoration: none;">Next →</a>';
         }
-        pagHtml += '</div></div>';
+        pagHtml += '</div>';
     }
 
-    listEl.innerHTML = pagHtml + html;
+    listEl.innerHTML = html + pagHtml;
 }
 
 function renderEstimatesList(listEl, estimates, searchTerm, emptyMessage) {
@@ -2436,7 +2435,7 @@ async function loadCustomerStats(customer) {
 }
 
 var _custTxnPage = {};
-var _custTxnPageSize = 20;
+var _custTxnPageSize = 10;
 var _custTxnFilter = {};
 
 function renderCustomerEstimates(customerId, page) {
@@ -2551,39 +2550,21 @@ function renderCustomerEstimates(customerId, page) {
         }).join('') +
         '</tbody></table>';
 
-    // Pagination controls
+    // Pagination controls — compact, at bottom
     var paginationHtml = '';
     if (totalPages > 1) {
-        paginationHtml = '<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; font-size: 12px; color: #6c757d;">' +
-            '<span>Showing ' + (startIdx + 1) + '–' + Math.min(startIdx + _custTxnPageSize, sorted.length) + ' of ' + sorted.length + '</span>' +
-            '<div style="display: flex; gap: 4px;">';
-
+        paginationHtml = '<div style="display: flex; justify-content: center; align-items: center; gap: 8px; padding: 8px 0; font-size: 11px; color: #999;">';
         if (currentPage > 1) {
-            paginationHtml += '<button class="btn btn-outline" style="font-size: 11px; padding: 3px 8px;" onclick="renderCustomerEstimates(\'' + customerId + '\', ' + (currentPage - 1) + ')">← Prev</button>';
+            paginationHtml += '<a href="#" onclick="event.preventDefault(); renderCustomerEstimates(\'' + customerId + '\', ' + (currentPage - 1) + ')" style="color: #2e7d32; text-decoration: none;">← Prev</a>';
         }
-
-        var startPage = Math.max(1, currentPage - 2);
-        var endPage = Math.min(totalPages, startPage + 4);
-        startPage = Math.max(1, endPage - 4);
-
-        for (var p = startPage; p <= endPage; p++) {
-            if (p === currentPage) {
-                paginationHtml += '<button class="btn" style="font-size: 11px; padding: 3px 8px; background: #2e7d32; color: white; border: none;">' + p + '</button>';
-            } else {
-                paginationHtml += '<button class="btn btn-outline" style="font-size: 11px; padding: 3px 8px;" onclick="renderCustomerEstimates(\'' + customerId + '\', ' + p + ')">' + p + '</button>';
-            }
-        }
-
+        paginationHtml += '<span>' + currentPage + ' / ' + totalPages + '</span>';
         if (currentPage < totalPages) {
-            paginationHtml += '<button class="btn btn-outline" style="font-size: 11px; padding: 3px 8px;" onclick="renderCustomerEstimates(\'' + customerId + '\', ' + (currentPage + 1) + ')">Next →</button>';
+            paginationHtml += '<a href="#" onclick="event.preventDefault(); renderCustomerEstimates(\'' + customerId + '\', ' + (currentPage + 1) + ')" style="color: #2e7d32; text-decoration: none;">Next →</a>';
         }
-
-        paginationHtml += '</div></div>';
-    } else if (sorted.length > 0) {
-        paginationHtml = '<div style="padding: 6px 0; font-size: 12px; color: #6c757d;">' + sorted.length + ' transaction' + (sorted.length === 1 ? '' : 's') + '</div>';
+        paginationHtml += '</div>';
     }
 
-    container.innerHTML = filterBarHtml + paginationHtml + tableHtml;
+    container.innerHTML = filterBarHtml + tableHtml + paginationHtml;
 }
 
 // Build sorted list from current filter for preview lookups
