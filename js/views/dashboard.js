@@ -292,16 +292,15 @@ async function loadEstimates() {
     if (posList) posList.innerHTML = loadingHtml;
     if (billsList) billsList.innerHTML = loadingHtml;
 
-    // Load estimates first (priority), then other types in background
+    // Load all estimates then split by status (QB doesn't support TxnStatus in WHERE)
     try {
-        var [acceptedData, pendingData] = await Promise.all([
-            EstimatesAPI.listAll({ status: 'Accepted' }),
-            EstimatesAPI.listAll({ status: 'Pending' })
-        ]);
+        var allData = await EstimatesAPI.listAll({});
 
-        var accepted = acceptedData.estimates || [];
-        var pending = pendingData.estimates || [];
-        window._qbEstimates = accepted.concat(pending);
+        var allEstimates = allData.estimates || [];
+        window._qbEstimates = allEstimates;
+
+        var accepted = allEstimates.filter(function(e) { return e.status === 'Accepted'; });
+        var pending = allEstimates.filter(function(e) { return e.status === 'Pending'; });
 
         document.getElementById('estAcceptedCount').textContent = accepted.length;
         document.getElementById('estPendingCount').textContent = pending.length;
