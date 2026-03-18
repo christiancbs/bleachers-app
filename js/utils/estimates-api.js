@@ -262,3 +262,60 @@ EstimatesAPI.statusColors = {
 
 // Make available globally
 window.EstimatesAPI = EstimatesAPI;
+
+// ==========================================
+// TRANSACTIONS API CLIENT
+// Fetches Invoices, POs, Bills from QuickBooks
+// ==========================================
+
+const TransactionsAPI = {
+    async getHeaders() {
+        return getApiHeaders();
+    },
+
+    // Fetch transactions for a customer (Invoices + POs by default)
+    async listByCustomer(qbCustomerId, options = {}) {
+        const { type } = options;
+        const params = new URLSearchParams();
+        params.set('customerId', qbCustomerId);
+        params.set('limit', 1000);
+        if (type) params.set('type', type);
+
+        const response = await fetch(`${QB_API_BASE}/transactions?${params}`, {
+            headers: await this.getHeaders()
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to fetch transactions');
+        }
+
+        return response.json();
+    },
+
+    // Fetch invoices for a customer
+    async listInvoices(qbCustomerId) {
+        return this.listByCustomer(qbCustomerId, { type: 'Invoice' });
+    },
+
+    // Fetch purchase orders (all — POs are vendor-addressed, not customer-addressed)
+    async listPurchaseOrders(options = {}) {
+        const { limit = 100 } = options;
+        const params = new URLSearchParams();
+        params.set('type', 'PurchaseOrder');
+        params.set('limit', limit);
+
+        const response = await fetch(`${QB_API_BASE}/transactions?${params}`, {
+            headers: await this.getHeaders()
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to fetch purchase orders');
+        }
+
+        return response.json();
+    }
+};
+
+window.TransactionsAPI = TransactionsAPI;

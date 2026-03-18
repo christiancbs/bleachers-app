@@ -2274,24 +2274,30 @@ let _custJobsCache = {};
 let _custEstimatesCache = {};
 let _custActivityCache = {};
 
+var _custInvoicesCache = {};
+
 async function loadCustomerStats(customer) {
     const customerId = customer.id;
     try {
-        // Fetch jobs by customer name (same pattern as browse.js)
+        // Fetch jobs, estimates, and invoices in parallel
         const jobsPromise = JobsAPI.list({ q: customer.name, limit: 500 });
-        // Fetch estimates from QB (source of truth) by QB customer ID
         const estPromise = customer.qbCustomerId
             ? EstimatesAPI.listByCustomer(customer.qbCustomerId)
             : Promise.resolve({ estimates: [] });
+        const invoicePromise = customer.qbCustomerId
+            ? TransactionsAPI.listInvoices(customer.qbCustomerId)
+            : Promise.resolve({ transactions: [] });
 
-        const [jobsData, estData] = await Promise.all([jobsPromise, estPromise]);
+        const [jobsData, estData, invoiceData] = await Promise.all([jobsPromise, estPromise, invoicePromise]);
 
         const jobs = jobsData.jobs || [];
         const estimates = estData.estimates || [];
+        const invoices = invoiceData.transactions || [];
 
         // Cache for other tabs
         _custJobsCache[customerId] = jobs;
         _custEstimatesCache[customerId] = estimates;
+        _custInvoicesCache[customerId] = invoices;
 
         // Auto-render estimates (default tab)
         if (currentCustomerId === customerId) {
@@ -2303,54 +2309,219 @@ async function loadCustomerStats(customer) {
     }
 }
 
-function renderCustomerEstimates(customerId) {
+var _custTxnPage = {};
+var _custTxnPageSize = 20;
+var _custTxnFilter = {};
+
+function renderCustomerEstimates(customerId, page) {
     const container = document.getElementById('custEstimatesList');
     if (!container) return;
 
     const estimates = _custEstimatesCache[customerId];
-    if (!estimates) {
-        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading estimates...</div>';
+    const invoices = _custInvoicesCache[customerId];
+
+    // Still loading
+    if (!estimates && !invoices) {
+        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">Loading transactions...</div>';
         return;
     }
 
-    if (estimates.length === 0) {
-        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No estimates found for this customer</div>';
+    // Merge estimates + invoices into unified list with type labels
+    var allTxns = [];
+    if (estimates) {
+        estimates.forEach(function(e) {
+            allTxns.push(Object.assign({}, e, { _type: 'Estimate' }));
+        });
+    }
+    if (invoices) {
+        invoices.forEach(function(inv) {
+            allTxns.push(Object.assign({}, inv, { _type: inv.type || 'Invoice' }));
+        });
+    }
+
+    if (allTxns.length === 0) {
+        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No transactions found for this customer</div>';
         return;
     }
+
+    // Filter tabs
+    var activeFilter = _custTxnFilter[customerId] || 'All';
+    var filtered = activeFilter === 'All' ? allTxns : allTxns.filter(function(t) { return t._type === activeFilter; });
+
+    // Count by type
+    var estCount = estimates ? estimates.length : 0;
+    var invCount = invoices ? invoices.length : 0;
 
     // Sort by date descending
-    const sorted = [...estimates].sort((a, b) => {
-        const da = new Date(a.txnDate || a.createdAt || 0);
-        const db = new Date(b.txnDate || b.createdAt || 0);
-        return db - da;
+    var sorted = filtered.slice().sort(function(a, b) {
+        return new Date(b.txnDate || b.createdAt || 0) - new Date(a.txnDate || a.createdAt || 0);
     });
 
-    const statusColors = {
+    // Pagination
+    var currentPage = page || _custTxnPage[customerId] || 1;
+    _custTxnPage[customerId] = currentPage;
+    var totalPages = Math.ceil(sorted.length / _custTxnPageSize);
+    if (currentPage > totalPages) currentPage = 1;
+    _custTxnPage[customerId] = currentPage;
+    var startIdx = (currentPage - 1) * _custTxnPageSize;
+    var pageItems = sorted.slice(startIdx, startIdx + _custTxnPageSize);
+
+    var typeColors = {
+        'Estimate': '#1565c0',
+        'Invoice': '#6a1b9a',
+        'PurchaseOrder': '#e65100'
+    };
+    var statusColors = {
         'Pending': '#FF9800',
         'Accepted': '#4CAF50',
         'Closed': '#6c757d',
-        'Rejected': '#f44336'
+        'Rejected': '#f44336',
+        'Paid': '#4CAF50',
+        'Open': '#1565c0',
+        'Overdue': '#f44336'
     };
 
-    container.innerHTML = '<table class="data-table" style="font-size: 12px;"><thead><tr>' +
-        '<th>Doc #</th><th>Date</th><th>Status</th>' +
+    // Filter tabs bar
+    function filterBtn(label, value, count) {
+        var isActive = activeFilter === value;
+        var style = isActive
+            ? 'background: #2e7d32; color: white; border: none;'
+            : 'background: white; color: #333; border: 1px solid #ddd;';
+        return '<button style="font-size: 11px; padding: 4px 10px; border-radius: 12px; cursor: pointer; ' + style + '" ' +
+            'onclick="_custTxnFilter[\'' + customerId + '\'] = \'' + value + '\'; _custTxnPage[\'' + customerId + '\'] = 1; renderCustomerEstimates(\'' + customerId + '\', 1);">' +
+            label + (count !== undefined ? ' (' + count + ')' : '') + '</button>';
+    }
+
+    var filterBarHtml = '<div style="display: flex; gap: 6px; padding: 8px 0; flex-wrap: wrap;">' +
+        filterBtn('All', 'All', allTxns.length) +
+        filterBtn('Estimates', 'Estimate', estCount) +
+        filterBtn('Invoices', 'Invoice', invCount) +
+        '</div>';
+
+    // Table
+    var tableHtml = '<table class="data-table" style="font-size: 12px;"><thead><tr>' +
+        '<th>Type</th><th>Doc #</th><th>Date</th><th>Amount</th><th>Status</th>' +
         '</tr></thead><tbody>' +
-        sorted.map(function(est, idx) {
-            var date = est.txnDate ? new Date(est.txnDate).toLocaleDateString() : '—';
-            var status = est.status || 'Unknown';
-            var color = statusColors[status] || '#6c757d';
-            return '<tr style="cursor: pointer;" onclick="showEstimatePreview(' + idx + ', \'' + customerId + '\')">' +
-                '<td><span style="color: #0066cc; font-weight: 500;">' + (est.docNumber || est.qbEstimateId || '—') + '</span></td>' +
+        pageItems.map(function(txn, idx) {
+            var globalIdx = startIdx + idx;
+            var date = txn.txnDate ? new Date(txn.txnDate).toLocaleDateString() : '—';
+            var status = txn.status || 'Unknown';
+            var sColor = statusColors[status] || '#6c757d';
+            var tColor = typeColors[txn._type] || '#333';
+            var amount = parseFloat(txn.totalAmount) || 0;
+            var typeLabel = txn._type === 'PurchaseOrder' ? 'PO' : txn._type;
+            var qbPath = txn._type === 'Invoice' ? 'invoice' : (txn._type === 'PurchaseOrder' ? 'purchaseorder' : 'estimate');
+            var qbId = txn.qbEstimateId || txn.id;
+            var onclick = txn._type === 'Estimate'
+                ? 'showEstimatePreview(' + globalIdx + ', \'' + customerId + '\')'
+                : 'showTransactionPreview(' + globalIdx + ', \'' + customerId + '\')';
+            return '<tr style="cursor: pointer;" onclick="' + onclick + '">' +
+                '<td><span class="badge" style="background: ' + tColor + '15; color: ' + tColor + '; font-size: 10px; font-weight: 600;">' + typeLabel + '</span></td>' +
+                '<td><span style="color: #0066cc; font-weight: 500;">' + (txn.docNumber || qbId || '—') + '</span></td>' +
                 '<td>' + date + '</td>' +
-                '<td><span class="badge" style="background: ' + color + '20; color: ' + color + '; font-size: 11px;">' + status + '</span></td>' +
+                '<td>$' + amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</td>' +
+                '<td><span class="badge" style="background: ' + sColor + '20; color: ' + sColor + '; font-size: 11px;">' + status + '</span></td>' +
                 '</tr>';
         }).join('') +
         '</tbody></table>';
+
+    // Pagination controls
+    var paginationHtml = '';
+    if (totalPages > 1) {
+        paginationHtml = '<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; font-size: 12px; color: #6c757d;">' +
+            '<span>Showing ' + (startIdx + 1) + '–' + Math.min(startIdx + _custTxnPageSize, sorted.length) + ' of ' + sorted.length + '</span>' +
+            '<div style="display: flex; gap: 4px;">';
+
+        if (currentPage > 1) {
+            paginationHtml += '<button class="btn btn-outline" style="font-size: 11px; padding: 3px 8px;" onclick="renderCustomerEstimates(\'' + customerId + '\', ' + (currentPage - 1) + ')">← Prev</button>';
+        }
+
+        var startPage = Math.max(1, currentPage - 2);
+        var endPage = Math.min(totalPages, startPage + 4);
+        startPage = Math.max(1, endPage - 4);
+
+        for (var p = startPage; p <= endPage; p++) {
+            if (p === currentPage) {
+                paginationHtml += '<button class="btn" style="font-size: 11px; padding: 3px 8px; background: #2e7d32; color: white; border: none;">' + p + '</button>';
+            } else {
+                paginationHtml += '<button class="btn btn-outline" style="font-size: 11px; padding: 3px 8px;" onclick="renderCustomerEstimates(\'' + customerId + '\', ' + p + ')">' + p + '</button>';
+            }
+        }
+
+        if (currentPage < totalPages) {
+            paginationHtml += '<button class="btn btn-outline" style="font-size: 11px; padding: 3px 8px;" onclick="renderCustomerEstimates(\'' + customerId + '\', ' + (currentPage + 1) + ')">Next →</button>';
+        }
+
+        paginationHtml += '</div></div>';
+    } else if (sorted.length > 0) {
+        paginationHtml = '<div style="padding: 6px 0; font-size: 12px; color: #6c757d;">' + sorted.length + ' transaction' + (sorted.length === 1 ? '' : 's') + '</div>';
+    }
+
+    container.innerHTML = filterBarHtml + paginationHtml + tableHtml;
+}
+
+// Build sorted list from current filter for preview lookups
+function _getSortedTxnList(customerId) {
+    var estimates = _custEstimatesCache[customerId] || [];
+    var invoices = _custInvoicesCache[customerId] || [];
+    var allTxns = [];
+    estimates.forEach(function(e) { allTxns.push(Object.assign({}, e, { _type: 'Estimate' })); });
+    invoices.forEach(function(inv) { allTxns.push(Object.assign({}, inv, { _type: inv.type || 'Invoice' })); });
+    var activeFilter = _custTxnFilter[customerId] || 'All';
+    var filtered = activeFilter === 'All' ? allTxns : allTxns.filter(function(t) { return t._type === activeFilter; });
+    return filtered.slice().sort(function(a, b) {
+        return new Date(b.txnDate || b.createdAt || 0) - new Date(a.txnDate || a.createdAt || 0);
+    });
+}
+
+function showTransactionPreview(idx, customerId) {
+    var sorted = _getSortedTxnList(customerId);
+    var txn = sorted[idx];
+    if (!txn) return;
+
+    var amount = parseFloat(txn.totalAmount) || 0;
+    var statusColors = { 'Pending': '#FF9800', 'Accepted': '#4CAF50', 'Closed': '#6c757d', 'Rejected': '#f44336', 'Paid': '#4CAF50', 'Open': '#1565c0', 'Overdue': '#f44336' };
+    var color = statusColors[txn.status] || '#6c757d';
+    var qbPath = txn._type === 'Invoice' ? 'invoice' : 'purchaseorder';
+    var qbUrl = 'https://qbo.intuit.com/app/' + qbPath + '?txnId=' + txn.id;
+    var date = txn.txnDate ? new Date(txn.txnDate).toLocaleDateString() : '—';
+    var typeLabel = txn._type === 'PurchaseOrder' ? 'Purchase Order' : txn._type;
+
+    var items = txn.lineItems || [];
+    var lineItemsHtml = items.length > 0
+        ? items.map(function(li) {
+            return '<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px;">' +
+                '<span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' + (li.description || li.itemName || '—') + '</span>' +
+                '<span style="font-weight: 500; margin-left: 12px; white-space: nowrap;">$' + (parseFloat(li.amount) || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</span>' +
+                '</div>';
+        }).join('')
+        : '<div style="font-size: 13px; color: #6c757d; padding: 12px 0;">No line items</div>';
+
+    var fields = [
+        { label: 'Date', value: date },
+        { label: 'Total', value: '$' + amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}), bold: true }
+    ];
+
+    if (txn._type === 'Invoice') {
+        if (txn.balance !== undefined) fields.push({ label: 'Balance', value: '$' + parseFloat(txn.balance).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) });
+        if (txn.poNumber) fields.push({ label: 'PO Number', value: txn.poNumber });
+        if (txn.dueDate) fields.push({ label: 'Due Date', value: new Date(txn.dueDate).toLocaleDateString() });
+    }
+
+    if (txn.customerName) fields.push({ label: 'Customer', value: txn.customerName });
+    if (txn.vendorName) fields.push({ label: 'Vendor', value: txn.vendorName });
+
+    showCrmPreview({
+        title: typeLabel + ' ' + (txn.docNumber || txn.id),
+        badge: { label: txn.status || 'Unknown', color: color },
+        topRight: '<a href="' + qbUrl + '" target="_blank" rel="noopener" onclick="event.stopPropagation();" style="font-size: 12px; color: #0066cc; text-decoration: none; padding: 4px 10px; border: 1px solid #0066cc; border-radius: 6px;">Open in QuickBooks ↗</a>',
+        fields: fields,
+        sections: [{ title: 'Line Items', html: lineItemsHtml }]
+    });
 }
 
 function showEstimatePreview(idx, customerId) {
-    var estimates = _custEstimatesCache[customerId];
-    var sorted = [].concat(estimates).sort(function(a, b) { return new Date(b.txnDate || b.createdAt || 0) - new Date(a.txnDate || a.createdAt || 0); });
+    var sorted = _getSortedTxnList(customerId);
     var est = sorted[idx];
     if (!est) return;
 
