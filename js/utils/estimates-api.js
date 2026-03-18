@@ -86,6 +86,24 @@ const EstimatesAPI = {
         return { estimates: filtered, count: filtered.length };
     },
 
+    // Fetch all estimates for a specific QB customer (server-side filter, no 1000 cap issue)
+    async listByCustomer(qbCustomerId) {
+        const params = new URLSearchParams();
+        params.set('customerId', qbCustomerId);
+        params.set('limit', 1000);
+
+        const response = await fetch(`${QB_API_BASE}/estimates?${params}`, {
+            headers: await this.getHeaders()
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to fetch customer estimates');
+        }
+
+        return response.json();
+    },
+
     // Create new estimate in QB
     async create(estimateData) {
         const response = await fetch(`${QB_API_BASE}/estimates`, {

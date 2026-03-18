@@ -2277,9 +2277,9 @@ async function loadCustomerStats(customer) {
     try {
         // Fetch jobs by customer name (same pattern as browse.js)
         const jobsPromise = JobsAPI.list({ q: customer.name, limit: 500 });
-        // Fetch estimates from QB (source of truth) by customer name
-        const estPromise = customer.name
-            ? EstimatesAPI.search(customer.name)
+        // Fetch estimates from QB (source of truth) by QB customer ID
+        const estPromise = customer.qbCustomerId
+            ? EstimatesAPI.listByCustomer(customer.qbCustomerId)
             : Promise.resolve({ estimates: [] });
 
         const [jobsData, estData] = await Promise.all([jobsPromise, estPromise]);
