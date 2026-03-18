@@ -273,11 +273,11 @@ const TransactionsAPI = {
         return getApiHeaders();
     },
 
-    // Fetch transactions for a customer (Invoices + POs by default)
+    // Fetch transactions — optionally filtered by customer
     async listByCustomer(qbCustomerId, options = {}) {
         const { type } = options;
         const params = new URLSearchParams();
-        params.set('customerId', qbCustomerId);
+        if (qbCustomerId) params.set('customerId', qbCustomerId);
         params.set('limit', 1000);
         if (type) params.set('type', type);
 

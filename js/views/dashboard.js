@@ -270,6 +270,9 @@ function renderTodayPanel(containerId) {
 async function loadEstimates() {
     var acceptedList = document.getElementById('acceptedEstimatesList');
     var pendingList = document.getElementById('pendingEstimatesList');
+    var invoicesList = document.getElementById('invoicesList');
+    var posList = document.getElementById('purchaseOrdersList');
+    var billsList = document.getElementById('billsList');
     var defaultView = document.getElementById('estimatesDefaultView');
     var searchResults = document.getElementById('estimatesSearchResults');
     var createTab = document.getElementById('estimatesCreateTab');
@@ -285,9 +288,12 @@ async function loadEstimates() {
     var loadingHtml = '<div style="padding: 30px; text-align: center; color: #6c757d;">Loading from QuickBooks...</div>';
     acceptedList.innerHTML = loadingHtml;
     pendingList.innerHTML = loadingHtml;
+    if (invoicesList) invoicesList.innerHTML = loadingHtml;
+    if (posList) posList.innerHTML = loadingHtml;
+    if (billsList) billsList.innerHTML = loadingHtml;
 
+    // Load estimates first (priority), then other types in background
     try {
-        // Fetch accepted and pending separately from QB (server-side filtered, auto-paginated)
         var [acceptedData, pendingData] = await Promise.all([
             EstimatesAPI.listAll({ status: 'Accepted' }),
             EstimatesAPI.listAll({ status: 'Pending' })
@@ -300,10 +306,7 @@ async function loadEstimates() {
         document.getElementById('estAcceptedCount').textContent = accepted.length;
         document.getElementById('estPendingCount').textContent = pending.length;
 
-        // Render accepted
         renderEstimatesList(acceptedList, accepted, '', 'No accepted estimates needing jobs');
-
-        // Render pending
         renderEstimatesList(pendingList, pending, '', 'No pending estimates');
     } catch (err) {
         console.error('Failed to load estimates:', err);
@@ -311,6 +314,129 @@ async function loadEstimates() {
         acceptedList.innerHTML = '<div style="padding: 30px; text-align: center; color: #dc3545;">Failed to load estimates: ' + err.message + '</div>';
         pendingList.innerHTML = '';
     }
+
+    // Load invoices, POs, bills in parallel (non-blocking)
+    loadQbTransactions();
+}
+
+async function loadQbTransactions() {
+    try {
+        var [invoiceData, poData, billData] = await Promise.all([
+            TransactionsAPI.listByCustomer(null, { type: 'Invoice' }).catch(function() { return { transactions: [] }; }),
+            TransactionsAPI.listPurchaseOrders({ limit: 1000 }).catch(function() { return { transactions: [] }; }),
+            fetch('https://bleachers-api.vercel.app/api/qb/transactions?type=Bill&limit=1000', { headers: await getApiHeaders() })
+                .then(function(r) { return r.ok ? r.json() : { transactions: [] }; })
+                .catch(function() { return { transactions: [] }; })
+        ]);
+
+        var invoices = invoiceData.transactions || [];
+        var pos = poData.transactions || [];
+        var bills = billData.transactions || [];
+
+        window._qbInvoices = invoices;
+        window._qbPOs = pos;
+        window._qbBills = bills;
+
+        var invoicesCountEl = document.getElementById('estInvoicesCount');
+        var posCountEl = document.getElementById('estPOsCount');
+        var billsCountEl = document.getElementById('estBillsCount');
+        if (invoicesCountEl) invoicesCountEl.textContent = invoices.length;
+        if (posCountEl) posCountEl.textContent = pos.length;
+        if (billsCountEl) billsCountEl.textContent = bills.length;
+
+        var invoicesList = document.getElementById('invoicesList');
+        var posList = document.getElementById('purchaseOrdersList');
+        var billsList = document.getElementById('billsList');
+
+        if (invoicesList) renderTransactionsList(invoicesList, invoices, 'Invoice', 'No invoices found');
+        if (posList) renderTransactionsList(posList, pos, 'PurchaseOrder', 'No purchase orders found');
+        if (billsList) renderTransactionsList(billsList, bills, 'Bill', 'No bills found');
+    } catch (err) {
+        console.error('Failed to load QB transactions:', err);
+    }
+}
+
+function renderTransactionsList(listEl, transactions, type, emptyMessage) {
+    if (!transactions || transactions.length === 0) {
+        listEl.innerHTML = '<div style="padding: 30px; text-align: center; color: #6c757d;">' + (emptyMessage || 'No transactions found') + '</div>';
+        return;
+    }
+
+    // Sort by date descending
+    var sorted = transactions.slice().sort(function(a, b) {
+        return new Date(b.txnDate || 0) - new Date(a.txnDate || 0);
+    });
+
+    // Pagination
+    var pageSize = 20;
+    var pageKey = '_txnPage_' + type;
+    window[pageKey] = window[pageKey] || 1;
+    var currentPage = window[pageKey];
+    var totalPages = Math.ceil(sorted.length / pageSize);
+    if (currentPage > totalPages) currentPage = 1;
+    window[pageKey] = currentPage;
+    var startIdx = (currentPage - 1) * pageSize;
+    var pageItems = sorted.slice(startIdx, startIdx + pageSize);
+
+    var statusColors = {
+        'Pending': { bg: '#fff3e0', color: '#e65100' },
+        'Accepted': { bg: '#c8e6c9', color: '#2e7d32' },
+        'Open': { bg: '#bbdefb', color: '#1565c0' },
+        'Closed': { bg: '#e0e0e0', color: '#616161' },
+        'Paid': { bg: '#c8e6c9', color: '#2e7d32' },
+        'Overdue': { bg: '#ffcdd2', color: '#c62828' }
+    };
+
+    var html = pageItems.map(function(txn) {
+        var sc = statusColors[txn.status] || { bg: '#e0e0e0', color: '#616161' };
+        var name = txn.customerName || txn.vendorName || '';
+        var qbPath = type === 'Invoice' ? 'invoice' : (type === 'PurchaseOrder' ? 'purchaseorder' : 'bill');
+        var qbUrl = 'https://qbo.intuit.com/app/' + qbPath + '?txnId=' + txn.id;
+
+        var secondLine = '';
+        if (type === 'PurchaseOrder' && txn.shipTo) {
+            secondLine = '<span style="font-size: 12px; color: #6c757d;">Ship to: ' + txn.shipTo + '</span>';
+        } else if (type === 'Invoice' && txn.balance > 0) {
+            secondLine = '<span style="font-size: 12px; color: #dc3545;">Balance: $' + Number(txn.balance).toLocaleString(undefined, {minimumFractionDigits: 2}) + '</span>';
+        }
+
+        return '<div class="inspection-item" onclick="window.open(\'' + qbUrl + '\', \'_blank\')" style="padding: 16px; border-bottom: 1px solid #e9ecef; cursor: pointer;">' +
+            '<div style="display: flex; justify-content: space-between; align-items: flex-start;">' +
+                '<div style="flex: 1; min-width: 0;">' +
+                    '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">' +
+                        '<span style="font-weight: 600; color: #007bff;">' + (txn.docNumber || '') + '</span>' +
+                        '<span class="badge" style="background: ' + sc.bg + '; color: ' + sc.color + ';">' + (txn.status || '') + '</span>' +
+                    '</div>' +
+                    '<strong style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + name + '</strong>' +
+                    '<p style="font-size: 13px; color: #6c757d; margin-top: 4px;">' +
+                        (txn.lineItems ? txn.lineItems.length : 0) + ' line items' +
+                        (txn.txnDate ? ' &bull; ' + new Date(txn.txnDate).toLocaleDateString() : '') +
+                    '</p>' +
+                    (secondLine ? '<p style="margin-top: 2px;">' + secondLine + '</p>' : '') +
+                '</div>' +
+                '<div style="text-align: right; flex-shrink: 0; margin-left: 16px;">' +
+                    '<span style="font-weight: 600; color: #28a745; font-size: 16px;">$' + Number(txn.totalAmount || 0).toLocaleString() + '</span>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+
+    // Pagination controls
+    var pagHtml = '';
+    if (totalPages > 1) {
+        pagHtml = '<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; font-size: 12px; color: #6c757d; border-bottom: 1px solid #e9ecef;">' +
+            '<span>Showing ' + (startIdx + 1) + '–' + Math.min(startIdx + pageSize, sorted.length) + ' of ' + sorted.length + '</span>' +
+            '<div style="display: flex; gap: 4px;">';
+        if (currentPage > 1) {
+            pagHtml += '<button class="btn btn-outline" style="font-size: 11px; padding: 3px 8px;" onclick="event.stopPropagation(); window._txnPage_' + type + ' = ' + (currentPage - 1) + '; loadQbTransactions();">← Prev</button>';
+        }
+        if (currentPage < totalPages) {
+            pagHtml += '<button class="btn btn-outline" style="font-size: 11px; padding: 3px 8px;" onclick="event.stopPropagation(); window._txnPage_' + type + ' = ' + (currentPage + 1) + '; loadQbTransactions();">Next →</button>';
+        }
+        pagHtml += '</div></div>';
+    }
+
+    listEl.innerHTML = pagHtml + html;
 }
 
 function renderEstimatesList(listEl, estimates, searchTerm, emptyMessage) {
@@ -416,27 +542,28 @@ function hideEstimateBuilder() {
 }
 
 function switchEstimateTab(tab) {
-    var acceptedTab = document.getElementById('estTabAccepted');
-    var pendingTab = document.getElementById('estTabPending');
-    var acceptedPanel = document.getElementById('estPanelAccepted');
-    var pendingPanel = document.getElementById('estPanelPending');
+    var tabs = ['accepted', 'pending', 'invoices', 'pos', 'bills'];
+    var tabIds = { accepted: 'estTabAccepted', pending: 'estTabPending', invoices: 'estTabInvoices', pos: 'estTabPOs', bills: 'estTabBills' };
+    var panelIds = { accepted: 'estPanelAccepted', pending: 'estPanelPending', invoices: 'estPanelInvoices', pos: 'estPanelPOs', bills: 'estPanelBills' };
 
-    if (tab === 'accepted') {
-        acceptedTab.classList.add('active');
-        pendingTab.classList.remove('active');
-        acceptedPanel.classList.remove('hidden');
-        pendingPanel.classList.add('hidden');
-    } else {
-        pendingTab.classList.add('active');
-        acceptedTab.classList.remove('active');
-        pendingPanel.classList.remove('hidden');
-        acceptedPanel.classList.add('hidden');
-    }
+    tabs.forEach(function(t) {
+        var tabEl = document.getElementById(tabIds[t]);
+        var panelEl = document.getElementById(panelIds[t]);
+        if (!tabEl || !panelEl) return;
+        if (t === tab) {
+            tabEl.classList.add('active');
+            panelEl.classList.remove('hidden');
+        } else {
+            tabEl.classList.remove('active');
+            panelEl.classList.add('hidden');
+        }
+    });
 }
 
 window.showEstimateBuilder = showEstimateBuilder;
 window.hideEstimateBuilder = hideEstimateBuilder;
 window.loadEstimates = loadEstimates;
+window.loadQbTransactions = loadQbTransactions;
 window.searchEstimates = searchEstimates;
 window.switchEstimateTab = switchEstimateTab;
 

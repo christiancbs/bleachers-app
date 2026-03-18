@@ -181,15 +181,24 @@
                             </div>
                         </div>
 
-                        <!-- Default view: Tabs for Accepted + Pending -->
+                        <!-- Default view: Tabs for Accepted + Pending + Invoices + POs -->
                         <div id="estimatesDefaultView">
                             <!-- Tab bar -->
-                            <div style="display: flex; gap: 0; margin-bottom: 0; border-bottom: 2px solid #e9ecef;">
+                            <div style="display: flex; gap: 0; margin-bottom: 0; border-bottom: 2px solid #e9ecef; overflow-x: auto;">
                                 <button id="estTabAccepted" class="est-tab active" onclick="switchEstimateTab('accepted')">
                                     Accepted <span id="estAcceptedCount" class="badge" style="background: #c8e6c9; color: #2e7d32; margin-left: 4px; font-size: 11px;">0</span>
                                 </button>
                                 <button id="estTabPending" class="est-tab" onclick="switchEstimateTab('pending')">
                                     Pending <span id="estPendingCount" class="badge" style="background: #fff3e0; color: #e65100; margin-left: 4px; font-size: 11px;">0</span>
+                                </button>
+                                <button id="estTabInvoices" class="est-tab" onclick="switchEstimateTab('invoices')">
+                                    Invoices <span id="estInvoicesCount" class="badge" style="background: #e8d5f5; color: #6a1b9a; margin-left: 4px; font-size: 11px;">0</span>
+                                </button>
+                                <button id="estTabPOs" class="est-tab" onclick="switchEstimateTab('pos')">
+                                    Purchase Orders <span id="estPOsCount" class="badge" style="background: #ffe0cc; color: #e65100; margin-left: 4px; font-size: 11px;">0</span>
+                                </button>
+                                <button id="estTabBills" class="est-tab" onclick="switchEstimateTab('bills')">
+                                    Bills <span id="estBillsCount" class="badge" style="background: #e0e0e0; color: #616161; margin-left: 4px; font-size: 11px;">0</span>
                                 </button>
                             </div>
 
@@ -201,6 +210,21 @@
                             <!-- Pending panel -->
                             <div id="estPanelPending" class="card hidden" style="border-top-left-radius: 0; border-top-right-radius: 0;">
                                 <div class="card-body" id="pendingEstimatesList" style="padding: 0;"></div>
+                            </div>
+
+                            <!-- Invoices panel -->
+                            <div id="estPanelInvoices" class="card hidden" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+                                <div class="card-body" id="invoicesList" style="padding: 0;"></div>
+                            </div>
+
+                            <!-- Purchase Orders panel -->
+                            <div id="estPanelPOs" class="card hidden" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+                                <div class="card-body" id="purchaseOrdersList" style="padding: 0;"></div>
+                            </div>
+
+                            <!-- Bills panel -->
+                            <div id="estPanelBills" class="card hidden" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+                                <div class="card-body" id="billsList" style="padding: 0;"></div>
                             </div>
                         </div>
 
