@@ -18,10 +18,10 @@ const EstimatesAPI = {
 
     // Fetch all estimates from QB
     async list(options = {}) {
-        const { limit = 100, status, forceRefresh = false } = options;
+        const { limit = 100, status, customerId, forceRefresh = false } = options;
 
-        // Check cache
-        if (!forceRefresh && this._cache && this._cacheTime && (Date.now() - this._cacheTime < this._cacheDuration)) {
+        // Check cache (only for non-customer-filtered requests)
+        if (!customerId && !forceRefresh && this._cache && this._cacheTime && (Date.now() - this._cacheTime < this._cacheDuration)) {
             let estimates = this._cache;
             if (status) {
                 estimates = estimates.filter(e => e.status === status);
@@ -32,6 +32,7 @@ const EstimatesAPI = {
         const params = new URLSearchParams();
         params.set('limit', limit);
         if (status) params.set('status', status);
+        if (customerId) params.set('customerId', customerId);
 
         const response = await fetch(`${QB_API_BASE}/estimates?${params}`, {
             headers: await this.getHeaders()
@@ -275,10 +276,10 @@ const TransactionsAPI = {
 
     // Fetch transactions — optionally filtered by customer
     async listByCustomer(qbCustomerId, options = {}) {
-        const { type } = options;
+        const { type, limit = 1000 } = options;
         const params = new URLSearchParams();
         if (qbCustomerId) params.set('customerId', qbCustomerId);
-        params.set('limit', 1000);
+        params.set('limit', limit);
         if (type) params.set('type', type);
 
         const response = await fetch(`${QB_API_BASE}/transactions?${params}`, {

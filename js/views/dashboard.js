@@ -2281,6 +2281,7 @@ async function viewCustomerDetail(customerId) {
     }
 
     currentCustomerId = customerId;
+    window._currentCustomerObj = customer;
 
     // Populate header
     const typeInfo = CUSTOMER_TYPES[customer.type] || CUSTOMER_TYPES.other;
@@ -2518,16 +2519,18 @@ let _custActivityCache = {};
 
 var _custInvoicesCache = {};
 
+var _custTxnLoadedAll = {};
+
 async function loadCustomerStats(customer) {
     const customerId = customer.id;
     try {
-        // Fetch jobs, estimates, and invoices in parallel
+        // Fetch jobs + first page of estimates/invoices (20 each — fast initial load)
         const jobsPromise = JobsAPI.list({ customerId: customer.id, limit: 500 });
         const estPromise = customer.qbCustomerId
-            ? EstimatesAPI.listByCustomer(customer.qbCustomerId)
+            ? EstimatesAPI.list({ customerId: customer.qbCustomerId, limit: 20 })
             : Promise.resolve({ estimates: [] });
         const invoicePromise = customer.qbCustomerId
-            ? TransactionsAPI.listInvoices(customer.qbCustomerId)
+            ? TransactionsAPI.listByCustomer(customer.qbCustomerId, { type: 'Invoice', limit: 20 })
             : Promise.resolve({ transactions: [] });
 
         const [jobsData, estData, invoiceData] = await Promise.all([jobsPromise, estPromise, invoicePromise]);
@@ -2540,14 +2543,40 @@ async function loadCustomerStats(customer) {
         _custJobsCache[customerId] = jobs;
         _custEstimatesCache[customerId] = estimates;
         _custInvoicesCache[customerId] = invoices;
+        _custTxnLoadedAll[customerId] = false;
 
-        // Auto-render estimates (default tab)
+        // Auto-render estimates tab right away
         if (currentCustomerId === customerId) {
             renderCustomerEstimates(customerId);
         }
 
     } catch (err) {
         console.error('Failed to load customer stats:', err);
+    }
+}
+
+// Load all estimates + invoices for a customer (triggered by "Load More" or paginating past initial set)
+async function loadAllCustomerTxns(customerId, customer) {
+    if (_custTxnLoadedAll[customerId]) return;
+    _custTxnLoadedAll[customerId] = true;
+
+    try {
+        var qbId = customer ? customer.qbCustomerId : null;
+        if (!qbId) return;
+
+        var [estData, invoiceData] = await Promise.all([
+            EstimatesAPI.listByCustomer(qbId),
+            TransactionsAPI.listInvoices(qbId)
+        ]);
+
+        _custEstimatesCache[customerId] = estData.estimates || [];
+        _custInvoicesCache[customerId] = invoiceData.transactions || [];
+
+        if (currentCustomerId === customerId) {
+            renderCustomerEstimates(customerId);
+        }
+    } catch (err) {
+        console.error('Failed to load all transactions:', err);
     }
 }
 
@@ -2681,7 +2710,13 @@ function renderCustomerEstimates(customerId, page) {
         paginationHtml += '</div>';
     }
 
-    container.innerHTML = filterBarHtml + tableHtml + paginationHtml;
+    // "Load all" link if we only fetched initial batch
+    var loadMoreHtml = '';
+    if (!_custTxnLoadedAll[customerId] && (estCount >= 20 || invCount >= 20)) {
+        loadMoreHtml = '<div style="text-align: center; padding: 6px 0;"><a href="#" onclick="event.preventDefault(); this.textContent=\'Loading...\'; loadAllCustomerTxns(\'' + customerId + '\', window._currentCustomerObj);" style="font-size: 11px; color: #2e7d32;">Load all transactions</a></div>';
+    }
+
+    container.innerHTML = filterBarHtml + tableHtml + paginationHtml + loadMoreHtml;
 }
 
 // Build sorted list from current filter for preview lookups
