@@ -2522,7 +2522,7 @@ async function loadCustomerStats(customer) {
     const customerId = customer.id;
     try {
         // Fetch jobs, estimates, and invoices in parallel
-        const jobsPromise = JobsAPI.list({ customer_id: customer.id, limit: 500 });
+        const jobsPromise = JobsAPI.list({ customerId: customer.id, limit: 500 });
         const estPromise = customer.qbCustomerId
             ? EstimatesAPI.listByCustomer(customer.qbCustomerId)
             : Promise.resolve({ estimates: [] });
