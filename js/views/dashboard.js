@@ -1779,38 +1779,155 @@ function timeSince(dateStr) {
 
 function searchCustomersCRM(query) {
     clearTimeout(_crmSearchTimer);
-    var dashboard = document.getElementById('crmDashboard');
-    var searchResults = document.getElementById('crmSearchResults');
+    var dropdown = document.getElementById('crmSearchDropdown');
 
     if (!query || query.length < 2) {
-        _crmSearchResults = [];
-        renderCustomersCRM();
-        // Show dashboard when search is cleared
-        if (dashboard) dashboard.classList.remove('hidden');
-        if (searchResults) searchResults.classList.add('hidden');
+        if (dropdown) { dropdown.classList.add('hidden'); dropdown.innerHTML = ''; }
         return;
     }
 
-    // Hide dashboard, show search results when typing
-    if (dashboard) dashboard.classList.add('hidden');
-    if (searchResults) searchResults.classList.remove('hidden');
+    // Show loading in dropdown
+    if (dropdown) {
+        dropdown.classList.remove('hidden');
+        dropdown.innerHTML = '<div style="padding: 16px; text-align: center; color: #6c757d; font-size: 13px;">Searching...</div>';
+    }
+
     _crmSearchTimer = setTimeout(async function() {
         try {
-            const data = await CustomersAPI.list({ q: query, limit: 100 });
-            _crmSearchResults = data.customers || [];
+            const data = await CustomersAPI.list({ q: query, limit: 20 });
+            var results = data.customers || [];
             // Cache for profile navigation
             if (typeof browseCustomersCache !== 'undefined') {
-                _crmSearchResults.forEach(c => {
+                results.forEach(c => {
                     if (!browseCustomersCache.find(bc => bc.id == c.id)) {
                         browseCustomersCache.push(c);
                     }
                 });
             }
-            renderCustomersCRM();
+            renderCrmSearchDropdown(results, query);
         } catch (err) {
             console.error('CRM search failed:', err);
+            if (dropdown) dropdown.innerHTML = '<div style="padding: 16px; text-align: center; color: #dc3545; font-size: 13px;">Search failed</div>';
         }
     }, 300);
+}
+
+function renderCrmSearchDropdown(results, query) {
+    var dropdown = document.getElementById('crmSearchDropdown');
+    if (!dropdown) return;
+
+    if (results.length === 0) {
+        dropdown.innerHTML = '<div style="padding: 16px; text-align: center; color: #6c757d; font-size: 13px;">No customers found for "' + query + '"</div>';
+        return;
+    }
+
+    var typeIcons = {
+        county: '\ud83c\udfdb\ufe0f', collegiate: '\ud83c\udf93', private: '\ud83c\udfe2',
+        contractor: '\ud83d\udee0\ufe0f', government: '\ud83c\udfe3', worship: '\u26ea', other: '\ud83d\udccb'
+    };
+
+    var html = results.map(function(c) {
+        var icon = typeIcons[c.type] || '\ud83d\udccb';
+        var territory = c.territory || '';
+        var tColor = territory === 'Original' ? '#1a73e8' : territory === 'Southern' ? '#e65100' : '#6c757d';
+        return '<div onclick="crmDropdownSelect(' + c.id + ')" style="padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 10px; transition: background 0.15s;" onmouseenter="this.style.background=\'#f8f9fa\'" onmouseleave="this.style.background=\'white\'">' +
+            '<span style="font-size: 16px;">' + icon + '</span>' +
+            '<div style="flex: 1; min-width: 0;">' +
+                '<div style="font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + (c.name || c.displayName || '') + '</div>' +
+                (c.city || c.state ? '<div style="font-size: 11px; color: #6c757d;">' + [c.city, c.state].filter(Boolean).join(', ') + '</div>' : '') +
+            '</div>' +
+            (territory ? '<span style="font-size: 10px; font-weight: 600; color: ' + tColor + '; background: ' + tColor + '15; padding: 2px 6px; border-radius: 4px;">' + territory + '</span>' : '') +
+        '</div>';
+    }).join('');
+
+    dropdown.innerHTML = html;
+}
+
+function crmDropdownSelect(customerId) {
+    // Close dropdown and clear search
+    var dropdown = document.getElementById('crmSearchDropdown');
+    var searchInput = document.getElementById('crmCustomerSearch');
+    if (dropdown) { dropdown.classList.add('hidden'); dropdown.innerHTML = ''; }
+    if (searchInput) searchInput.value = '';
+
+    // Navigate to customer profile
+    window._customerDetailFrom = 'customers';
+    viewCustomerDetail(customerId);
+}
+
+function crmShowSearchDropdown() {
+    var input = document.getElementById('crmCustomerSearch');
+    if (input && input.value.length >= 2) {
+        searchCustomersCRM(input.value);
+    }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    var dropdown = document.getElementById('crmSearchDropdown');
+    if (dropdown && !e.target.closest('#crmSearchDropdown') && !e.target.closest('#crmCustomerSearch')) {
+        dropdown.classList.add('hidden');
+    }
+});
+
+// Create Customer functions for CRM
+function crmShowCreateCustomer() {
+    var form = document.getElementById('crmCreateCustomerForm');
+    if (form) form.classList.toggle('hidden');
+    var nameInput = document.getElementById('crmNewCustName');
+    if (nameInput) nameInput.focus();
+}
+
+async function crmCreateCustomer() {
+    var name = document.getElementById('crmNewCustName').value.trim();
+    var address = document.getElementById('crmNewCustAddress').value.trim();
+    var phone = document.getElementById('crmNewCustPhone').value.trim();
+    var email = document.getElementById('crmNewCustEmail').value.trim();
+    var territory = document.getElementById('crmNewCustTerritory').value;
+    var type = document.getElementById('crmNewCustType').value;
+    var errorEl = document.getElementById('crmNewCustError');
+    var btn = document.getElementById('crmNewCustSubmit');
+
+    if (!name) { errorEl.textContent = 'Name is required'; return; }
+    errorEl.textContent = '';
+    btn.disabled = true;
+    btn.textContent = 'Creating...';
+
+    try {
+        var addressObj = null;
+        if (address) {
+            var parts = address.split(',').map(function(p) { return p.trim(); });
+            var stateZip = (parts[2] || '').trim().split(/\s+/);
+            addressObj = { line1: parts[0] || '', city: parts[1] || '', state: stateZip[0] || '', zip: stateZip[1] || '' };
+        }
+
+        var result = await CustomersAPI.createInQB({
+            displayName: name,
+            companyName: name,
+            email: email || undefined,
+            phone: phone || undefined,
+            address: addressObj,
+            territory: territory,
+            type: type
+        });
+
+        if (typeof showNotification === 'function') showNotification('Customer created in QuickBooks', 'success');
+        document.getElementById('crmCreateCustomerForm').classList.add('hidden');
+        // Clear form
+        ['crmNewCustName','crmNewCustAddress','crmNewCustPhone','crmNewCustEmail'].forEach(function(id) {
+            var el = document.getElementById(id); if (el) el.value = '';
+        });
+        // Navigate to new customer
+        if (result && result.customer) {
+            window._customerDetailFrom = 'customers';
+            viewCustomerDetail(result.customer.id);
+        }
+    } catch (err) {
+        errorEl.textContent = err.message || 'Failed to create customer';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create in QuickBooks';
+    }
 }
 
 function filterCustomersCRM(territory) {

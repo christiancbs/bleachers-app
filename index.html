@@ -493,11 +493,55 @@
 
                         <!-- CRM List Mode -->
                         <div id="crmListMode">
-                            <!-- Search -->
-                            <div class="card" style="margin-bottom: 16px;">
-                                <div class="card-body" style="padding: 12px 16px;">
-                                    <input type="text" id="crmCustomerSearch" class="form-input" placeholder="Search customers..." style="width: 100%; font-size: 14px;" oninput="searchCustomersCRM(this.value)">
+                            <!-- Create Customer -->
+                            <button class="btn btn-primary" onclick="crmShowCreateCustomer()" style="margin-bottom: 12px;">+ Create Customer</button>
+
+                            <!-- Inline Create Customer Form (hidden by default) -->
+                            <div id="crmCreateCustomerForm" class="card hidden" style="margin-bottom: 16px; border: 2px solid #2e7d32;">
+                                <div class="card-body" style="padding: 16px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                        <strong style="font-size: 15px;">Create New Customer</strong>
+                                        <button class="btn btn-outline" style="font-size: 11px; padding: 4px 10px;" onclick="document.getElementById('crmCreateCustomerForm').classList.add('hidden')">Cancel</button>
+                                    </div>
+                                    <div style="display: grid; gap: 10px;">
+                                        <input type="text" id="crmNewCustName" class="form-input" placeholder="Customer / School name *" style="font-size: 14px;">
+                                        <input type="text" id="crmNewCustAddress" class="form-input" placeholder="Address (123 Main St, City, ST 12345)" style="font-size: 14px;">
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                            <input type="text" id="crmNewCustPhone" class="form-input" placeholder="Phone" style="font-size: 14px;">
+                                            <input type="email" id="crmNewCustEmail" class="form-input" placeholder="Email" style="font-size: 14px;">
+                                        </div>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                            <select id="crmNewCustTerritory" class="form-input" style="font-size: 14px;">
+                                                <option value="Original">Original (KY/TN)</option>
+                                                <option value="Southern">Southern (AL/FL)</option>
+                                            </select>
+                                            <select id="crmNewCustType" class="form-input" style="font-size: 14px;">
+                                                <option value="county">County</option>
+                                                <option value="collegiate">Collegiate</option>
+                                                <option value="private">Private</option>
+                                                <option value="government">Government</option>
+                                                <option value="contractor">Contractor</option>
+                                                <option value="worship">Worship</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div style="display: flex; gap: 8px; align-items: center;">
+                                            <button id="crmNewCustSubmit" class="btn btn-primary" onclick="crmCreateCustomer()" style="font-size: 13px;">Create in QuickBooks</button>
+                                            <span id="crmNewCustError" style="color: #dc3545; font-size: 12px;"></span>
+                                        </div>
+                                    </div>
                                 </div>
+                            </div>
+
+                            <!-- Search with dropdown -->
+                            <div style="position: relative; margin-bottom: 16px;">
+                                <div class="card">
+                                    <div class="card-body" style="padding: 12px 16px;">
+                                        <input type="text" id="crmCustomerSearch" class="form-input" placeholder="Search customers..." style="width: 100%; font-size: 14px;" oninput="searchCustomersCRM(this.value)" onfocus="crmShowSearchDropdown()" autocomplete="off">
+                                    </div>
+                                </div>
+                                <!-- Search dropdown overlay -->
+                                <div id="crmSearchDropdown" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; z-index: 100; background: white; border: 1px solid #e0e0e0; border-radius: 0 0 8px 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-height: 400px; overflow-y: auto;"></div>
                             </div>
 
                             <!-- Dashboard Stats (loaded from API) -->
